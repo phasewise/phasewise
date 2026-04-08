@@ -8,8 +8,19 @@ See `POC_SCOPE.md` for the full product spec and roadmap. See `BUSINESS_PLAN.md`
 
 - **Name:** Phasewise (formerly PowerKG)
 - **Tagline:** Phase-based project intelligence for design professionals
-- **Primary domain target:** phasewise.com (also .io and .app)
+- **Primary domain:** phasewise.io (live, deployed)
+- **Backup domain:** getphasewise.com (owned, redirect to .io)
+- **phasewise.com:** For sale at ~$4,888 on Afternic — negotiate to ~$1,500 when revenue justifies it
 - **Naming rationale:** Documented in BUSINESS_PLAN.md under "Brand Identity: Why Phasewise"
+- **Brand assets:** `brand/` directory — logos, social banners, favicons, guidelines
+
+### Social Accounts (Claimed)
+
+| Platform | Handle/URL |
+|----------|-----------|
+| GitHub | github.com/phasewise |
+| LinkedIn | linkedin.com/company/phasewise-io |
+| X/Twitter | @phasewise |
 
 ### Multi-Industry Scaling (Future)
 
@@ -24,6 +35,25 @@ The name is intentionally industry-agnostic. Future verticals to develop:
 
 Each vertical shares the core platform (time tracking, budgets, profitability, dashboards) but adds industry-specific phase types, terminology, compliance features, and integrations. Do not build multi-industry features yet — focus on LA until product-market fit is achieved.
 
+## Deployment
+
+- **Hosting:** Vercel (Hobby plan, Pro Trial active)
+- **Live URL:** https://phasewise.io
+- **Vercel URL:** phasewise.vercel.app
+- **Database:** Supabase PostgreSQL — West US (North California), project "Phasewise" under org "Phasewise"
+- **DNS:** Cloudflare — A record `@` → `216.198.79.1` (DNS only, no proxy)
+- **Auto-deploy:** Pushing to `main` on GitHub triggers Vercel deployment automatically
+- **Repo:** github.com/phasewise/phasewise (public)
+
+### Environment Variables (Vercel + local `app/.env`)
+
+| Variable | Source |
+|----------|--------|
+| `DATABASE_URL` | Supabase > Connect > ORM > Prisma (pooled, port 6543) |
+| `DIRECT_URL` | Supabase > Connect > ORM > Prisma (direct, port 5432) |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase > Project Settings > API |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase > Project Settings > API (anon/public key) |
+
 ## Tech Stack
 
 - **Framework:** Next.js 16 (App Router) — see `app/AGENTS.md` for breaking-change rules
@@ -31,21 +61,22 @@ Each vertical shares the core platform (time tracking, budgets, profitability, d
 - **Database:** PostgreSQL via Supabase, ORM is Prisma (`app/prisma/schema.prisma`)
 - **Auth:** Supabase Auth (server-side via `@supabase/ssr`)
 - **UI:** Tailwind CSS 4, Lucide icons, Base UI components
-- **Payments:** Stripe
-- **Hosting target:** Vercel
+- **Payments:** Stripe (not yet integrated)
+- **Hosting:** Vercel
 
 ## Project Structure
 
 ```
-powerkg/                          # Repo directory (legacy name, may rename later)
-├── app/                          # Next.js application root
+phasewise/                        # Repo: github.com/phasewise/phasewise
+├── app/                          # Next.js application root (Vercel root directory)
 │   ├── prisma/schema.prisma      # Database schema (source of truth)
+│   ├── .env                      # Local environment variables (not committed)
 │   ├── src/
 │   │   ├── app/
 │   │   │   ├── (app)/            # Authenticated app routes (shared sidebar layout)
 │   │   │   │   ├── dashboard/
 │   │   │   │   ├── projects/     # List, new, [id] detail
-│   │   │   │   ├── time/         # Timesheet, approve
+│   │   │   │   ├── time/         # Timesheet grid, submit, approve
 │   │   │   │   ├── reports/
 │   │   │   │   └── settings/
 │   │   │   ├── (auth)/           # Login and signup pages
@@ -62,6 +93,7 @@ powerkg/                          # Repo directory (legacy name, may rename late
 │   │           ├── client.ts     # Supabase browser client
 │   │           └── auth.ts       # getCurrentUser() helper
 │   └── package.json
+├── brand/                        # Brand assets (logos, social banners, guidelines)
 ├── BUSINESS_PLAN.md
 ├── POC_SCOPE.md
 └── CLAUDE.md
@@ -95,6 +127,7 @@ All authenticated pages/routes follow:
 
 - Run `npx prisma generate` after any schema change
 - Run `npx prisma db push` to sync schema to Supabase
+- Prisma schema uses `directUrl` for migrations (direct connection, port 5432)
 - Prisma Decimal fields need `Number()` conversion for display
 - Use enum types from `@prisma/client` (e.g., `PhaseType`, `PhaseStatus`) when casting user input
 
@@ -119,3 +152,14 @@ npx prisma generate  # Regenerate Prisma client
 npx prisma db push   # Push schema to database
 npx prisma studio    # Visual database browser
 ```
+
+## TODO (Next Session)
+
+- [ ] Set up Google Workspace (kevin@phasewise.io)
+- [ ] Upload PNG logos to LinkedIn, X/Twitter, GitHub profiles
+- [ ] Claim @phasewise on Instagram
+- [ ] File USPTO trademark for "Phasewise"
+- [ ] Set up getphasewise.com redirect to phasewise.io in Cloudflare
+- [ ] Add Stripe integration for subscription billing
+- [ ] Project editing (update existing projects)
+- [ ] Profitability reporting dashboard
