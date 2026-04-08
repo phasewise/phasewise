@@ -1,0 +1,202 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Organizations (firms) ─────────────────────────────────────────────
+
+model Organization {
+  id                   String   @id @default(uuid()) @db.Uuid
+  name                 String
+  slug                 String   @unique
+  plan                 Plan     @default(TRIAL)
+  stripeCustomerId     String?  @map("stripe_customer_id")
+  stripeSubscriptionId String?  @map("stripe_subscription_id")
+  trialEndsAt          DateTime? @map("trial_ends_at")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  users       User[]
+  projects    Project[]
+  invitations Invitation[]
+  timeEntries TimeEntry[]
+
+  @@map("organizations")
+}
+
+enum Plan {
+  TRIAL
+  STARTER
+  PROFESSIONAL
+  STUDIO
+  ENTERPRISE
+}
+
+// ── Users ─────────────────────────────────────────────────────────────
+
+model User {
+  id              String   @id @default(uuid()) @db.Uuid
+  authId          String   @unique @map("auth_id") // Supabase auth.users.id
+  organizationId  String   @map("organization_id") @db.Uuid
+  fullName        String   @map("full_name")
+  email           String
+  role            UserRole @default(STAFF)
+  billingRate     Decimal? @map("billing_rate") @db.Decimal(10, 2)
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  timeEntries  TimeEntry[]
+  createdProjects Project[] @relation("ProjectCreator")
+  approvedTimesheets WeeklyTimesheet[] @relation("TimesheetApprover")
+  timesheets   WeeklyTimesheet[]
+
+  @@map("users")
+}
+
+enum UserRole {
+  OWNER
+  ADMIN
+  PM
+  STAFF
+}
+
+// ── Invitations ───────────────────────────────────────────────────────
+
+model Invitation {
+  id              String   @id @default(uuid()) @db.Uuid
+  organizationId  String   @map("organization_id") @db.Uuid
+  email           String
+  role            UserRole @default(STAFF)
+  token           String   @unique @default(uuid())
+  expiresAt       DateTime @map("expires_at")
+  acceptedAt      DateTime? @map("accepted_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@map("invitations")
+}
+
+// ── Projects ──────────────────────────────────────────────────────────
+
+model Project {
+  id               String        @id @default(uuid()) @db.Uuid
+  organizationId   String        @map("organization_id") @db.Uuid
+  name             String
+  projectNumber    String?       @map("project_number")
+  clientName       String?       @map("client_name")
+  clientEmail      String?       @map("client_email")
+  status           ProjectStatus @default(ACTIVE)
+  startDate        DateTime?     @map("start_date") @db.Date
+  targetCompletion DateTime?     @map("target_completion") @db.Date
+  description      String?
+  createdById      String        @map("created_by_id") @db.Uuid
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User           @relation("ProjectCreator", fields: [createdById], references: [id])
+  phases       ProjectPhase[]
+  timeEntries  TimeEntry[]
+
+  @@map("projects")
+}
+
+enum ProjectStatus {
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  ARCHIVED
+}
+
+// ── Project Phases ────────────────────────────────────────────────────
+
+model ProjectPhase {
+  id            String    @id @default(uuid()) @db.Uuid
+  projectId     String    @map("project_id") @db.Uuid
+  phaseType     PhaseType @map("phase_type")
+  status        PhaseStatus @default(NOT_STARTED)
+  budgetedFee   Decimal?  @map("budgeted_fee") @db.Decimal(12, 2)
+  budgetedHours Decimal?  @map("budgeted_hours") @db.Decimal(8, 2)
+  startDate     DateTime? @map("start_date") @db.Date
+  endDate       DateTime? @map("end_date") @db.Date
+  sortOrder     Int       @map("sort_order")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  project     Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  timeEntries TimeEntry[]
+
+  @@map("project_phases")
+}
+
+enum PhaseType {
+  PRE_DESIGN
+  SCHEMATIC_DESIGN
+  DESIGN_DEVELOPMENT
+  CONSTRUCTION_DOCUMENTS
+  BIDDING
+  CONSTRUCTION_ADMIN
+  CLOSEOUT
+}
+
+enum PhaseStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETE
+}
+
+// ── Time Entries ──────────────────────────────────────────────────────
+
+model TimeEntry {
+  id              String   @id @default(uuid()) @db.Uuid
+  organizationId  String   @map("organization_id") @db.Uuid
+  userId          String   @map("user_id") @db.Uuid
+  projectId       String   @map("project_id") @db.Uuid
+  phaseId         String   @map("phase_id") @db.Uuid
+  date            DateTime @db.Date
+  hours           Decimal  @db.Decimal(5, 2)
+  description     String?
+  isBillable      Boolean  @default(true) @map("is_billable")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id])
+  project      Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  phase        ProjectPhase @relation(fields: [phaseId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, date])
+  @@index([projectId, phaseId])
+  @@index([userId, date])
+  @@map("time_entries")
+}
+
+// ── Weekly Timesheets ─────────────────────────────────────────────────
+
+model WeeklyTimesheet {
+  id           String          @id @default(uuid()) @db.Uuid
+  userId       String          @map("user_id") @db.Uuid
+  weekStart    DateTime        @map("week_start") @db.Date
+  status       TimesheetStatus @default(DRAFT)
+  submittedAt  DateTime?       @map("submitted_at")
+  approvedById String?         @map("approved_by_id") @db.Uuid
+  approvedAt   DateTime?       @map("approved_at")
+  createdAt    DateTime        @default(now()) @map("created_at")
+
+  user       User  @relation(fields: [userId], references: [id])
+  approvedBy User? @relation("TimesheetApprover", fields: [approvedById], references: [id])
+
+  @@unique([userId, weekStart])
+  @@map("weekly_timesheets")
+}
+
+enum TimesheetStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+}
