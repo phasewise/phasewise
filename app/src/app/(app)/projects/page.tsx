@@ -1,35 +1,23 @@
-import { ArrowUpRight, FolderKanban } from "lucide-react";
 import Link from "next/link";
-import { PHASE_SHORT_LABELS, STATUS_COLORS } from "@/lib/constants";
+import { ArrowUpRight, FolderPlus } from "lucide-react";
 import { getCurrentUser } from "@/lib/supabase/auth";
 import { prisma } from "@/lib/prisma";
+import { PHASE_SHORT_LABELS, STATUS_COLORS } from "@/lib/constants";
 
 function getCurrentPhase(phases: Array<{ phaseType: string; status: string }>) {
   const activePhase = phases.find((phase) => phase.status !== "COMPLETE");
   return activePhase ?? phases[phases.length - 1] ?? { phaseType: "PRE_DESIGN", status: "NOT_STARTED" };
 }
 
-function getBurnColor(pct: number) {
-  if (pct >= 95) return "bg-red-500";
-  if (pct >= 80) return "bg-yellow-500";
-  return "bg-emerald-500";
-}
-
-function getBurnBadge(pct: number) {
-  if (pct >= 95) return "text-red-700 bg-red-50";
-  if (pct >= 80) return "text-yellow-700 bg-yellow-50";
-  return "text-emerald-700 bg-emerald-50";
-}
-
-export default async function DashboardPage() {
+export default async function ProjectsPage() {
   const currentUser = await getCurrentUser();
 
   if (!currentUser) {
     return (
       <div className="p-8">
-        <div className="rounded-3xl border border-slate-200 bg-white p-8 text-slate-700">
-          <h1 className="text-2xl font-semibold">Dashboard</h1>
-          <p className="mt-3 text-sm text-slate-500">Unable to load your account. Please sign in again.</p>
+        <div className="rounded-2xl border border-slate-200 bg-white p-8 text-slate-700">
+          <h1 className="text-2xl font-semibold mb-4">Projects</h1>
+          <p className="text-sm text-slate-500">Unable to load your account. Please sign in again.</p>
         </div>
       </div>
     );
@@ -55,9 +43,11 @@ export default async function DashboardPage() {
 
   const activeProjects = projects.filter((project) => project.status === "ACTIVE");
   const atRiskProjects = activeProjects.filter((project) => {
-    const budgetedHours = project.phases.reduce(
-      (sum, phase) => sum + Number(phase.budgetedHours ?? 0),
-      0
+    const budgetedHours = Number(
+      project.phases.reduce(
+        (sum, phase) => sum + Number(phase.budgetedHours ?? 0),
+        0
+      )
     );
     const usedHours = projectTimeMap.get(project.id) ?? 0;
     return budgetedHours > 0 && usedHours / budgetedHours >= 0.9;
@@ -77,9 +67,11 @@ export default async function DashboardPage() {
     activeProjects.length > 0
       ?
         activeProjects.reduce((sum, project) => {
-          const budgetedHours = project.phases.reduce(
-            (phaseSum, phase) => phaseSum + Number(phase.budgetedHours ?? 0),
-            0
+          const budgetedHours = Number(
+            project.phases.reduce(
+              (phaseSum, phase) => phaseSum + Number(phase.budgetedHours ?? 0),
+              0
+            )
           );
           const hoursUsed = projectTimeMap.get(project.id) ?? 0;
           return sum + (budgetedHours > 0 ? (hoursUsed / budgetedHours) * 100 : 0);
@@ -90,14 +82,14 @@ export default async function DashboardPage() {
     <div className="p-8">
       <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Dashboard</h1>
-          <p className="text-sm text-slate-500 mt-1">Your firm at a glance</p>
+          <h1 className="text-3xl font-bold text-slate-900">Projects</h1>
+          <p className="text-sm text-slate-500 mt-1">All projects for your organization</p>
         </div>
         <Link
           href="/projects/new"
           className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-500"
         >
-          <FolderKanban className="h-4 w-4" />
+          <FolderPlus className="h-4 w-4" />
           New Project
         </Link>
       </div>
@@ -185,11 +177,11 @@ export default async function DashboardPage() {
                     <td className="px-6 py-4 text-slate-600">{project.clientName || "—"}</td>
                     <td className="px-6 py-4 text-slate-600">
                       <span className="text-xs font-medium rounded-full bg-slate-100 px-2 py-1">
-                        {PHASE_SHORT_LABELS[currentPhase.phaseType]}
+                        {PHASE_SHORT_LABELS[currentPhase?.phaseType ?? "PRE_DESIGN"]}
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`text-xs font-semibold px-2 py-1 rounded-full ${STATUS_COLORS[project.status]}`}>
+                      <span className={`text-xs font-semibold px-2 py-1 rounded-full ${STATUS_COLORS[project.status]}`}> 
                         {project.status.replace("_", " ")}
                       </span>
                     </td>
@@ -198,7 +190,7 @@ export default async function DashboardPage() {
                       <div className="flex items-center gap-3">
                         <div className="w-24 overflow-hidden rounded-full bg-slate-100 h-2">
                           <div
-                            className={`h-2 rounded-full ${getBurnColor(burnPercent)}`}
+                            className={`h-2 rounded-full ${burnPercent >= 95 ? "bg-red-500" : burnPercent >= 80 ? "bg-yellow-500" : "bg-emerald-500"}`}
                             style={{ width: `${Math.min(burnPercent, 100)}%` }}
                           />
                         </div>

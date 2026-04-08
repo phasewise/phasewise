@@ -55,6 +55,8 @@ model User {
   createdProjects Project[] @relation("ProjectCreator")
   approvedTimesheets WeeklyTimesheet[] @relation("TimesheetApprover")
   timesheets   WeeklyTimesheet[]
+  assignments ProjectAssignment[]
+  assignedTasks ProjectTask[]
 
   @@map("users")
 }
@@ -62,6 +64,7 @@ model User {
 enum UserRole {
   OWNER
   ADMIN
+  SUPERVISOR
   PM
   STAFF
 }
@@ -103,6 +106,8 @@ model Project {
   organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   createdBy    User           @relation("ProjectCreator", fields: [createdById], references: [id])
   phases       ProjectPhase[]
+  assignments  ProjectAssignment[]
+  tasks        ProjectTask[]
   timeEntries  TimeEntry[]
 
   @@map("projects")
@@ -113,6 +118,43 @@ enum ProjectStatus {
   ON_HOLD
   COMPLETED
   ARCHIVED
+}
+
+model ProjectAssignment {
+  id            String   @id @default(uuid()) @db.Uuid
+  projectId     String   @map("project_id") @db.Uuid
+  userId        String   @map("user_id") @db.Uuid
+  assignedAt    DateTime @default(now()) @map("assigned_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+  @@map("project_assignments")
+}
+
+model ProjectTask {
+  id            String      @id @default(uuid()) @db.Uuid
+  projectId     String      @map("project_id") @db.Uuid
+  assignedToId  String?     @map("assigned_to_id") @db.Uuid
+  name          String
+  description   String?
+  dueDate       DateTime?   @map("due_date") @db.Date
+  status        TaskStatus  @default(NOT_STARTED)
+  completedAt   DateTime?   @map("completed_at")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  project    Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assignedTo User?   @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
+
+  @@map("project_tasks")
+}
+
+enum TaskStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETE
 }
 
 // ── Project Phases ────────────────────────────────────────────────────

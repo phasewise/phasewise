@@ -1,10 +1,10 @@
-# PowerKG
+# Phasewise
 
-**Power Kinetic Growth** — The operating system for landscape architecture firms.
+**Phase-based project intelligence for design professionals.**
 
 ## What is this?
 
-PowerKG is a vertical SaaS platform built specifically for landscape architecture firms. It replaces the fragmented stack of spreadsheets, email, and generic PM tools with a single platform designed around how landscape architects actually work.
+Phasewise is a vertical SaaS platform built specifically for landscape architecture firms. It replaces the fragmented stack of spreadsheets, email, and generic PM tools with a single platform designed around how landscape architects actually work — tracking projects through phases (PD → SD → DD → CD → Bid → CA → Closeout) with real-time budget and profitability visibility.
 
 ## Documents
 
@@ -16,7 +16,7 @@ PowerKG is a vertical SaaS platform built specifically for landscape architectur
 - [x] Market research complete
 - [x] Business plan written
 - [x] POC scoped
-- [ ] Development started
+- [x] Development started
 - [ ] MVP launched
 - [ ] Beta users onboarded
 

@@ -1,4 +1,4 @@
-# PowerKG — Proof of Concept (POC) Scope
+# Phasewise — Proof of Concept (POC) Scope
 ## MVP Technical Specification
 
 ---

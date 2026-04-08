@@ -74,7 +74,7 @@ export default function SignupPage() {
       <div className="w-full max-w-sm">
         <div className="flex items-center justify-center gap-2 mb-8">
           <Leaf className="h-7 w-7 text-emerald-400" />
-          <span className="text-white font-semibold text-xl">PowerKG</span>
+          <span className="text-white font-semibold text-xl">Phasewise</span>
         </div>
 
         <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">

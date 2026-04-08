@@ -1,4 +1,4 @@
-# PowerKG — Business Plan
+# Phasewise — Business Plan
 ## Project Management & Operations Platform for Landscape Architecture Firms
 ### Prepared April 8, 2026
 
@@ -6,7 +6,7 @@
 
 ## Executive Summary
 
-PowerKG (Power Kinetic Growth) is a vertical SaaS platform purpose-built for landscape architecture firms. It replaces the fragmented tool stack of spreadsheets, email, and generic project management software with a single platform designed around how landscape architects actually work — from project phases and fee tracking to submittal logs, plant schedules, and construction administration.
+Phasewise is a vertical SaaS platform purpose-built for landscape architecture firms. It replaces the fragmented tool stack of spreadsheets, email, and generic project management software with a single platform designed around how landscape architects actually work — from project phases and fee tracking to submittal logs, plant schedules, and construction administration.
 
 **The opportunity:** There are approximately 8,500 landscape architecture firms in the US generating $11B+ in annual revenue. 95% have fewer than 50 employees. There is **zero** purpose-built SaaS for LA firm operations. The closest competitor, Monograph, targets architecture firms and lacks landscape-specific features (plant schedules, irrigation, water budgets, MWELO compliance, CA-phase tools).
 
@@ -110,7 +110,7 @@ At full maturity (5+ years), capturing 15-20% of the LA market + 5% of adjacent 
 | **Monday/Asana** | Everyone | Minimal | $8-20/user/mo | No understanding of project phases, fee structures, AEC billing |
 | **QuickBooks + Excel** | Default | Minimal | ~$80/mo | Fragmented, manual, no real-time project visibility |
 
-### Competitive Advantages of PowerKG
+### Competitive Advantages of Phasewise
 
 1. **Only LA-specific platform** — First-mover in an empty category
 2. **Built by a practicing landscape architect** — Authentic domain expertise
@@ -322,7 +322,7 @@ The MVP focuses on the #1 pain point: **"I don't know if my projects are profita
 
 ### Pre-Launch (Months 1-3)
 
-1. **Landing page** at powerkg.com — waitlist signup with "Get early access" CTA
+1. **Landing page** at phasewise.com — waitlist signup with "Get early access" CTA
 2. **ASLA community engagement** — Join forums, LinkedIn groups, attend local chapter events
 3. **Content marketing** — Blog posts on LA firm operations, productivity, technology
 4. **Beta recruitment** — 10 firms for free beta access in exchange for feedback
@@ -373,7 +373,7 @@ The MVP focuses on the #1 pain point: **"I don't know if my projects are profita
 | Category | Monthly Cost | Notes |
 |----------|-------------|-------|
 | Infrastructure | $0-90 | Free tiers initially, scales with users |
-| Domain + email | $15 | powerkg.com + Google Workspace |
+| Domain + email | $15 | phasewise.com + Google Workspace |
 | Stripe fees | 2.9% of MRR | ~$430/mo at 100 subs |
 | Marketing | $200-500 | Content, small ad tests |
 | Legal (one-time) | $2,000-3,000 | Terms of service, privacy policy |
@@ -464,9 +464,9 @@ The MVP focuses on the #1 pain point: **"I don't know if my projects are profita
 
 1. **MWELO Calculator as lead magnet** — Free tool drives LA firms to the platform (California has 40M people, every new landscape needs MWELO compliance)
 2. **ASLA partnership** — Official "recommended tool" status would unlock the entire member base
-3. **University pipeline** — Partner with LA programs (Harvard GSD, UC Berkeley, Cal Poly) — students learn PowerKG, bring it to their first jobs
+3. **University pipeline** — Partner with LA programs (Harvard GSD, UC Berkeley, Cal Poly) — students learn Phasewise, bring it to their first jobs
 4. **Plant database network effect** — As firms add plants, the database becomes more valuable, creating switching costs
-5. **Verifield templates as marketing** — Use existing n8n automation templates as free lead gen for PowerKG
+5. **Verifield templates as marketing** — Use existing n8n automation templates as free lead gen for Phasewise
 
 ---
 
@@ -495,6 +495,59 @@ The MVP focuses on the #1 pain point: **"I don't know if my projects are profita
 
 ---
 
-*PowerKG — Power Kinetic Growth*
-*The operating system for landscape architecture firms.*
+---
+
+## Brand Identity: Why "Phasewise"
+
+### Naming Process
+
+The original working name was "PowerKG" (Power Kinetic Growth), using the founder's initials. A comprehensive naming analysis was conducted in April 2026 evaluating the name against:
+
+- **Industry alignment** — How the name resonates with landscape architecture professionals
+- **Competitive landscape** — Naming patterns of successful AEC software (Monograph, Deltek, Harvest, Factor AE)
+- **Target customer identity** — LA firm principals and PMs are designers who value craft, nature, and clarity over corporate/industrial language
+- **Trademark and domain availability** — Conflict checking against existing software products
+
+### Why PowerKG Was Replaced
+
+1. **"KG" was opaque** — Founder initials mean nothing to customers. In the metric system LA firms use daily, "kg" reads as kilogram. In tech, it reads as knowledge graph.
+2. **"Power" was tonally wrong** — Connotes heavy industry and enterprise IT, not the design sensitivity and craft that landscape architects identify with. Compare to Monograph (intellectual, design-world) and Harvest (warm, natural).
+3. **Poor googleability** — Searches returned noise about power software, kilogram measurements, and Microsoft Power Platform.
+
+### Why Phasewise Won
+
+Over 40 alternative names were researched, including Sightline, Canopy, Verdant, Ridgeline, Clearsite, Planform, Terrace, Gradia, Fieldmark, Datumline, Scopeline, and Swale. Most had significant trademark conflicts with existing software products:
+
+- **Canopy** — $70M-funded SaaS company (getcanopy.com)
+- **Ridgeline** — Major SaaS by Dave Duffield (PeopleSoft/Workday founder)
+- **Sightline** — Multiple software companies (cybersecurity, BI, defense)
+- **Planform** — Existing AEC PDF measurement tool (direct conflict)
+- **Clearsite** — Active facility management app
+- **Verdant** — Crowded namespace (5+ software companies)
+
+**Phasewise** was selected because:
+
+1. **No trademark conflicts** — No existing software product uses this name
+2. **Domain availability** — phasewise.com, .io, and .app appear acquirable
+3. **Communicates the differentiator** — Phase-based project management is what separates this product from generic PM tools. The name says it immediately.
+4. **Professional tone** — Matches the intellectual, design-aware identity of LA professionals without being corporate or clinical
+5. **Passes the "tell a friend" test** — "We use Phasewise to track our projects" sounds natural and self-explanatory
+6. **Multi-industry scalability** — The name is not LA-specific, enabling expansion to other phase-based industries (architecture, construction, civil engineering, agriculture) without rebranding
+
+### Multi-Industry Brand Architecture (Future)
+
+The name "Phasewise" is industry-agnostic by design, enabling a platform strategy:
+
+| Product | Market | Phase Structure |
+|---------|--------|----------------|
+| **Phasewise** (core) | Landscape Architecture | PD → SD → DD → CD → Bid → CA → Closeout |
+| **Phasewise CM** | Construction Management | Pre-Con → Mobilization → Construction → Closeout |
+| **Phasewise AE** | Architecture & Engineering | Programming → SD → DD → CD → CA |
+| **Phasewise AG** | Agriculture | Planning → Planting → Growing → Harvest → Fallow |
+
+Each vertical would share the core platform (time tracking, budgets, profitability, dashboards) but add industry-specific phase types, terminology, compliance features, and integrations. This architecture enables expansion from a $1B LA market to the $50B+ AEC market without a rebrand.
+
+---
+
+*Phasewise — Phase-based project intelligence for design professionals.*
 *Built by a landscape architect, for landscape architects.*

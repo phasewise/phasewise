@@ -15,7 +15,7 @@ export default function HomePage() {
       <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 bg-slate-950/90 backdrop-blur border-b border-slate-800">
         <div className="flex items-center gap-2">
           <Leaf className="h-6 w-6 text-emerald-400" />
-          <span className="font-semibold text-lg tracking-tight">PowerKG</span>
+          <span className="font-semibold text-lg tracking-tight">Phasewise</span>
         </div>
         <div className="flex items-center gap-4">
           <Link
@@ -46,7 +46,7 @@ export default function HomePage() {
           <span className="text-emerald-400 italic">spreadsheets.</span>
         </h1>
         <p className="text-lg text-slate-400 max-w-xl mx-auto mb-10 leading-relaxed">
-          PowerKG is the project management platform built specifically for
+          Phasewise is the project management platform built specifically for
           landscape architecture firms. Track phases, budgets, time, and
           profitability — the way you actually work.
         </p>
@@ -261,7 +261,7 @@ export default function HomePage() {
       <footer className="border-t border-slate-800 py-8 px-6 flex items-center justify-between text-sm text-slate-500">
         <div className="flex items-center gap-2">
           <Leaf className="h-4 w-4 text-emerald-400" />
-          PowerKG
+          Phasewise
         </div>
         <div>Built by a landscape architect, for landscape architects.</div>
       </footer>

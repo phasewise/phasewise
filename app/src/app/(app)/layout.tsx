@@ -25,7 +25,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <aside className="w-56 bg-slate-900 text-white flex flex-col border-r border-slate-800">
         <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-800">
           <Leaf className="h-5 w-5 text-emerald-400" />
-          <span className="font-semibold text-sm tracking-tight">PowerKG</span>
+          <span className="font-semibold text-sm tracking-tight">Phasewise</span>
         </div>
         <nav className="flex-1 px-3 py-4 space-y-1">
           {navigation.map((item) => (
@@ -40,7 +40,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
         <div className="px-5 py-4 border-t border-slate-800">
-          <p className="text-xs text-slate-600">PowerKG v0.1.0</p>
+          <p className="text-xs text-slate-600">Phasewise v0.1.0</p>
         </div>
       </aside>
 

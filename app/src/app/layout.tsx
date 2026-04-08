@@ -8,7 +8,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "PowerKG — Project Management for Landscape Architects",
+  title: "Phasewise — Project Management for Landscape Architects",
   description:
     "The operating system for landscape architecture firms. Track projects, budgets, time, and profitability in one platform built for how you work.",
 };
