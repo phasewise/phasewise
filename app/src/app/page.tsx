@@ -150,10 +150,10 @@ export default function HomePage() {
         id="pw-nav"
         className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur border-b border-[#E2EBE4] transition-shadow"
       >
-        <div className="max-w-[1120px] mx-auto px-10 h-[68px] flex items-center justify-between">
+        <div className="max-w-[1120px] mx-auto px-5 sm:px-10 h-[64px] sm:h-[68px] flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5 no-underline">
             <PhaseLogo />
-            <span className="text-[19px] font-semibold tracking-[-0.4px] text-[#1A2E22]">
+            <span className="text-[18px] sm:text-[19px] font-semibold tracking-[-0.4px] text-[#1A2E22]">
               phase<em className="not-italic font-light text-[#2D6A4F]">wise</em>
             </span>
           </Link>
@@ -174,13 +174,16 @@ export default function HomePage() {
               </a>
             </li>
           </ul>
-          <div className="flex items-center gap-4">
-            <Link href="/login" className="text-sm text-[#3D5C48] hover:text-[#1A2E22] transition-colors">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <Link
+              href="/login"
+              className="hidden sm:inline text-sm text-[#3D5C48] hover:text-[#1A2E22] transition-colors"
+            >
               Log in
             </Link>
             <Link
               href="/signup"
-              className="inline-flex items-center gap-2 text-sm font-medium px-6 py-[11px] rounded-md bg-[#2D6A4F] text-white hover:bg-[#40916C] hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(45,106,79,0.3)] transition-all"
+              className="inline-flex items-center gap-2 text-[13px] sm:text-sm font-medium px-4 sm:px-6 py-2 sm:py-[11px] rounded-md bg-[#2D6A4F] text-white hover:bg-[#40916C] hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(45,106,79,0.3)] transition-all whitespace-nowrap"
             >
               Start Free Trial
             </Link>
@@ -189,19 +192,19 @@ export default function HomePage() {
       </nav>
 
       {/* ── Hero ────────────────────────────────────── */}
-      <section className="pt-40 pb-20 px-10 bg-white relative overflow-hidden">
-        <div className="max-w-[1120px] mx-auto grid lg:grid-cols-2 gap-20 items-center">
+      <section className="pt-24 sm:pt-32 lg:pt-40 pb-16 sm:pb-20 px-6 sm:px-10 bg-white relative overflow-hidden">
+        <div className="max-w-[1120px] mx-auto grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
           <div>
-            <div className="inline-flex items-center gap-2 bg-[#F0FAF4] border border-[#52B788]/30 rounded-full px-3.5 py-[5px] text-xs font-medium text-[#2D6A4F] mb-7">
+            <div className="inline-flex items-center gap-2 bg-[#F0FAF4] border border-[#52B788]/30 rounded-full px-3.5 py-[5px] text-xs font-medium text-[#2D6A4F] mb-6 sm:mb-7">
               <span className="w-1.5 h-1.5 rounded-full bg-[#52B788]" />
               Built by a landscape architect
             </div>
-            <h1 className="font-serif text-[clamp(38px,4.5vw,58px)] font-normal leading-[1.1] text-[#1A2E22] mb-6 tracking-[-0.5px]">
+            <h1 className="font-serif text-[clamp(34px,7vw,58px)] font-normal leading-[1.1] text-[#1A2E22] mb-5 sm:mb-6 tracking-[-0.5px]">
               Focus on the <em className="italic text-[#2D6A4F]">design.</em>
               <br />
               We&apos;ll handle everything else.
             </h1>
-            <p className="text-lg leading-[1.75] text-[#6B8C74] mb-10 max-w-[480px]">
+            <p className="text-base sm:text-lg leading-[1.7] sm:leading-[1.75] text-[#6B8C74] mb-8 sm:mb-10 max-w-[480px]">
               Phasewise is the operating system for landscape architecture firms.
               Project management, budgets, time tracking, billing, and client coordination — automated, so you can spend more time designing.
             </p>
@@ -315,19 +318,19 @@ export default function HomePage() {
       </section>
 
       {/* ── Proof Bar ─────────────────────────────── */}
-      <div className="bg-[#F7F9F7] border-y border-[#E2EBE4] py-11 px-10">
-        <div className="max-w-[1120px] mx-auto flex flex-col items-center gap-9">
-          <p className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[#40916C]">
+      <div className="bg-[#F7F9F7] border-y border-[#E2EBE4] py-10 sm:py-11 px-6 sm:px-10">
+        <div className="max-w-[1120px] mx-auto flex flex-col items-center gap-8 sm:gap-9">
+          <p className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[#40916C] text-center">
             Built for landscape architecture firms
           </p>
-          <div className="flex gap-12 items-center flex-wrap justify-center">
+          <div className="flex gap-6 sm:gap-12 items-center flex-wrap justify-center">
             {["Clearwater Studio", "Mesa + Associates", "Groundwork LA", "Terrain Group", "Grove Design"].map((firm) => (
               <span key={firm} className="text-sm font-medium text-[#A3BEA9] tracking-wide font-serif">
                 {firm}
               </span>
             ))}
           </div>
-          <div className="flex gap-16 flex-wrap justify-center">
+          <div className="flex gap-8 sm:gap-16 flex-wrap justify-center">
             {[
               { num: "200+", label: "Projects managed" },
               { num: "15%", label: "Avg. budget savings" },
@@ -346,7 +349,7 @@ export default function HomePage() {
       </div>
 
       {/* ── Pain → Solution ─────────────────────── */}
-      <section className="py-24 px-10 bg-white">
+      <section className="py-16 sm:py-24 px-6 sm:px-10 bg-white">
         <div className="max-w-[1120px] mx-auto">
           <div className="text-center mb-14">
             <p className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[#40916C] mb-4">The Problem</p>
@@ -388,7 +391,7 @@ export default function HomePage() {
       </section>
 
       {/* ── Features ────────────────────────────── */}
-      <section id="features" className="py-24 px-10 bg-[#F7F9F7]">
+      <section id="features" className="py-16 sm:py-24 px-6 sm:px-10 bg-[#F7F9F7]">
         <div className="max-w-[1120px] mx-auto">
           <div className="text-center mb-14">
             <p className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[#40916C] mb-4">Features</p>
@@ -422,7 +425,7 @@ export default function HomePage() {
       </section>
 
       {/* ── Pricing ─────────────────────────────── */}
-      <section id="pricing" className="py-24 px-10 bg-white">
+      <section id="pricing" className="py-16 sm:py-24 px-6 sm:px-10 bg-white">
         <div className="max-w-[1120px] mx-auto">
           <div className="text-center mb-16">
             <p className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[#40916C] mb-4">Pricing</p>
@@ -500,7 +503,7 @@ export default function HomePage() {
       </section>
 
       {/* ── Testimonials ─────────────────────────── */}
-      <section className="py-24 px-10 bg-[#F7F9F7]">
+      <section className="py-16 sm:py-24 px-6 sm:px-10 bg-[#F7F9F7]">
         <div className="max-w-[1120px] mx-auto">
           <div className="text-center mb-14">
             <p className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[#40916C] mb-4">What firms say</p>
@@ -527,7 +530,7 @@ export default function HomePage() {
       </section>
 
       {/* ── Final CTA ─────────────────────────── */}
-      <section className="bg-[#1A2E22] py-32 px-10 text-center relative overflow-hidden">
+      <section className="bg-[#1A2E22] py-20 sm:py-32 px-6 sm:px-10 text-center relative overflow-hidden">
         <div
           className="absolute -top-48 left-1/2 -translate-x-1/2 w-[800px] h-[400px] pointer-events-none"
           style={{
@@ -568,7 +571,7 @@ export default function HomePage() {
       </section>
 
       {/* ── Footer ─────────────────────────────── */}
-      <footer className="bg-[#0D2218] py-16 px-10 border-t border-white/[0.04]">
+      <footer className="bg-[#0D2218] py-12 sm:py-16 px-6 sm:px-10 border-t border-white/[0.04]">
         <div className="max-w-[1120px] mx-auto">
           <div className="grid md:grid-cols-4 gap-12 mb-14">
             <div>
