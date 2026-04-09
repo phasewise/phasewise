@@ -92,7 +92,7 @@ export default function SignupPage() {
           <h1 className="font-serif text-2xl text-[#1A2E22] mb-1">Start your free trial</h1>
           <p className="text-[#6B8C74] text-sm mb-6">14 days free. No credit card required.</p>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Your name</label>
               <input
@@ -101,7 +101,7 @@ export default function SignupPage() {
                 onChange={(e) => setFullName(e.target.value)}
                 required
                 className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-[#1A2E22] text-sm focus:outline-none focus:border-[#52B788] focus:bg-white transition-colors"
-                placeholder="Kevin Gallo"
+                placeholder="Ada Rivera"
               />
             </div>
             <div>
@@ -112,7 +112,7 @@ export default function SignupPage() {
                 onChange={(e) => setFirmName(e.target.value)}
                 required
                 className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-[#1A2E22] text-sm focus:outline-none focus:border-[#52B788] focus:bg-white transition-colors"
-                placeholder="Gallo Landscape Architecture"
+                placeholder="Meridian Landscape Studio"
               />
             </div>
             <div>
@@ -123,7 +123,7 @@ export default function SignupPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-[#1A2E22] text-sm focus:outline-none focus:border-[#52B788] focus:bg-white transition-colors"
-                placeholder="kevin@firm.com"
+                placeholder="ada@meridian.design"
               />
             </div>
             <div>
