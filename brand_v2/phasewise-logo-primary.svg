@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 56" width="280" height="56">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;600&amp;display=swap');
+    </style>
+  </defs>
+
+  <!-- Icon mark: stacked phase bars forming a "P" shape -->
+  <g transform="translate(0, 8)">
+    <!-- Phase bars - stacked horizontal lines of decreasing width, suggesting project phases -->
+    <rect x="0" y="0"  width="32" height="5" rx="2.5" fill="#2D6A4F"/>
+    <rect x="0" y="9"  width="24" height="5" rx="2.5" fill="#2D6A4F"/>
+    <rect x="0" y="18" width="18" height="5" rx="2.5" fill="#40916C"/>
+    <rect x="0" y="27" width="28" height="5" rx="2.5" fill="#52B788"/>
+  </g>
+
+  <!-- Wordmark -->
+  <text
+    x="46"
+    y="37"
+    font-family="'Outfit', 'Helvetica Neue', Arial, sans-serif"
+    font-weight="600"
+    font-size="26"
+    letter-spacing="-0.5"
+    fill="#1A2E22"
+  >phase</text>
+  <text
+    x="139"
+    y="37"
+    font-family="'Outfit', 'Helvetica Neue', Arial, sans-serif"
+    font-weight="300"
+    font-size="26"
+    letter-spacing="-0.5"
+    fill="#2D6A4F"
+  >wise</text>
+
+  <!-- Tagline -->
+  <text
+    x="46"
+    y="50"
+    font-family="'Outfit', 'Helvetica Neue', Arial, sans-serif"
+    font-weight="300"
+    font-size="9"
+    letter-spacing="2.5"
+    fill="#7A9E8A"
+  >PROJECT MANAGEMENT</text>
+</svg>

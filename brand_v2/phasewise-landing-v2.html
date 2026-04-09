@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Phasewise — Project Management for Landscape Architects</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet"/>
+<style>
+  /* ── Reset & base ──────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Outfit', system-ui, sans-serif;
+    font-weight: 400;
+    background: #FFFFFF;
+    color: #1A2E22;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: rgba(82,183,136,0.25); }
+
+  /* ── Color tokens ──────────────────────────────── */
+  :root {
+    --green-900: #0D2218;
+    --green-800: #1A2E22;
+    --green-700: #2D6A4F;
+    --green-500: #40916C;
+    --green-300: #52B788;
+    --green-100: #B7E4C7;
+    --green-50:  #F0FAF4;
+    --stone-500: #C9A87C;
+    --stone-300: #E8D5B7;
+    --stone-50:  #FAF6EF;
+    --ink-900:   #1A2E22;
+    --ink-700:   #3D5C48;
+    --ink-500:   #6B8C74;
+    --ink-300:   #A3BEA9;
+    --ink-100:   #E8EDE9;
+    --surface:   #F7F9F7;
+    --white:     #FFFFFF;
+    --border:    #E2EBE4;
+  }
+
+  /* ── Typography ───────────────────────────────── */
+  .serif { font-family: 'DM Serif Display', Georgia, serif; font-weight: 400; }
+  .overline {
+    font-size: 11px; font-weight: 600;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--green-500);
+  }
+
+  /* ── Layout ───────────────────────────────────── */
+  .container { max-width: 1120px; margin: 0 auto; padding: 0 40px; }
+  section { padding: 100px 40px; }
+  .section-white { background: var(--white); }
+  .section-surface { background: var(--surface); }
+  .section-dark { background: var(--green-800); }
+  .section-center { text-align: center; }
+
+  /* ── Nav ──────────────────────────────────────── */
+  .nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    transition: box-shadow 0.3s;
+  }
+  .nav.scrolled { box-shadow: 0 2px 24px rgba(26,46,34,0.08); }
+  .nav-inner {
+    max-width: 1120px; margin: 0 auto; padding: 0 40px;
+    height: 68px; display: flex; align-items: center; justify-content: space-between;
+  }
+  .nav-logo {
+    display: flex; align-items: center; gap: 10px;
+    text-decoration: none;
+  }
+  .nav-logo-mark {
+    display: flex; flex-direction: column; gap: 3px; justify-content: center;
+  }
+  .nav-logo-mark span {
+    display: block; height: 4px; border-radius: 2px;
+    background: var(--green-700);
+    transition: width 0.3s;
+  }
+  .nav-logo-mark span:nth-child(1) { width: 22px; }
+  .nav-logo-mark span:nth-child(2) { width: 16px; background: var(--green-500); }
+  .nav-logo-mark span:nth-child(3) { width: 20px; background: var(--green-300); }
+  .nav-wordmark {
+    font-size: 19px; font-weight: 600; letter-spacing: -0.4px;
+    color: var(--ink-900);
+  }
+  .nav-wordmark em { font-style: normal; font-weight: 300; color: var(--green-700); }
+  .nav-links {
+    display: flex; align-items: center; gap: 36px;
+    list-style: none;
+  }
+  .nav-links a {
+    font-size: 14px; font-weight: 400; color: var(--ink-700);
+    text-decoration: none; transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--ink-900); }
+  .nav-actions { display: flex; align-items: center; gap: 16px; }
+  .nav-login {
+    font-size: 14px; color: var(--ink-700); text-decoration: none;
+    transition: color 0.2s;
+  }
+  .nav-login:hover { color: var(--ink-900); }
+
+  /* ── Buttons ──────────────────────────────────── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: 'Outfit', sans-serif; font-weight: 500; font-size: 14px;
+    padding: 11px 24px; border-radius: 6px; border: none;
+    cursor: pointer; text-decoration: none; transition: all 0.2s ease;
+    letter-spacing: 0.01em;
+  }
+  .btn-primary {
+    background: var(--green-700); color: #fff;
+  }
+  .btn-primary:hover {
+    background: var(--green-500);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(45,106,79,0.3);
+  }
+  .btn-primary-lg {
+    font-size: 16px; padding: 15px 36px; border-radius: 7px;
+    background: var(--green-700); color: #fff;
+  }
+  .btn-primary-lg:hover {
+    background: var(--green-500);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 32px rgba(45,106,79,0.3);
+  }
+  .btn-ghost {
+    background: transparent; color: var(--ink-700);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover {
+    border-color: var(--green-300); color: var(--green-700);
+    background: var(--green-50);
+  }
+  .btn-ghost-lg {
+    font-size: 16px; padding: 14px 36px; border-radius: 7px;
+    background: transparent; color: var(--ink-700);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost-lg:hover {
+    border-color: var(--green-300); color: var(--green-700);
+    background: var(--green-50);
+  }
+  .btn-white {
+    background: #fff; color: var(--green-800);
+    font-size: 16px; padding: 15px 36px; border-radius: 7px;
+  }
+  .btn-white:hover {
+    background: var(--green-50);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  }
+
+  /* ── Hero ─────────────────────────────────────── */
+  .hero {
+    padding: 160px 40px 80px;
+    background: var(--white);
+    position: relative; overflow: hidden;
+  }
+  .hero-inner {
+    max-width: 1120px; margin: 0 auto;
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 80px; align-items: center;
+  }
+  .hero-tag {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--green-50);
+    border: 1px solid rgba(82,183,136,0.3);
+    border-radius: 20px; padding: 5px 14px;
+    font-size: 12px; font-weight: 500;
+    color: var(--green-700); margin-bottom: 28px;
+  }
+  .hero-tag-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--green-300);
+  }
+  .hero h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(38px, 4.5vw, 58px);
+    font-weight: 400; line-height: 1.1;
+    color: var(--ink-900); margin-bottom: 24px;
+    letter-spacing: -0.5px;
+  }
+  .hero h1 em { font-style: italic; color: var(--green-700); }
+  .hero p {
+    font-size: 18px; line-height: 1.75;
+    color: var(--ink-500); margin-bottom: 40px;
+    max-width: 480px;
+  }
+  .hero-actions { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+  .hero-note {
+    font-size: 12px; color: var(--ink-300);
+    margin-top: 16px; letter-spacing: 0.02em;
+  }
+
+  /* ── Hero dashboard mockup ─────────────────────── */
+  .hero-visual {
+    position: relative;
+  }
+  .mockup-window {
+    background: var(--green-800);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 32px 80px rgba(26,46,34,0.25), 0 8px 24px rgba(26,46,34,0.12);
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .mockup-bar {
+    background: rgba(255,255,255,0.04);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    padding: 12px 16px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot-r { background: #E76F51; }
+  .dot-y { background: #E9C46A; }
+  .dot-g { background: #52B788; }
+  .url-bar {
+    flex: 1; margin-left: 8px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 4px; padding: 4px 12px;
+    font-size: 11px; color: rgba(255,255,255,0.3);
+    font-family: 'Outfit', monospace;
+  }
+  .mockup-body {
+    display: flex; height: 380px;
+  }
+  .mock-sidebar {
+    width: 200px; padding: 20px 0;
+    border-right: 1px solid rgba(255,255,255,0.06);
+    background: rgba(0,0,0,0.15);
+  }
+  .mock-sidebar-label {
+    font-size: 9px; font-weight: 600; letter-spacing: 0.15em;
+    color: rgba(255,255,255,0.25); padding: 0 20px 12px;
+    text-transform: uppercase;
+  }
+  .mock-nav-item {
+    padding: 9px 20px; font-size: 12px;
+    color: rgba(255,255,255,0.4);
+    display: flex; align-items: center; gap: 9px;
+    cursor: default;
+  }
+  .mock-nav-item.active {
+    background: rgba(82,183,136,0.12);
+    color: #52B788;
+    border-left: 2px solid #52B788;
+  }
+  .mock-nav-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+  .mock-main { flex: 1; padding: 24px; overflow: hidden; }
+  .mock-title-row {
+    display: flex; justify-content: space-between;
+    align-items: flex-start; margin-bottom: 20px;
+  }
+  .mock-project-name {
+    font-family: 'DM Serif Display', serif;
+    font-size: 16px; color: rgba(255,255,255,0.9);
+    font-weight: 400;
+  }
+  .mock-project-sub { font-size: 10px; color: rgba(255,255,255,0.3); margin-top: 2px; }
+  .mock-badge {
+    font-size: 10px; font-weight: 600; padding: 3px 9px;
+    border-radius: 12px; background: rgba(82,183,136,0.15);
+    border: 1px solid rgba(82,183,136,0.3); color: #52B788;
+  }
+  /* Budget card */
+  .mock-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px; padding: 14px; margin-bottom: 14px;
+  }
+  .mock-card-header {
+    display: flex; justify-content: space-between;
+    font-size: 10px; color: rgba(255,255,255,0.3);
+    letter-spacing: 0.1em; text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .mock-budget-num {
+    font-family: 'DM Serif Display', serif;
+    font-size: 24px; color: rgba(255,255,255,0.9);
+  }
+  .mock-budget-of {
+    font-size: 11px; color: rgba(255,255,255,0.3); margin-left: 6px;
+  }
+  .mock-progress-track {
+    height: 5px; background: rgba(255,255,255,0.06);
+    border-radius: 3px; margin-top: 10px; overflow: hidden;
+  }
+  .mock-progress-fill {
+    height: 100%; border-radius: 3px;
+    background: linear-gradient(90deg, #2D6A4F, #52B788);
+  }
+  /* Phase rows */
+  .mock-phases-label {
+    font-size: 9px; font-weight: 600; letter-spacing: 0.15em;
+    color: rgba(255,255,255,0.25); text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .mock-phase-row {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 9px;
+  }
+  .mock-phase-name { font-size: 10px; color: rgba(255,255,255,0.45); width: 140px; flex-shrink: 0; }
+  .mock-phase-track {
+    flex: 1; height: 4px; background: rgba(255,255,255,0.05);
+    border-radius: 2px; overflow: hidden;
+  }
+  .mock-phase-fill { height: 100%; border-radius: 2px; }
+  .mock-phase-pct { font-size: 10px; color: rgba(255,255,255,0.3); width: 28px; text-align: right; }
+
+  /* ── Proof bar ────────────────────────────────── */
+  .proof-bar {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 44px 40px;
+  }
+  .proof-bar-inner {
+    max-width: 1120px; margin: 0 auto;
+    display: flex; flex-direction: column; align-items: center; gap: 36px;
+  }
+  .proof-logos {
+    display: flex; gap: 48px; align-items: center; flex-wrap: wrap;
+    justify-content: center;
+  }
+  .proof-logo-pill {
+    font-size: 14px; font-weight: 500; color: var(--ink-300);
+    letter-spacing: 0.05em; font-family: 'DM Serif Display', serif;
+  }
+  .proof-stats {
+    display: flex; gap: 64px; flex-wrap: wrap; justify-content: center;
+  }
+  .proof-stat { text-align: center; }
+  .proof-stat-num {
+    font-family: 'DM Serif Display', serif;
+    font-size: 38px; color: var(--green-700);
+  }
+  .proof-stat-label {
+    font-size: 12px; color: var(--ink-300);
+    letter-spacing: 0.05em; margin-top: 4px;
+  }
+
+  /* ── Pain/Solution ────────────────────────────── */
+  .pain-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 2px; border-radius: 14px; overflow: hidden;
+    box-shadow: 0 8px 32px rgba(26,46,34,0.08);
+  }
+  .pain-col {
+    padding: 52px 48px;
+  }
+  .pain-col-before { background: var(--surface); }
+  .pain-col-after  { background: var(--green-800); }
+  .pain-col-label {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.18em;
+    text-transform: uppercase; margin-bottom: 28px;
+  }
+  .pain-col-before .pain-col-label { color: #B04030; }
+  .pain-col-after  .pain-col-label { color: var(--green-300); }
+  .pain-item {
+    display: flex; gap: 14px; align-items: flex-start; margin-bottom: 18px;
+  }
+  .pain-icon {
+    width: 20px; height: 20px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 1px;
+  }
+  .pain-icon-x {
+    background: rgba(176,64,48,0.1);
+    border: 1px solid rgba(176,64,48,0.25);
+  }
+  .pain-icon-check {
+    background: rgba(82,183,136,0.12);
+    border: 1px solid rgba(82,183,136,0.3);
+  }
+  .pain-text { font-size: 14px; line-height: 1.6; }
+  .pain-col-before .pain-text { color: var(--ink-500); }
+  .pain-col-after  .pain-text { color: rgba(255,255,255,0.6); }
+
+  /* ── Feature grid ─────────────────────────────── */
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .feature-card {
+    background: var(--white);
+    padding: 40px 36px;
+    transition: background 0.2s;
+    cursor: default;
+  }
+  .feature-card:hover { background: var(--green-50); }
+  .feature-icon {
+    width: 44px; height: 44px; border-radius: 10px;
+    background: var(--green-50);
+    border: 1px solid rgba(82,183,136,0.2);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 20px;
+    color: var(--green-700);
+  }
+  .feature-title {
+    font-size: 16px; font-weight: 600;
+    color: var(--ink-900); margin-bottom: 8px;
+  }
+  .feature-desc {
+    font-size: 14px; line-height: 1.65;
+    color: var(--ink-500);
+  }
+
+  /* ── Deep feature ──────────────────────────────── */
+  .deep-feature {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 80px; align-items: center;
+  }
+  .deep-feature.reverse { direction: rtl; }
+  .deep-feature.reverse > * { direction: ltr; }
+  .deep-feature-text h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(28px, 3vw, 40px);
+    font-weight: 400; line-height: 1.15;
+    color: var(--ink-900); margin: 16px 0 20px;
+  }
+  .deep-feature-text p {
+    font-size: 16px; line-height: 1.75;
+    color: var(--ink-500); margin-bottom: 28px;
+  }
+  .deep-feature-checks { list-style: none; }
+  .deep-feature-checks li {
+    display: flex; gap: 10px; align-items: flex-start;
+    font-size: 14px; color: var(--ink-700); margin-bottom: 12px;
+  }
+  .check-bullet {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--green-50); border: 1px solid var(--green-100);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 1px; color: var(--green-500);
+  }
+  .deep-visual {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 32px;
+    box-shadow: 0 4px 24px rgba(26,46,34,0.06);
+  }
+
+  /* ── Pricing ───────────────────────────────────── */
+  .pricing-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 20px; align-items: start;
+  }
+  .pricing-card {
+    border: 1px solid var(--border); border-radius: 14px;
+    padding: 40px 36px; background: var(--white);
+    transition: all 0.25s ease; position: relative;
+  }
+  .pricing-card:hover {
+    border-color: var(--green-300);
+    transform: translateY(-3px);
+    box-shadow: 0 12px 40px rgba(45,106,79,0.12);
+  }
+  .pricing-card.featured {
+    border-color: var(--green-700);
+    background: var(--green-800);
+    transform: scale(1.03);
+    box-shadow: 0 20px 60px rgba(26,46,34,0.25);
+  }
+  .pricing-card.featured:hover { transform: scale(1.03) translateY(-3px); }
+  .pricing-badge {
+    position: absolute; top: -13px; left: 50%;
+    transform: translateX(-50%);
+    background: var(--green-700); color: #fff;
+    font-size: 10px; font-weight: 600; letter-spacing: 0.12em;
+    text-transform: uppercase; padding: 4px 16px; border-radius: 20px;
+  }
+  .pricing-name {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--green-500); margin-bottom: 16px;
+  }
+  .pricing-card.featured .pricing-name { color: var(--green-300); }
+  .pricing-price {
+    font-family: 'DM Serif Display', serif;
+    font-size: 48px; color: var(--ink-900); line-height: 1;
+  }
+  .pricing-card.featured .pricing-price { color: #fff; }
+  .pricing-per { font-size: 14px; color: var(--ink-300); margin-left: 4px; }
+  .pricing-desc {
+    font-size: 13px; color: var(--ink-300); margin: 8px 0 24px;
+  }
+  .pricing-card.featured .pricing-desc { color: rgba(255,255,255,0.4); }
+  .pricing-divider { height: 1px; background: var(--border); margin-bottom: 24px; }
+  .pricing-card.featured .pricing-divider { background: rgba(255,255,255,0.08); }
+  .pricing-features { list-style: none; margin-bottom: 32px; }
+  .pricing-features li {
+    display: flex; gap: 10px; align-items: center;
+    font-size: 14px; color: var(--ink-700); margin-bottom: 12px;
+  }
+  .pricing-card.featured .pricing-features li { color: rgba(255,255,255,0.65); }
+  .pricing-check { color: var(--green-500); flex-shrink: 0; }
+  .pricing-card.featured .pricing-check { color: var(--green-300); }
+  .btn-pricing {
+    width: 100%; justify-content: center; padding: 13px;
+    border-radius: 7px; font-size: 14px; font-weight: 500;
+    background: var(--green-50); color: var(--green-700);
+    border: 1px solid var(--green-100);
+    cursor: pointer; transition: all 0.2s;
+    font-family: 'Outfit', sans-serif;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .btn-pricing:hover {
+    background: var(--green-700); color: #fff; border-color: transparent;
+  }
+  .btn-pricing-featured {
+    width: 100%; justify-content: center; padding: 13px;
+    border-radius: 7px; font-size: 14px; font-weight: 500;
+    background: var(--green-300); color: var(--green-800);
+    border: none; cursor: pointer; transition: all 0.2s;
+    font-family: 'Outfit', sans-serif;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .btn-pricing-featured:hover {
+    background: var(--green-100); transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(82,183,136,0.3);
+  }
+
+  /* ── Testimonials ─────────────────────────────── */
+  .testimonials-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+  }
+  .testimonial-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 14px; padding: 36px;
+    transition: all 0.2s;
+  }
+  .testimonial-card:hover {
+    border-color: var(--green-100);
+    box-shadow: 0 8px 32px rgba(26,46,34,0.07);
+    transform: translateY(-2px);
+  }
+  .testimonial-stars { color: var(--stone-500); font-size: 14px; margin-bottom: 16px; }
+  .testimonial-quote {
+    font-size: 15px; line-height: 1.7; color: var(--ink-700);
+    margin-bottom: 24px; font-style: italic;
+  }
+  .testimonial-author { font-weight: 600; font-size: 14px; color: var(--ink-900); }
+  .testimonial-firm { font-size: 12px; color: var(--ink-300); margin-top: 3px; }
+
+  /* ── Final CTA ────────────────────────────────── */
+  .final-cta {
+    background: var(--green-800);
+    padding: 120px 40px; text-align: center;
+    position: relative; overflow: hidden;
+  }
+  .final-cta::before {
+    content: '';
+    position: absolute; top: -200px; left: 50%; transform: translateX(-50%);
+    width: 800px; height: 400px;
+    background: radial-gradient(ellipse, rgba(82,183,136,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .final-cta h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(36px, 5vw, 60px);
+    font-weight: 400; line-height: 1.1;
+    color: #fff; margin: 16px 0 24px;
+  }
+  .final-cta h2 em { font-style: italic; color: var(--green-300); }
+  .final-cta p { font-size: 18px; color: rgba(255,255,255,0.5); max-width: 480px; margin: 0 auto 48px; line-height: 1.7; }
+  .final-cta-actions { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+  .final-cta-note { font-size: 12px; color: rgba(255,255,255,0.25); margin-top: 20px; letter-spacing: 0.05em; }
+
+  /* ── Footer ───────────────────────────────────── */
+  footer {
+    background: var(--green-900);
+    padding: 64px 40px 40px;
+    border-top: 1px solid rgba(255,255,255,0.04);
+  }
+  .footer-inner {
+    max-width: 1120px; margin: 0 auto;
+  }
+  .footer-top {
+    display: grid; grid-template-columns: 280px repeat(3, 1fr);
+    gap: 48px; margin-bottom: 56px;
+  }
+  .footer-brand-desc {
+    font-size: 13px; line-height: 1.7;
+    color: rgba(255,255,255,0.3); margin-top: 16px;
+  }
+  .footer-col-title {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.18em;
+    text-transform: uppercase; color: rgba(255,255,255,0.3);
+    margin-bottom: 20px;
+  }
+  .footer-col-links { list-style: none; }
+  .footer-col-links li { margin-bottom: 12px; }
+  .footer-col-links a {
+    font-size: 13px; color: rgba(255,255,255,0.35);
+    text-decoration: none; transition: color 0.2s;
+  }
+  .footer-col-links a:hover { color: rgba(255,255,255,0.75); }
+  .footer-bottom {
+    border-top: 1px solid rgba(255,255,255,0.06);
+    padding-top: 24px; display: flex;
+    justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 12px;
+  }
+  .footer-copy { font-size: 12px; color: rgba(255,255,255,0.2); }
+
+  /* ── Scroll reveal ────────────────────────────── */
+  .reveal {
+    opacity: 0; transform: translateY(20px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+  .reveal-delay-1 { transition-delay: 0.1s; }
+  .reveal-delay-2 { transition-delay: 0.2s; }
+  .reveal-delay-3 { transition-delay: 0.3s; }
+
+  /* ── Section headings ─────────────────────────── */
+  .section-eyebrow { margin-bottom: 16px; }
+  .section-heading {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(30px, 3.5vw, 46px);
+    font-weight: 400; line-height: 1.15;
+    color: var(--ink-900); margin-bottom: 20px;
+  }
+  .section-heading em { font-style: italic; color: var(--green-700); }
+  .section-heading-white { color: #fff; }
+  .section-subhead {
+    font-size: 18px; color: var(--ink-500);
+    line-height: 1.65; max-width: 560px; margin: 0 auto;
+  }
+
+  /* ── SVG icons ────────────────────────────────── */
+  svg.icon { display: block; }
+
+  /* ── Responsive ───────────────────────────────── */
+  @media (max-width: 768px) {
+    section { padding: 72px 24px; }
+    .hero { padding: 120px 24px 60px; }
+    .hero-inner { grid-template-columns: 1fr; gap: 48px; }
+    .hero-visual { order: -1; }
+    .pain-grid { grid-template-columns: 1fr; }
+    .feature-grid { grid-template-columns: 1fr; }
+    .deep-feature, .deep-feature.reverse { grid-template-columns: 1fr; direction: ltr; }
+    .pricing-grid { grid-template-columns: 1fr; }
+    .testimonials-grid { grid-template-columns: 1fr; }
+    .footer-top { grid-template-columns: 1fr 1fr; }
+    .nav-links { display: none; }
+    .container { padding: 0 24px; }
+    .proof-stats { gap: 32px; }
+    .pricing-card.featured { transform: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Nav ──────────────────────────────────────── -->
+<nav class="nav" id="nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-logo">
+      <div class="nav-logo-mark">
+        <span></span><span></span><span></span>
+      </div>
+      <span class="nav-wordmark">phase<em>wise</em></span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="#features">Features</a></li>
+      <li><a href="#pricing">Pricing</a></li>
+      <li><a href="#about">About</a></li>
+    </ul>
+    <div class="nav-actions">
+      <a href="#" class="nav-login">Log in</a>
+      <a href="#" class="btn btn-primary">Start Free Trial</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ── Hero ─────────────────────────────────────── -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-content">
+      <div class="hero-tag">
+        <div class="hero-tag-dot"></div>
+        Built by a landscape architect
+      </div>
+      <h1>Stop managing projects <em>in spreadsheets.</em></h1>
+      <p>Phasewise is the project management platform built specifically for landscape architecture firms. Track phases, budgets, time, and profitability — the way you actually work.</p>
+      <div class="hero-actions">
+        <a href="#" class="btn btn-primary-lg">Start 14-Day Free Trial</a>
+        <a href="#features" class="btn btn-ghost-lg">See Features</a>
+      </div>
+      <p class="hero-note">No credit card required · Cancel anytime</p>
+    </div>
+    <div class="hero-visual reveal">
+      <div class="mockup-window">
+        <div class="mockup-bar">
+          <div class="dot dot-r"></div>
+          <div class="dot dot-y"></div>
+          <div class="dot dot-g"></div>
+          <div class="url-bar">phasewise.io/projects/canyon-creek</div>
+        </div>
+        <div class="mockup-body">
+          <div class="mock-sidebar">
+            <div class="mock-sidebar-label">Navigation</div>
+            <div class="mock-nav-item active"><div class="mock-nav-dot"></div> Dashboard</div>
+            <div class="mock-nav-item"><div class="mock-nav-dot"></div> Projects</div>
+            <div class="mock-nav-item"><div class="mock-nav-dot"></div> Budget</div>
+            <div class="mock-nav-item"><div class="mock-nav-dot"></div> Timesheets</div>
+            <div class="mock-nav-item"><div class="mock-nav-dot"></div> Submittals</div>
+            <div class="mock-nav-item"><div class="mock-nav-dot"></div> Plants</div>
+            <div class="mock-nav-item"><div class="mock-nav-dot"></div> Reports</div>
+          </div>
+          <div class="mock-main">
+            <div class="mock-title-row">
+              <div>
+                <div class="mock-project-name">Canyon Creek Master Plan</div>
+                <div class="mock-project-sub">Active · 4 phases · 8 team members</div>
+              </div>
+              <div class="mock-badge">On Track</div>
+            </div>
+            <div class="mock-card">
+              <div class="mock-card-header">
+                <span>Total Budget</span><span style="color:#C9A87C">72% used</span>
+              </div>
+              <div>
+                <span class="mock-budget-num">$147,200</span>
+                <span class="mock-budget-of">of $204,000</span>
+              </div>
+              <div class="mock-progress-track">
+                <div class="mock-progress-fill" style="width:72%"></div>
+              </div>
+            </div>
+            <div class="mock-phases-label">Project Phases</div>
+            <div class="mock-phase-row">
+              <div class="mock-phase-name">Schematic Design</div>
+              <div class="mock-phase-track"><div class="mock-phase-fill" style="width:100%;background:#52B788"></div></div>
+              <div class="mock-phase-pct" style="color:#52B788">100%</div>
+            </div>
+            <div class="mock-phase-row">
+              <div class="mock-phase-name">Design Development</div>
+              <div class="mock-phase-track"><div class="mock-phase-fill" style="width:78%;background:#40916C"></div></div>
+              <div class="mock-phase-pct" style="color:#40916C">78%</div>
+            </div>
+            <div class="mock-phase-row">
+              <div class="mock-phase-name">Construction Docs</div>
+              <div class="mock-phase-track"><div class="mock-phase-fill" style="width:42%;background:#2D6A4F"></div></div>
+              <div class="mock-phase-pct">42%</div>
+            </div>
+            <div class="mock-phase-row">
+              <div class="mock-phase-name">Bidding &amp; Negotiation</div>
+              <div class="mock-phase-track"><div class="mock-phase-fill" style="width:0%;background:#1A3D2B"></div></div>
+              <div class="mock-phase-pct">—</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Proof Bar ─────────────────────────────────── -->
+<div class="proof-bar">
+  <div class="proof-bar-inner">
+    <p class="overline">Trusted by landscape architecture firms</p>
+    <div class="proof-logos">
+      <span class="proof-logo-pill">Clearwater Studio</span>
+      <span class="proof-logo-pill">Mesa + Associates</span>
+      <span class="proof-logo-pill">Groundwork LA</span>
+      <span class="proof-logo-pill">Terrain Group</span>
+      <span class="proof-logo-pill">Grove Design</span>
+    </div>
+    <div class="proof-stats">
+      <div class="proof-stat reveal">
+        <div class="proof-stat-num">200+</div>
+        <div class="proof-stat-label">Projects managed</div>
+      </div>
+      <div class="proof-stat reveal reveal-delay-1">
+        <div class="proof-stat-num">15%</div>
+        <div class="proof-stat-label">Avg. budget savings</div>
+      </div>
+      <div class="proof-stat reveal reveal-delay-2">
+        <div class="proof-stat-num">5 hrs</div>
+        <div class="proof-stat-label">Saved per PM weekly</div>
+      </div>
+      <div class="proof-stat reveal reveal-delay-3">
+        <div class="proof-stat-num">14 day</div>
+        <div class="proof-stat-label">Free trial</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Pain → Solution ──────────────────────────── -->
+<section class="section-white">
+  <div class="container">
+    <div class="section-center reveal" style="margin-bottom:56px">
+      <p class="overline section-eyebrow">The Problem</p>
+      <h2 class="section-heading">Your firm runs on Excel.<br><em>It shouldn't.</em></h2>
+    </div>
+    <div class="pain-grid reveal">
+      <div class="pain-col pain-col-before">
+        <div class="pain-col-label">Before Phasewise</div>
+        <div class="pain-item">
+          <div class="pain-icon pain-icon-x">
+            <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#B04030" stroke-width="2"><line x1="2" y1="2" x2="10" y2="10"/><line x1="10" y1="2" x2="2" y2="10"/></svg>
+          </div>
+          <div class="pain-text">Budget tracking across 12 separate spreadsheet tabs</div>
+        </div>
+        <div class="pain-item">
+          <div class="pain-icon pain-icon-x">
+            <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#B04030" stroke-width="2"><line x1="2" y1="2" x2="10" y2="10"/><line x1="10" y1="2" x2="2" y2="10"/></svg>
+          </div>
+          <div class="pain-text">Finding out you're over budget after it's already happened</div>
+        </div>
+        <div class="pain-item">
+          <div class="pain-icon pain-icon-x">
+            <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#B04030" stroke-width="2"><line x1="2" y1="2" x2="10" y2="10"/><line x1="10" y1="2" x2="2" y2="10"/></svg>
+          </div>
+          <div class="pain-text">Chasing timesheets via email every Friday afternoon</div>
+        </div>
+        <div class="pain-item">
+          <div class="pain-icon pain-icon-x">
+            <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#B04030" stroke-width="2"><line x1="2" y1="2" x2="10" y2="10"/><line x1="10" y1="2" x2="2" y2="10"/></svg>
+          </div>
+          <div class="pain-text">Submittals tracked in a shared doc nobody updates</div>
+        </div>
+        <div class="pain-item">
+          <div class="pain-icon pain-icon-x">
+            <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#B04030" stroke-width="2"><line x1="2" y1="2" x2="10" y2="10"/><line x1="10" y1="2" x2="2" y2="10"/></svg>
+          </div>
+          <div class="pain-text">No idea which projects are actually profitable</div>
+        </div>
+        <div class="pain-item">
+          <div class="pain-icon pain-icon-x">
+            <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#B04030" stroke-width="2"><line x1="2" y1="2" x2="10" y2="10"/><line x1="10" y1="2" x2="2" y2="10"/></svg>
+          </div>
+          <div class="pain-text">Staff asking "which phase should I log this to?" daily</div>
+        </div>
+      </div>
+      <div class="pain-col pain-col-after">
+        <div class="pain-col-label">After Phasewise</div>
+        <div class="pain-item">
+          <div class="pain-icon pain-icon-check">
+            <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#52B788" stroke-width="2"><polyline points="2,6 5,9 10,3"/></svg>
+          </div>
+          <div class="pain-text">One dashboard shows every project's health at a glance</div>
+        </div>
+        <div class="pain-item">
+          <div class="pain-icon pain-icon-check">
+            <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#52B788" stroke-width="2"><polyline points="2,6 5,9 10,3"/></svg>
+          </div>
+          <div class="pain-text">Real-time budget alerts before you go over — not after</div>
+        </div>
+        <div class="pain-item">
+          <div class="pain-icon pain-icon-check">
+            <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#52B788" stroke-width="2"><polyline points="2,6 5,9 10,3"/></svg>
+          </div>
+          <div class="pain-text">Staff submit time from anywhere in under 2 minutes</div>
+        </div>
+        <div class="pain-item">
+          <div class="pain-icon pain-icon-check">
+            <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#52B788" stroke-width="2"><polyline points="2,6 5,9 10,3"/></svg>
+          </div>
+          <div class="pain-text">Submittal log with automatic reminders and full history</div>
+        </div>
+        <div class="pain-item">
+          <div class="pain-icon pain-icon-check">
+            <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#52B788" stroke-width="2"><polyline points="2,6 5,9 10,3"/></svg>
+          </div>
+          <div class="pain-text">Profitability reports per project, per phase, per person</div>
+        </div>
+        <div class="pain-item">
+          <div class="pain-icon pain-icon-check">
+            <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#52B788" stroke-width="2"><polyline points="2,6 5,9 10,3"/></svg>
+          </div>
+          <div class="pain-text">Your phases are already built in — SD, DD, CDs, CA, and more</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Feature Grid ─────────────────────────────── -->
+<section id="features" class="section-surface">
+  <div class="container">
+    <div class="section-center reveal" style="margin-bottom:56px">
+      <p class="overline section-eyebrow">Features</p>
+      <h2 class="section-heading">Everything your firm needs.<br><em>Nothing it doesn't.</em></h2>
+      <p class="section-subhead">Purpose-built for the way landscape architecture firms actually operate — from first client meeting to final punchlist.</p>
+    </div>
+    <div class="feature-grid reveal">
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg>
+        </div>
+        <div class="feature-title">Phase-Based Projects</div>
+        <div class="feature-desc">SD → DD → CDs → CA → Closeout. Your phases are already here. New projects start in the right structure automatically.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        </div>
+        <div class="feature-title">Real-Time Budget Tracking</div>
+        <div class="feature-desc">Know exactly how much is spent per project and per phase the moment a timesheet is submitted. Alerts before you go over.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <div class="feature-title">Time Tracking That Fits</div>
+        <div class="feature-desc">Weekly timesheet grid by project and phase. Mobile-friendly for field and remote staff. Takes less than two minutes to complete.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z"/></svg>
+        </div>
+        <div class="feature-title">Submittal &amp; RFI Manager</div>
+        <div class="feature-desc">Track submittals, RFIs, and half-ball with automated reminders and a searchable log. Full history, always current.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22V12m0 0C12 7 8 4 3 4c0 5 3 8 9 8zm0 0c0-5 4-8 9-8 0 5-3 8-9 8z"/></svg>
+        </div>
+        <div class="feature-title">Plant Schedule Manager</div>
+        <div class="feature-desc">Live plant database with substitution tracking and client-approval workflows. Export directly to CAD-compatible format.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0 1 12 2.944a11.955 11.955 0 0 1-8.618 3.04A12.02 12.02 0 0 0 3 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+        </div>
+        <div class="feature-title">Compliance Tracker</div>
+        <div class="feature-desc">MWELO water budgets, LEED credits, privacy screening — all in one place with zero redundancy across projects.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Pricing ───────────────────────────────────── -->
+<section id="pricing" class="section-white">
+  <div class="container">
+    <div class="section-center reveal" style="margin-bottom:64px">
+      <p class="overline section-eyebrow">Pricing</p>
+      <h2 class="section-heading">Less than your<br><em>QuickBooks subscription.</em></h2>
+      <p class="section-subhead">Simple, transparent pricing. No per-project fees, no hidden costs. Start free, upgrade when you're ready.</p>
+    </div>
+    <div class="pricing-grid">
+      <div class="pricing-card reveal">
+        <div class="pricing-name">Starter</div>
+        <div class="pricing-price">$99<span class="pricing-per">/mo</span></div>
+        <div class="pricing-desc">Small practices &amp; solo firms</div>
+        <div class="pricing-divider"></div>
+        <ul class="pricing-features">
+          <li><svg class="pricing-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Up to 5 users</li>
+          <li><svg class="pricing-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> 20 active projects</li>
+          <li><svg class="pricing-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Time tracking &amp; budgets</li>
+          <li><svg class="pricing-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Basic reports</li>
+          <li><svg class="pricing-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Email support</li>
+        </ul>
+        <button class="btn-pricing">Start Free Trial</button>
+      </div>
+      <div class="pricing-card featured reveal reveal-delay-1">
+        <div class="pricing-badge">Most Popular</div>
+        <div class="pricing-name">Professional</div>
+        <div class="pricing-price" style="color:#fff">$199<span class="pricing-per" style="color:rgba(255,255,255,0.4)">/mo</span></div>
+        <div class="pricing-desc">Growing firms</div>
+        <div class="pricing-divider"></div>
+        <ul class="pricing-features">
+          <li><svg class="pricing-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#52B788" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Up to 15 users</li>
+          <li><svg class="pricing-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#52B788" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Unlimited projects</li>
+          <li><svg class="pricing-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#52B788" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> All modules included</li>
+          <li><svg class="pricing-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#52B788" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Client portal</li>
+          <li><svg class="pricing-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#52B788" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Priority support</li>
+        </ul>
+        <button class="btn-pricing-featured">Start Free Trial →</button>
+      </div>
+      <div class="pricing-card reveal reveal-delay-2">
+        <div class="pricing-name">Studio</div>
+        <div class="pricing-price">$349<span class="pricing-per">/mo</span></div>
+        <div class="pricing-desc">Multi-disciplinary studios</div>
+        <div class="pricing-divider"></div>
+        <ul class="pricing-features">
+          <li><svg class="pricing-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Unlimited everything</li>
+          <li><svg class="pricing-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Custom integrations</li>
+          <li><svg class="pricing-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> QuickBooks sync</li>
+          <li><svg class="pricing-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Client portal</li>
+          <li><svg class="pricing-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Dedicated support</li>
+        </ul>
+        <button class="btn-pricing">Start Free Trial</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Testimonials ─────────────────────────────── -->
+<section class="section-surface">
+  <div class="container">
+    <div class="section-center reveal" style="margin-bottom:56px">
+      <p class="overline section-eyebrow">What firms say</p>
+      <h2 class="section-heading">Built for how<br><em>you actually work.</em></h2>
+    </div>
+    <div class="testimonials-grid">
+      <div class="testimonial-card reveal">
+        <div class="testimonial-stars">★★★★★</div>
+        <div class="testimonial-quote">"Phasewise replaced four separate tools we were using. Our project managers actually use it every single day now."</div>
+        <div class="testimonial-author">Principal, Landscape Architect</div>
+        <div class="testimonial-firm">Mid-size LA firm, California</div>
+      </div>
+      <div class="testimonial-card reveal reveal-delay-1">
+        <div class="testimonial-stars">★★★★★</div>
+        <div class="testimonial-quote">"We caught a budget overrun in week two instead of week twelve. That alone paid for an entire year of the subscription."</div>
+        <div class="testimonial-author">Studio Director</div>
+        <div class="testimonial-firm">Design-build practice, Pacific Northwest</div>
+      </div>
+      <div class="testimonial-card reveal reveal-delay-2">
+        <div class="testimonial-stars">★★★★★</div>
+        <div class="testimonial-quote">"Finally — project management software that understands what a phase actually means to a landscape architect."</div>
+        <div class="testimonial-author">Senior Project Manager</div>
+        <div class="testimonial-firm">Urban design firm, New York</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Final CTA ──────────────────────────────────── -->
+<section class="final-cta">
+  <div style="position:relative;z-index:1">
+    <p class="overline" style="color:rgba(82,183,136,0.7)">Your projects deserve better</p>
+    <h2>Join the firms replacing<br><em>Excel with Phasewise.</em></h2>
+    <p>Purpose-built for landscape architects. From schematic design to closeout — every phase, budget, and hour in one place.</p>
+    <div class="final-cta-actions">
+      <a href="#" class="btn btn-white">Start Your Free 14-Day Trial</a>
+      <a href="#features" class="btn" style="background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.7);border:1px solid rgba(255,255,255,0.15)">Explore Features</a>
+    </div>
+    <p class="final-cta-note">No credit card required · Cancel anytime · Setup in 5 minutes</p>
+  </div>
+</section>
+
+<!-- ── Footer ─────────────────────────────────────── -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-top">
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+          <div style="display:flex;flex-direction:column;gap:3px">
+            <div style="width:20px;height:4px;border-radius:2px;background:#52B788"></div>
+            <div style="width:15px;height:4px;border-radius:2px;background:#40916C"></div>
+            <div style="width:18px;height:4px;border-radius:2px;background:#2D6A4F"></div>
+          </div>
+          <span style="font-size:18px;font-weight:600;color:#fff;letter-spacing:-0.3px">phase<span style="font-weight:300;color:#52B788">wise</span></span>
+        </div>
+        <p class="footer-brand-desc">Project management built for landscape architects. Track every phase, budget, and hour — the way your firm actually works.</p>
+      </div>
+      <div>
+        <div class="footer-col-title">Product</div>
+        <ul class="footer-col-links">
+          <li><a href="#">Features</a></li>
+          <li><a href="#">Pricing</a></li>
+          <li><a href="#">Roadmap</a></li>
+          <li><a href="#">Changelog</a></li>
+          <li><a href="#">API</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-col-title">Company</div>
+        <ul class="footer-col-links">
+          <li><a href="#">About</a></li>
+          <li><a href="#">Blog</a></li>
+          <li><a href="#">Careers</a></li>
+          <li><a href="#">Contact</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-col-title">Support</div>
+        <ul class="footer-col-links">
+          <li><a href="#">Documentation</a></li>
+          <li><a href="#">Help Center</a></li>
+          <li><a href="#">System Status</a></li>
+          <li><a href="#">Privacy Policy</a></li>
+          <li><a href="#">Terms of Service</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span class="footer-copy">© 2026 Phasewise. Built by a landscape architect, for landscape architects.</span>
+      <span class="footer-copy">phasewise.io</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Nav scroll effect
+  const nav = document.getElementById('nav');
+  window.addEventListener('scroll', () => {
+    nav.classList.toggle('scrolled', window.scrollY > 20);
+  });
+
+  // Scroll reveal
+  const reveals = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.12 });
+  reveals.forEach(el => observer.observe(el));
+</script>
+</body>
+</html>

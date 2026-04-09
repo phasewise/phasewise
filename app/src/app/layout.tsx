@@ -1,16 +1,24 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Outfit, DM_Serif_Display } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({
-  variable: "--font-inter",
+const outfit = Outfit({
+  variable: "--font-outfit",
   subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+});
+
+const dmSerifDisplay = DM_Serif_Display({
+  variable: "--font-dm-serif",
+  subsets: ["latin"],
+  weight: ["400"],
+  style: ["normal", "italic"],
 });
 
 export const metadata: Metadata = {
-  title: "Phasewise — Project Management for Landscape Architects",
+  title: "Phasewise — Focus on the design. We'll handle everything else.",
   description:
-    "The operating system for landscape architecture firms. Track projects, budgets, time, and profitability in one platform built for how you work.",
+    "Phasewise is the operating system for landscape architecture firms. Project management, budgets, time tracking, and profitability — built for how landscape architects actually work.",
 };
 
 export default function RootLayout({
@@ -19,8 +27,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} h-full`}>
-      <body className="min-h-full bg-gray-50 font-sans antialiased">
+    <html lang="en" className={`${outfit.variable} ${dmSerifDisplay.variable} h-full`}>
+      <body className="min-h-full bg-white font-sans antialiased text-[#1A2E22]">
         {children}
       </body>
     </html>

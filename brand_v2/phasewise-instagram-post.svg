@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080" width="1080" height="1080">
+  <defs>
+    <linearGradient id="igBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"   stop-color="#0F1F15"/>
+      <stop offset="100%" stop-color="#1A3D2B"/>
+    </linearGradient>
+    <linearGradient id="igAccent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"   stop-color="#2D6A4F"/>
+      <stop offset="100%" stop-color="#52B788"/>
+    </linearGradient>
+    <linearGradient id="glowGrad" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%"   stop-color="#52B788" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#52B788" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1080" height="1080" fill="url(#igBg)"/>
+
+  <!-- Top glow -->
+  <ellipse cx="540" cy="0" rx="600" ry="300" fill="url(#glowGrad)"/>
+
+  <!-- Subtle grid lines -->
+  <g opacity="0.05" stroke="#52B788" stroke-width="1">
+    <line x1="0" y1="270" x2="1080" y2="270"/>
+    <line x1="0" y1="540" x2="1080" y2="540"/>
+    <line x1="0" y1="810" x2="1080" y2="810"/>
+    <line x1="270" y1="0" x2="270" y2="1080"/>
+    <line x1="540" y1="0" x2="540" y2="1080"/>
+    <line x1="810" y1="0" x2="810" y2="1080"/>
+  </g>
+
+  <!-- Top label -->
+  <text x="540" y="140"
+    font-family="'Outfit','Helvetica Neue',Arial,sans-serif"
+    font-weight="400" font-size="14" letter-spacing="5"
+    fill="rgba(82,183,136,0.7)" text-anchor="middle">PHASEWISE · PROJECT MANAGEMENT</text>
+
+  <!-- Large headline -->
+  <text x="540" y="380"
+    font-family="'Outfit','Helvetica Neue',Arial,sans-serif"
+    font-weight="600" font-size="96" letter-spacing="-4"
+    fill="#FFFFFF" text-anchor="middle">Stop</text>
+
+  <text x="540" y="480"
+    font-family="'Outfit','Helvetica Neue',Arial,sans-serif"
+    font-weight="300" font-size="66" letter-spacing="-2"
+    fill="rgba(255,255,255,0.7)" text-anchor="middle">managing projects</text>
+
+  <text x="540" y="572"
+    font-family="'Outfit','Helvetica Neue',Arial,sans-serif"
+    font-weight="600" font-size="66" letter-spacing="-2"
+    fill="#52B788" text-anchor="middle">in spreadsheets.</text>
+
+  <!-- Accent bar -->
+  <rect x="390" y="612" width="300" height="2" rx="1" fill="url(#igAccent)" opacity="0.8"/>
+
+  <!-- Supporting text -->
+  <text x="540" y="680"
+    font-family="'Outfit','Helvetica Neue',Arial,sans-serif"
+    font-weight="300" font-size="24"
+    fill="rgba(255,255,255,0.5)" text-anchor="middle">Purpose-built for landscape architects.</text>
+
+  <!-- Mini phase bars visualization -->
+  <g transform="translate(190, 740)">
+    <rect x="0"   y="0"  width="700" height="10" rx="5" fill="rgba(82,183,136,0.1)"/>
+    <rect x="0"   y="0"  width="700" height="10" rx="5" fill="url(#igAccent)"/>
+    <text x="0"   y="26" font-family="'Outfit',Arial,sans-serif" font-size="11" font-weight="500" letter-spacing="2" fill="rgba(82,183,136,0.6)">SCHEMATIC DESIGN</text>
+    <text x="636" y="26" font-family="'Outfit',Arial,sans-serif" font-size="11" font-weight="500" fill="#52B788">100%</text>
+
+    <rect x="0"   y="44" width="700" height="10" rx="5" fill="rgba(82,183,136,0.1)"/>
+    <rect x="0"   y="44" width="518" height="10" rx="5" fill="#40916C"/>
+    <text x="0"   y="70" font-family="'Outfit',Arial,sans-serif" font-size="11" font-weight="500" letter-spacing="2" fill="rgba(255,255,255,0.3)">DESIGN DEVELOPMENT</text>
+    <text x="636" y="70" font-family="'Outfit',Arial,sans-serif" font-size="11" font-weight="500" fill="rgba(255,255,255,0.4)">74%</text>
+
+    <rect x="0"   y="88" width="700" height="10" rx="5" fill="rgba(82,183,136,0.1)"/>
+    <rect x="0"   y="88" width="294" height="10" rx="5" fill="#2D6A4F"/>
+    <text x="0"   y="114" font-family="'Outfit',Arial,sans-serif" font-size="11" font-weight="500" letter-spacing="2" fill="rgba(255,255,255,0.2)">CONSTRUCTION DOCUMENTS</text>
+    <text x="636" y="114" font-family="'Outfit',Arial,sans-serif" font-size="11" font-weight="500" fill="rgba(255,255,255,0.25)">42%</text>
+  </g>
+
+  <!-- Logo bottom -->
+  <g transform="translate(490, 920)">
+    <rect x="0" y="0"  width="40" height="5" rx="2.5" fill="#FFFFFF" opacity="0.8"/>
+    <rect x="0" y="9"  width="30" height="5" rx="2.5" fill="#FFFFFF" opacity="0.6"/>
+    <rect x="0" y="18" width="20" height="5" rx="2.5" fill="#52B788"/>
+    <rect x="0" y="27" width="35" height="5" rx="2.5" fill="#52B788" opacity="0.5"/>
+    <text x="50" y="24"
+      font-family="'Outfit','Helvetica Neue',Arial,sans-serif"
+      font-weight="600" font-size="22" letter-spacing="-0.5"
+      fill="#FFFFFF">phase<tspan fill="#52B788" font-weight="300">wise</tspan></text>
+  </g>
+</svg>
