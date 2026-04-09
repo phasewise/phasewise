@@ -1,6 +1,5 @@
 import Link from "next/link";
 import {
-  ArrowRight,
   CheckCircle2,
   Clock,
   FileText,
@@ -12,6 +11,11 @@ import {
 } from "lucide-react";
 import RevealOnScroll from "./_components/RevealOnScroll";
 import NavScrollEffect from "./_components/NavScrollEffect";
+import PricingButton from "./_components/PricingButton";
+
+const PRICE_STARTER = process.env.NEXT_PUBLIC_STRIPE_PRICE_STARTER ?? "";
+const PRICE_PROFESSIONAL = process.env.NEXT_PUBLIC_STRIPE_PRICE_PROFESSIONAL ?? "";
+const PRICE_STUDIO = process.env.NEXT_PUBLIC_STRIPE_PRICE_STUDIO ?? "";
 
 const painPoints = [
   "Budget tracking across 12 separate spreadsheet tabs",
@@ -68,6 +72,7 @@ const tiers = [
   {
     name: "Starter",
     price: "$99",
+    priceId: PRICE_STARTER,
     desc: "Small practices & solo firms",
     features: [
       "Up to 5 users",
@@ -81,6 +86,7 @@ const tiers = [
   {
     name: "Professional",
     price: "$199",
+    priceId: PRICE_PROFESSIONAL,
     desc: "Growing firms",
     features: [
       "Up to 15 users",
@@ -94,6 +100,7 @@ const tiers = [
   {
     name: "Studio",
     price: "$349",
+    priceId: PRICE_STUDIO,
     desc: "Multi-disciplinary studios",
     features: [
       "Unlimited everything",
@@ -485,17 +492,7 @@ export default function HomePage() {
                     </li>
                   ))}
                 </ul>
-                <Link
-                  href="/signup"
-                  className={`w-full inline-flex items-center justify-center gap-2 px-3 py-3.5 rounded-[7px] text-sm font-medium transition-all ${
-                    tier.featured
-                      ? "bg-[#52B788] text-[#1A2E22] hover:bg-[#B7E4C7] hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(82,183,136,0.3)]"
-                      : "bg-[#F0FAF4] text-[#2D6A4F] border border-[#B7E4C7] hover:bg-[#2D6A4F] hover:text-white hover:border-transparent"
-                  }`}
-                >
-                  Start Free Trial
-                  {tier.featured && <ArrowRight className="w-4 h-4" />}
-                </Link>
+                <PricingButton priceId={tier.priceId} featured={tier.featured} />
               </div>
             ))}
           </div>

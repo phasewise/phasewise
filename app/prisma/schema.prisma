@@ -11,15 +11,19 @@ datasource db {
 // ── Organizations (firms) ─────────────────────────────────────────────
 
 model Organization {
-  id                   String   @id @default(uuid()) @db.Uuid
-  name                 String
-  slug                 String   @unique
-  plan                 Plan     @default(TRIAL)
-  stripeCustomerId     String?  @map("stripe_customer_id")
-  stripeSubscriptionId String?  @map("stripe_subscription_id")
-  trialEndsAt          DateTime? @map("trial_ends_at")
-  createdAt            DateTime @default(now()) @map("created_at")
-  updatedAt            DateTime @updatedAt @map("updated_at")
+  id                       String              @id @default(uuid()) @db.Uuid
+  name                     String
+  slug                     String              @unique
+  plan                     Plan                @default(TRIAL)
+  stripeCustomerId         String?             @unique @map("stripe_customer_id")
+  stripeSubscriptionId     String?             @unique @map("stripe_subscription_id")
+  stripePriceId            String?             @map("stripe_price_id")
+  subscriptionStatus       SubscriptionStatus? @map("subscription_status")
+  currentPeriodEnd         DateTime?           @map("current_period_end")
+  cancelAtPeriodEnd        Boolean             @default(false) @map("cancel_at_period_end")
+  trialEndsAt              DateTime?           @map("trial_ends_at")
+  createdAt                DateTime            @default(now()) @map("created_at")
+  updatedAt                DateTime            @updatedAt @map("updated_at")
 
   users       User[]
   projects    Project[]
@@ -35,6 +39,17 @@ enum Plan {
   PROFESSIONAL
   STUDIO
   ENTERPRISE
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  INCOMPLETE
+  INCOMPLETE_EXPIRED
+  UNPAID
+  PAUSED
 }
 
 // ── Users ─────────────────────────────────────────────────────────────
