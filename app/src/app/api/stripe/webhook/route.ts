@@ -58,17 +58,65 @@ export async function POST(request: Request) {
       }
 
       case "customer.subscription.created":
-      case "customer.subscription.updated":
       case "customer.subscription.trial_will_end": {
         const subscription = event.data.object as Stripe.Subscription;
         await syncSubscriptionToOrg(subscription);
         break;
       }
 
-      case "customer.subscription.deleted": {
+      case "customer.subscription.updated": {
         const subscription = event.data.object as Stripe.Subscription;
+
+        // Detect a fresh "cancel at period end" transition. We compare the
+        // org's current state in the DB BEFORE the sync — if cancelAtPeriodEnd
+        // was false and the new event has it true, the user just clicked
+        // "Cancel subscription" in the Customer Portal. Send the canceled
+        // email even though Stripe won't fire customer.subscription.deleted
+        // until the period actually ends.
+        const subWithCancel = subscription as unknown as { cancel_at_period_end?: boolean };
+        const newCancelFlag = subWithCancel.cancel_at_period_end === true;
+
+        const customerId =
+          typeof subscription.customer === "string"
+            ? subscription.customer
+            : subscription.customer.id;
+        const existingOrg = await prisma.organization.findFirst({
+          where: { stripeCustomerId: customerId },
+          select: { cancelAtPeriodEnd: true },
+        });
+        const wasNotCanceling = existingOrg?.cancelAtPeriodEnd === false;
+
+        await syncSubscriptionToOrg(subscription);
+
+        if (newCancelFlag && wasNotCanceling) {
+          await sendCanceledEmail(subscription);
+        }
+        break;
+      }
+
+      case "customer.subscription.deleted": {
+        // Fires when the subscription period actually ends after a
+        // cancel-at-period-end, OR when "Cancel immediately" is used.
+        // We always sync state. Only send the canceled email here if the
+        // org wasn't already in a "canceling at period end" state — that
+        // means we never sent the email via the updated branch above,
+        // which happens with immediate cancellation.
+        const subscription = event.data.object as Stripe.Subscription;
+        const customerId =
+          typeof subscription.customer === "string"
+            ? subscription.customer
+            : subscription.customer.id;
+        const existingOrg = await prisma.organization.findFirst({
+          where: { stripeCustomerId: customerId },
+          select: { cancelAtPeriodEnd: true },
+        });
+        const alreadyEmailedForCancellation = existingOrg?.cancelAtPeriodEnd === true;
+
         await markSubscriptionCanceled(subscription);
-        await sendCanceledEmail(subscription);
+
+        if (!alreadyEmailedForCancellation) {
+          await sendCanceledEmail(subscription);
+        }
         break;
       }
 
