@@ -1,6 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-export async function middleware(request: NextRequest) {
+// Next.js 16 renamed Middleware to Proxy. The file lives at src/proxy.ts
+// and exports a function named `proxy`. See:
+// node_modules/next/dist/docs/01-app/01-getting-started/16-proxy.md
+export async function proxy(request: NextRequest) {
   // Skip auth check if Supabase is not configured
   if (
     !process.env.NEXT_PUBLIC_SUPABASE_URL ||
