@@ -2,7 +2,16 @@ import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { stripe, planFromPriceId } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
-import type { SubscriptionStatus } from "@prisma/client";
+import { sendTransactional, LOOPS_TEMPLATES } from "@/lib/loops";
+import type { SubscriptionStatus, Plan } from "@prisma/client";
+
+const PLAN_DISPLAY_NAME: Record<Plan, string> = {
+  TRIAL: "Trial",
+  STARTER: "Starter",
+  PROFESSIONAL: "Professional",
+  STUDIO: "Studio",
+  ENTERPRISE: "Enterprise",
+};
 
 export const dynamic = "force-dynamic";
 
@@ -42,6 +51,8 @@ export async function POST(request: Request) {
               : session.subscription.id
           );
           await syncSubscriptionToOrg(subscription);
+          // Welcome-to-paid email — fires once when trial begins
+          await sendTrialStartedEmail(subscription);
         }
         break;
       }
@@ -57,6 +68,7 @@ export async function POST(request: Request) {
       case "customer.subscription.deleted": {
         const subscription = event.data.object as Stripe.Subscription;
         await markSubscriptionCanceled(subscription);
+        await sendCanceledEmail(subscription);
         break;
       }
 
@@ -71,6 +83,7 @@ export async function POST(request: Request) {
             typeof subId === "string" ? subId : subId.id
           );
           await syncSubscriptionToOrg(subscription);
+          await sendPaymentFailedEmail(subscription);
         }
         break;
       }
@@ -177,5 +190,87 @@ function mapStripeStatus(status: Stripe.Subscription.Status): SubscriptionStatus
     paused: "PAUSED",
   };
   return map[status];
+}
+
+/**
+ * Look up the org owner's email + first name for a subscription.
+ * Returns null if we can't find the org or there's no owner.
+ */
+async function getOwnerForSubscription(subscription: Stripe.Subscription) {
+  const customerId =
+    typeof subscription.customer === "string" ? subscription.customer : subscription.customer.id;
+
+  const org = await prisma.organization.findFirst({
+    where: { stripeCustomerId: customerId },
+    include: {
+      users: {
+        where: { role: "OWNER" },
+        take: 1,
+      },
+    },
+  });
+
+  if (!org || !org.users[0]) return null;
+
+  const owner = org.users[0];
+  const firstName = owner.fullName.split(/\s+/)[0] || "there";
+
+  return { org, owner, firstName };
+}
+
+async function sendTrialStartedEmail(subscription: Stripe.Subscription) {
+  const ctx = await getOwnerForSubscription(subscription);
+  if (!ctx) return;
+
+  const priceId = subscription.items.data[0]?.price.id;
+  const plan = planFromPriceId(priceId) ?? "STARTER";
+  const planName = PLAN_DISPLAY_NAME[plan];
+
+  const trialEnd = subscription.trial_end
+    ? new Date(subscription.trial_end * 1000).toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      })
+    : "in 14 days";
+
+  await sendTransactional({
+    email: ctx.owner.email,
+    transactionalId: LOOPS_TEMPLATES.TRIAL_STARTED,
+    dataVariables: {
+      firstName: ctx.firstName,
+      firmName: ctx.org.name,
+      planName,
+      trialEndDate: trialEnd,
+    },
+  });
+}
+
+async function sendCanceledEmail(subscription: Stripe.Subscription) {
+  const ctx = await getOwnerForSubscription(subscription);
+  if (!ctx) return;
+
+  await sendTransactional({
+    email: ctx.owner.email,
+    transactionalId: LOOPS_TEMPLATES.SUBSCRIPTION_CANCELED,
+    dataVariables: {
+      firstName: ctx.firstName,
+      firmName: ctx.org.name,
+    },
+  });
+}
+
+async function sendPaymentFailedEmail(subscription: Stripe.Subscription) {
+  const ctx = await getOwnerForSubscription(subscription);
+  if (!ctx) return;
+
+  await sendTransactional({
+    email: ctx.owner.email,
+    transactionalId: LOOPS_TEMPLATES.PAYMENT_FAILED,
+    dataVariables: {
+      firstName: ctx.firstName,
+      firmName: ctx.org.name,
+    },
+  });
 }
 

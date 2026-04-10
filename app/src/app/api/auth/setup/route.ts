@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { upsertContact, sendTransactional, LOOPS_TEMPLATES } from "@/lib/loops";
 
 export const dynamic = "force-dynamic";
 
@@ -46,6 +47,32 @@ export async function POST(request: Request) {
       });
 
       return { org, user };
+    });
+
+    // Email + audience sync — fire-and-forget, never blocks the response.
+    // Loops failures must not prevent the user from completing signup.
+    const [firstName, ...lastNameParts] = fullName.trim().split(/\s+/);
+    const lastName = lastNameParts.join(" ");
+
+    void Promise.all([
+      upsertContact({
+        email,
+        firstName,
+        lastName: lastName || undefined,
+        userId: result.user.id,
+        source: "Phasewise signup",
+        userGroup: "trial",
+      }),
+      sendTransactional({
+        email,
+        transactionalId: LOOPS_TEMPLATES.WELCOME,
+        dataVariables: {
+          firstName: firstName || "there",
+          firmName,
+        },
+      }),
+    ]).catch((err) => {
+      console.error("[loops] Post-signup email/contact sync failed:", err);
     });
 
     return NextResponse.json({
