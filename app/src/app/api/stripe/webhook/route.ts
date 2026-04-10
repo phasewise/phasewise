@@ -86,10 +86,22 @@ export async function POST(request: Request) {
         });
         const wasNotCanceling = existingOrg?.cancelAtPeriodEnd === false;
 
+        console.log("[stripe webhook] customer.subscription.updated", {
+          subscriptionId: subscription.id,
+          customerId,
+          orgFound: !!existingOrg,
+          previousCancelAtPeriodEnd: existingOrg?.cancelAtPeriodEnd,
+          newCancelFlag,
+          wasNotCanceling,
+          willSendEmail: newCancelFlag && wasNotCanceling,
+        });
+
         await syncSubscriptionToOrg(subscription);
 
         if (newCancelFlag && wasNotCanceling) {
-          await sendCanceledEmail(subscription);
+          console.log("[stripe webhook] sending canceled email");
+          const result = await sendCanceledEmail(subscription);
+          console.log("[stripe webhook] sendCanceledEmail returned", result);
         }
         break;
       }
@@ -296,9 +308,20 @@ async function sendTrialStartedEmail(subscription: Stripe.Subscription) {
 
 async function sendCanceledEmail(subscription: Stripe.Subscription) {
   const ctx = await getOwnerForSubscription(subscription);
-  if (!ctx) return;
+  if (!ctx) {
+    console.warn("[stripe webhook] sendCanceledEmail: no owner found for subscription", subscription.id);
+    return { success: false, reason: "no owner" };
+  }
 
-  await sendTransactional({
+  console.log("[stripe webhook] sendCanceledEmail attempting send", {
+    to: ctx.owner.email,
+    templateId: LOOPS_TEMPLATES.SUBSCRIPTION_CANCELED,
+    templateIdSet: !!LOOPS_TEMPLATES.SUBSCRIPTION_CANCELED,
+    firstName: ctx.firstName,
+    firmName: ctx.org.name,
+  });
+
+  const result = await sendTransactional({
     email: ctx.owner.email,
     transactionalId: LOOPS_TEMPLATES.SUBSCRIPTION_CANCELED,
     dataVariables: {
@@ -306,6 +329,9 @@ async function sendCanceledEmail(subscription: Stripe.Subscription) {
       firmName: ctx.org.name,
     },
   });
+
+  console.log("[stripe webhook] sendCanceledEmail result", result);
+  return result;
 }
 
 async function sendPaymentFailedEmail(subscription: Stripe.Subscription) {
