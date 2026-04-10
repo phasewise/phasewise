@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   // Skip auth check if Supabase is not configured
   if (
     !process.env.NEXT_PUBLIC_SUPABASE_URL ||
@@ -16,6 +16,9 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    // Match all paths except static assets and API routes that handle their
+    // own auth (Stripe webhook needs raw body, auth/setup is called right
+    // after signup before the session cookie is set).
+    "/((?!_next/static|_next/image|favicon.ico|api/stripe/webhook|api/auth/setup|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
