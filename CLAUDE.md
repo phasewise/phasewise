@@ -197,8 +197,10 @@ All variables are set in **Vercel project Settings → Environment Variables** A
 | `LOOPS_API_KEY` | ✅ local, ⏳ Vercel | Loops > Settings > API |
 | `LOOPS_TEMPLATE_WELCOME` | ⏳ pending | Loops > Transactional > Welcome template ID |
 | `LOOPS_TEMPLATE_TRIAL_STARTED` | ⏳ pending | Loops > Transactional > Trial started template ID |
-| `LOOPS_TEMPLATE_SUBSCRIPTION_CANCELED` | ⏳ pending | Loops > Transactional > Subscription canceled template ID |
-| `LOOPS_TEMPLATE_PAYMENT_FAILED` | ⏳ pending | Loops > Transactional > Payment failed template ID |
+| `LOOPS_TEMPLATE_WELCOME` | ✅ Vercel + local | `cmnsy2ivn01fx0iyrotfy4w2i` |
+| `LOOPS_TEMPLATE_TRIAL_STARTED` | ✅ Vercel + local | `cmnt111lb00a20i0d70r302q1` |
+| `LOOPS_TEMPLATE_SUBSCRIPTION_CANCELED` | ✅ Vercel + local | `cmnt17tyg00m20iyvwcuxod0r` |
+| `LOOPS_TEMPLATE_PAYMENT_FAILED` | ✅ Vercel + local | `cmnt1c1fm0cg60i0dsl64dtfv` |
 
 ### Switching Stripe to Live Mode (when ready)
 
@@ -321,70 +323,97 @@ Most meaningful first. Strikethrough = done.
 5. ~~Favicon + PWA icons~~ ✅ 2026-04-09
 6. ~~Stripe integration — checkout, customer portal, webhook handler, billing page~~ ✅ 2026-04-09 (test mode)
 7. ~~Loops integration — SDK + lib wrapper + welcome/trial/canceled/payment-failed wired~~ ✅ 2026-04-09
-8. **Loops transactional templates + env vars** ⏳ NEXT — pickup point for tomorrow
-9. **End-to-end test of signup → checkout → webhooks → emails** ⏳ Right after #8
-10. **Waitlist + contact capture on landing page** — Loops contacts API (one form, no auth required)
-11. **Replace `/brand` v1 assets with v2 versions** — single source of truth
-12. **Project editing** — currently only create + view
-13. **Profitability reporting dashboard** — the core value prop demands a real report
-14. **Client management module** — contacts, communications, automations
-15. **Onboarding flow** — first-run experience after signup
-16. **Empty states + loading states** — production polish
-17. **Privacy Policy + Terms** — legal pages before launch
-18. **Switch Stripe to live mode** — env var swap only
-19. **Social media automation (n8n)** — scheduled posts to LinkedIn/X/Instagram
-20. **Google Workspace setup** — kevin@phasewise.io for business email
-21. **USPTO trademark filing** — protect the name
+8. ~~Loops transactional templates + env vars~~ ✅ 2026-04-10
+9. ~~Stripe Tax (sandbox) head office address registered~~ ✅ 2026-04-10
+10. ~~End-to-end test: signup → welcome email~~ ✅ 2026-04-10
+11. ~~End-to-end test: checkout → trial active → trial started email~~ ✅ 2026-04-10
+12. ~~End-to-end test: Customer Portal opens, cancellation flow~~ ✅ 2026-04-10
+13. **Debug: canceled email not firing on cancel-at-period-end** ⏳ NEXT — diagnostic logging deployed (commit `1c59e92`), need to re-trigger and read Vercel logs
+14. **Waitlist + contact capture on landing page** — Loops contacts API (one form, no auth required)
+15. **Replace `/brand` v1 assets with v2 versions** — single source of truth
+16. **Project editing** — currently only create + view
+17. **Profitability reporting dashboard** — the core value prop demands a real report
+18. **Client management module** — contacts, communications, automations
+19. **Onboarding flow** — first-run experience after signup
+20. **Empty states + loading states** — production polish
+21. **Privacy Policy + Terms** — legal pages before launch
+22. **Stripe Tax: revisit before going live** — currently a placeholder CA registration; SaaS in CA is 0% but other states may need real registration. Consider Anrok or TaxJar at $50K+ revenue.
+23. **Switch Stripe to live mode** — env var swap only
+24. **Social media automation (n8n)** — scheduled posts to LinkedIn/X/Instagram
+25. **Google Workspace setup** — kevin@phasewise.io for business email
+26. **USPTO trademark filing** — protect the name
 
-## Where We Left Off (2026-04-09 EOD)
+## Where We Left Off (2026-04-10 EOD)
 
-**Last action:** Pushed commit `e0cde99` adding Loops integration. Vercel is auto-deploying.
+**Status:** Almost everything works. The signup → welcome email → checkout → trial-started email → Customer Portal flow is fully verified end-to-end with Stripe test cards. **The single open issue is the cancellation email not firing.**
 
-**To resume tomorrow:**
+**Latest commit:** `1c59e92` "Add diagnostic logging to webhook canceled email path"
 
-1. **Start in Loops dashboard** → Transactional → create 4 templates:
-   - Welcome (vars: `firstName`, `firmName`)
-   - Trial started (vars: `firstName`, `firmName`, `planName`, `trialEndDate`)
-   - Subscription canceled (vars: `firstName`, `firmName`)
-   - Payment failed (vars: `firstName`, `firmName`)
-2. **Copy each template ID** from the Loops dashboard
-3. **Add to Vercel env vars** (and local `app/.env`):
-   - `LOOPS_API_KEY` (already in local `.env`, need to add to Vercel)
-   - `LOOPS_TEMPLATE_WELCOME`
-   - `LOOPS_TEMPLATE_TRIAL_STARTED`
-   - `LOOPS_TEMPLATE_SUBSCRIPTION_CANCELED`
-   - `LOOPS_TEMPLATE_PAYMENT_FAILED`
-4. **Redeploy** from Vercel
-5. **Run end-to-end test:**
-   - Open phasewise.io in incognito → click Pricing → Professional → "Start Free Trial"
-   - Sign up as a new test user (e.g. `test+phasewise1@…`)
-   - Should redirect to Stripe Checkout
-   - Use test card: `4242 4242 4242 4242`, exp `12/30`, CVC `123`, any zip
-   - Should land on `/settings/billing?status=success`
-   - Verify welcome email arrives at signup time, trial-started email arrives after checkout
-   - Check `/settings/billing` shows "Trial active" badge with end date
-   - Click "Manage subscription" → confirm Customer Portal opens
-   - Test cancellation → confirm "Subscription canceled" email arrives
+### What we know about the canceled email bug
 
-**Test card reference:**
+**The full cancellation chain works EXCEPT the email send:**
+- Stripe webhook fires `customer.subscription.updated` with `cancel_at_period_end: true` ✅
+- Webhook delivery shows 200 OK in Stripe dashboard ✅
+- DB sync runs and updates `cancelAtPeriodEnd` correctly ✅
+- Customer Portal correctly shows "Cancels Apr 24" ✅
+- **But the "Sorry to see you go" email never arrives** ❌
+
+**The bug:** Stripe doesn't fire `customer.subscription.deleted` when you cancel in the Customer Portal. It only fires `customer.subscription.updated` with `cancel_at_period_end: true`. The actual `deleted` event only fires when the period actually ends (or when "Cancel immediately" is used). My initial fix in commit `6cca1f5` added the email send to the `updated` branch when the cancel flag transitions from false → true. That logic looks correct on paper but the email STILL isn't firing.
+
+**Confirmed NOT the cause:**
+- `LOOPS_TEMPLATE_SUBSCRIPTION_CANCELED` env var IS set in Vercel (`cmnt17tyg00m20iyvwcuxod0r`) ✅
+- Webhook is reaching the handler (200 OK in Stripe) ✅
+- Other Loops templates (welcome, trial started) work fine ✅
+
+**Diagnostic logging deployed in commit `1c59e92`:**
+- Logs `orgFound`, `previousCancelAtPeriodEnd`, `newCancelFlag`, `wasNotCanceling`, `willSendEmail` on every `customer.subscription.updated` event
+- Logs inside `sendCanceledEmail` showing template ID, recipient, variables
+- Logs the result of `sendTransactional`
+
+### To resume tomorrow
+
+1. **Wait for or trigger a fresh Vercel deploy of `1c59e92`** — verify it shows Ready in Vercel Deployments
+2. **Open Customer Portal** for the existing test user (`kgallo22+pwtest4@gmail.com` should still be there) — or create a new pwtest5 user from scratch
+3. **Click "Don't cancel subscription"** to re-activate (resets `cancelAtPeriodEnd` to false in DB via webhook sync)
+4. **Click "Cancel subscription"** again → submit a reason
+5. **Immediately switch to Vercel → Logs tab** (left sidebar of phasewise project)
+6. Filter to **Last 5 minutes**, look for log lines starting with `[stripe webhook]`
+7. The logs will tell us EXACTLY which check is failing:
+   - If `orgFound: false` → DB lookup is broken, probably wrong customer ID
+   - If `previousCancelAtPeriodEnd: true` → the org row is in the wrong state (the "Don't cancel" event wasn't synced first)
+   - If `willSendEmail: true` but `sendCanceledEmail` returns failure → Loops API call is failing
+   - If `willSendEmail: true` and `sendCanceledEmail` returns success → email IS being sent and the issue is in Loops dashboard (template not published, suppression list, etc.)
+
+### After the bug is fixed
+
+1. **Remove the diagnostic logging** from `app/src/app/api/stripe/webhook/route.ts` (the `console.log("[stripe webhook]" ...)` lines added in commit `1c59e92`)
+2. **Delete `app/test-stripe.mjs`** — it was a one-off Stripe key validator
+3. **Add the 4 LOOPS_TEMPLATE_* IDs to local `.env`** (currently only in Vercel) so local dev mode works with emails
+4. **Test the full lifecycle one more time** to confirm everything works end-to-end before moving on
+
+### Test card reference
+
 | Scenario | Card number |
 |----------|------------|
 | Successful payment | `4242 4242 4242 4242` |
 | Decline | `4000 0000 0000 0002` |
 | Requires 3D Secure | `4000 0025 0000 3155` |
 
-**Known good state at end of day:**
-- Production URL: https://phasewise.io
-- Latest commit: `e0cde99` (Loops integration)
-- All Stripe sandbox products live, webhook listening, billing page renders
+### Known good state at end of day 2026-04-10
+
+- Production URL: https://phasewise.io — fully deployed and functional
+- Latest commit: `1c59e92` (diagnostic logging on webhook canceled email path)
+- All Loops templates created, IDs in Vercel + as published templates in Loops dashboard
+- Stripe Tax sandbox registration in CA (placeholder for testing only)
+- Test users in Supabase + app DB: `pwtest1@gmail.com`, `pwtest2`, `pwtest3`, `pwtest4` (all under `kgallo22+pwtestN@gmail.com` Gmail aliases)
 - Code compiles clean (`npx tsc --noEmit` returns 0 errors)
+- Webhook event delivery rate: 100% success (0% error)
 
 ## TODO (Operational, non-code)
 
-- [ ] Create 4 Loops transactional templates (next session priority)
-- [ ] Add Loops env vars to Vercel (next session priority)
 - [ ] Set up Google Workspace (kevin@phasewise.io) — defer until first paying customer
 - [ ] Upload v2 PNG logos to LinkedIn, X/Twitter, GitHub profiles
 - [ ] Claim @phasewise on Instagram
 - [ ] File USPTO trademark for "Phasewise"
 - [ ] Set up getphasewise.com redirect to phasewise.io in Cloudflare
+- [ ] Revisit Stripe Tax setup before going live (currently a placeholder CA registration)
