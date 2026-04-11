@@ -67,14 +67,17 @@ export async function POST(request: Request) {
       case "customer.subscription.updated": {
         const subscription = event.data.object as Stripe.Subscription;
 
-        // Detect a fresh "cancel at period end" transition. We compare the
-        // org's current state in the DB BEFORE the sync — if cancelAtPeriodEnd
-        // was false and the new event has it true, the user just clicked
-        // "Cancel subscription" in the Customer Portal. Send the canceled
-        // email even though Stripe won't fire customer.subscription.deleted
-        // until the period actually ends.
-        const subWithCancel = subscription as unknown as { cancel_at_period_end?: boolean };
-        const newCancelFlag = subWithCancel.cancel_at_period_end === true;
+        // Cast through unknown so we can read potentially-undefined fields
+        const subRaw = subscription as unknown as {
+          cancel_at_period_end?: boolean;
+          cancel_at?: number | null;
+          canceled_at?: number | null;
+          cancellation_details?: unknown;
+          status?: string;
+          ended_at?: number | null;
+        };
+
+        const newCancelFlag = subRaw.cancel_at_period_end === true;
 
         const customerId =
           typeof subscription.customer === "string"
@@ -86,14 +89,28 @@ export async function POST(request: Request) {
         });
         const wasNotCanceling = existingOrg?.cancelAtPeriodEnd === false;
 
+        // DIAGNOSTIC: dump ALL cancellation-related fields so we can see
+        // what Stripe is actually sending. The "previous_attributes" on the
+        // event tells us what changed in this update.
+        const eventWithPrev = event as unknown as { data: { previous_attributes?: unknown } };
         console.log("[stripe webhook] customer.subscription.updated", {
           subscriptionId: subscription.id,
           customerId,
+          eventId: event.id,
           orgFound: !!existingOrg,
           previousCancelAtPeriodEnd: existingOrg?.cancelAtPeriodEnd,
           newCancelFlag,
           wasNotCanceling,
           willSendEmail: newCancelFlag && wasNotCanceling,
+          // Raw subscription cancellation fields
+          rawCancelAtPeriodEnd: subRaw.cancel_at_period_end,
+          rawCancelAt: subRaw.cancel_at,
+          rawCanceledAt: subRaw.canceled_at,
+          rawCancellationDetails: subRaw.cancellation_details,
+          rawStatus: subRaw.status,
+          rawEndedAt: subRaw.ended_at,
+          // What changed in this update event
+          previousAttributes: eventWithPrev.data.previous_attributes,
         });
 
         await syncSubscriptionToOrg(subscription);
