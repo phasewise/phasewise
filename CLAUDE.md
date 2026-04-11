@@ -328,8 +328,8 @@ Most meaningful first. Strikethrough = done.
 10. ~~End-to-end test: signup → welcome email~~ ✅ 2026-04-10
 11. ~~End-to-end test: checkout → trial active → trial started email~~ ✅ 2026-04-10
 12. ~~End-to-end test: Customer Portal opens, cancellation flow~~ ✅ 2026-04-10
-13. **Debug: canceled email not firing on cancel-at-period-end** ⏳ NEXT — diagnostic logging deployed (commit `1c59e92`), need to re-trigger and read Vercel logs
-14. **Waitlist + contact capture on landing page** — Loops contacts API (one form, no auth required)
+13. ~~End-to-end test: cancellation → "Sorry to see you go" email~~ ✅ 2026-04-11 (commit `979c65c`)
+14. **Waitlist + contact capture on landing page** ⏳ NEXT — Loops contacts API (one form, no auth required)
 15. **Replace `/brand` v1 assets with v2 versions** — single source of truth
 16. **Project editing** — currently only create + view
 17. **Profitability reporting dashboard** — the core value prop demands a real report
@@ -343,55 +343,27 @@ Most meaningful first. Strikethrough = done.
 25. **Google Workspace setup** — kevin@phasewise.io for business email
 26. **USPTO trademark filing** — protect the name
 
-## Where We Left Off (2026-04-10 EOD)
+## Where We Left Off (2026-04-11)
 
-**Status:** Almost everything works. The signup → welcome email → checkout → trial-started email → Customer Portal flow is fully verified end-to-end with Stripe test cards. **The single open issue is the cancellation email not firing.**
+**Status: Stripe + Loops integration is FULLY VERIFIED end-to-end.** All 4 transactional emails working in production with Stripe test cards. The cancellation bug from yesterday is fixed. Ready to move on to the next feature.
 
-**Latest commit:** `1c59e92` "Add diagnostic logging to webhook canceled email path"
+**Latest commit:** `cb8c56c` "Remove diagnostic logging from Stripe webhook handler"
 
-### What we know about the canceled email bug
+### What got fixed today
 
-**The full cancellation chain works EXCEPT the email send:**
-- Stripe webhook fires `customer.subscription.updated` with `cancel_at_period_end: true` ✅
-- Webhook delivery shows 200 OK in Stripe dashboard ✅
-- DB sync runs and updates `cancelAtPeriodEnd` correctly ✅
-- Customer Portal correctly shows "Cancels Apr 24" ✅
-- **But the "Sorry to see you go" email never arrives** ❌
+**The cancellation email bug.** Stripe's Customer Portal cancellation sets `cancel_at` (a unix timestamp) NOT `cancel_at_period_end` (a boolean), as I had assumed. My original code only checked the boolean, so the canceled email never fired.
 
-**The bug:** Stripe doesn't fire `customer.subscription.deleted` when you cancel in the Customer Portal. It only fires `customer.subscription.updated` with `cancel_at_period_end: true`. The actual `deleted` event only fires when the period actually ends (or when "Cancel immediately" is used). My initial fix in commit `6cca1f5` added the email send to the `updated` branch when the cancel flag transitions from false → true. That logic looks correct on paper but the email STILL isn't firing.
+**The fix (commit `979c65c`):** Detect a fresh cancellation by inspecting the webhook event's `previous_attributes` object. If a cancel field (either `cancel_at` or `cancel_at_period_end`) was null/false before this update and is now non-null/true, it's a fresh cancel. This also correctly skips the inverse case (clicking "Don't cancel subscription") because previous_attributes.cancel_at would be a non-null timestamp in that scenario.
 
-**Confirmed NOT the cause:**
-- `LOOPS_TEMPLATE_SUBSCRIPTION_CANCELED` env var IS set in Vercel (`cmnt17tyg00m20iyvwcuxod0r`) ✅
-- Webhook is reaching the handler (200 OK in Stripe) ✅
-- Other Loops templates (welcome, trial started) work fine ✅
+**Verified working:**
+- Welcome email on signup ✅
+- Trial Started email on Stripe checkout completion ✅
+- Sorry to see you go email on Customer Portal cancellation ✅
+- All emails render data variables correctly (firstName, firmName, planName, trialEndDate)
+- Customer Portal "Don't cancel subscription" undo correctly does NOT re-send the cancellation email
+- Webhook delivery rate: 100% (0% error)
 
-**Diagnostic logging deployed in commit `1c59e92`:**
-- Logs `orgFound`, `previousCancelAtPeriodEnd`, `newCancelFlag`, `wasNotCanceling`, `willSendEmail` on every `customer.subscription.updated` event
-- Logs inside `sendCanceledEmail` showing template ID, recipient, variables
-- Logs the result of `sendTransactional`
-
-### To resume tomorrow
-
-1. **Wait for or trigger a fresh Vercel deploy of `1c59e92`** — verify it shows Ready in Vercel Deployments
-2. **Open Customer Portal** for the existing test user (`kgallo22+pwtest4@gmail.com` should still be there) — or create a new pwtest5 user from scratch
-3. **Click "Don't cancel subscription"** to re-activate (resets `cancelAtPeriodEnd` to false in DB via webhook sync)
-4. **Click "Cancel subscription"** again → submit a reason
-5. **Immediately switch to Vercel → Logs tab** (left sidebar of phasewise project)
-6. Filter to **Last 5 minutes**, look for log lines starting with `[stripe webhook]`
-7. The logs will tell us EXACTLY which check is failing:
-   - If `orgFound: false` → DB lookup is broken, probably wrong customer ID
-   - If `previousCancelAtPeriodEnd: true` → the org row is in the wrong state (the "Don't cancel" event wasn't synced first)
-   - If `willSendEmail: true` but `sendCanceledEmail` returns failure → Loops API call is failing
-   - If `willSendEmail: true` and `sendCanceledEmail` returns success → email IS being sent and the issue is in Loops dashboard (template not published, suppression list, etc.)
-
-### After the bug is fixed
-
-1. **Remove the diagnostic logging** from `app/src/app/api/stripe/webhook/route.ts` (the `console.log("[stripe webhook]" ...)` lines added in commit `1c59e92`)
-2. **Delete `app/test-stripe.mjs`** — it was a one-off Stripe key validator
-3. **Add the 4 LOOPS_TEMPLATE_* IDs to local `.env`** (currently only in Vercel) so local dev mode works with emails
-4. **Test the full lifecycle one more time** to confirm everything works end-to-end before moving on
-
-### Test card reference
+### Test cards for future testing
 
 | Scenario | Card number |
 |----------|------------|
@@ -399,15 +371,25 @@ Most meaningful first. Strikethrough = done.
 | Decline | `4000 0000 0000 0002` |
 | Requires 3D Secure | `4000 0025 0000 3155` |
 
-### Known good state at end of day 2026-04-10
+### Test user accounts in DB
 
-- Production URL: https://phasewise.io — fully deployed and functional
-- Latest commit: `1c59e92` (diagnostic logging on webhook canceled email path)
-- All Loops templates created, IDs in Vercel + as published templates in Loops dashboard
-- Stripe Tax sandbox registration in CA (placeholder for testing only)
-- Test users in Supabase + app DB: `pwtest1@gmail.com`, `pwtest2`, `pwtest3`, `pwtest4` (all under `kgallo22+pwtestN@gmail.com` Gmail aliases)
+- `kgallo22+pwtest1@gmail.com` through `kgallo22+pwtest5@gmail.com` (Gmail aliases routing to your inbox)
+- All exist in Supabase Auth + app database
+- Can be deleted via Supabase Authentication > Users when no longer needed
+
+### Known good state end of 2026-04-11
+
+- Production URL: https://phasewise.io — fully deployed
+- Latest commit: `cb8c56c` (clean — diagnostic logging removed)
 - Code compiles clean (`npx tsc --noEmit` returns 0 errors)
-- Webhook event delivery rate: 100% success (0% error)
+- All Stripe sandbox products + webhook + tax registration live
+- All Loops templates published with correct data variables
+- Local `.env` has all required keys including LOOPS_TEMPLATE_*
+- Vercel env vars match local
+
+### Next session priority
+
+**#14 from build order: Add waitlist/contact capture to landing page.** Use the Loops contacts API (`upsertContact` already exists in `lib/loops.ts`). One form, no auth required. Should be a quick build now that Loops is fully wired up.
 
 ## TODO (Operational, non-code)
 
