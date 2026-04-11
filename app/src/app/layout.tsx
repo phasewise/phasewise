@@ -16,6 +16,7 @@ const dmSerifDisplay = DM_Serif_Display({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://phasewise.io"),
   title: "Phasewise — Focus on the design. We'll handle everything else.",
   description:
     "Phasewise is the operating system for landscape architecture firms. Project management, budgets, time tracking, and profitability — built for how landscape architects actually work.",
@@ -23,7 +24,24 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: "Phasewise",
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
+  },
+  icons: {
+    // Browser tab icon
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+    ],
+    // iOS home screen icon — points to the Next.js-generated apple-icon route.
+    // We include explicit sizes so iOS picks the right one and doesn't fall
+    // back to a screenshot of the page. Cache-busted via the Next.js icon
+    // file convention which fingerprints the URL on each deploy.
+    apple: [
+      { url: "/apple-icon", sizes: "180x180", type: "image/png" },
+    ],
+    // Microsoft tile icon (helpful for Windows pinned sites too)
+    other: [
+      { rel: "apple-touch-icon-precomposed", url: "/apple-icon" },
+    ],
   },
 };
 
@@ -32,6 +50,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

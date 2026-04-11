@@ -1,12 +1,8 @@
 import Link from "next/link";
-import {
-  BarChart3,
-  Clock,
-  FolderKanban,
-  Home,
-  Settings,
-  Users,
-} from "lucide-react";
+import { redirect } from "next/navigation";
+import { BarChart3, Clock, FolderKanban, Home, Settings, Users } from "lucide-react";
+import { getCurrentUser } from "@/lib/supabase/auth";
+import LogoutButton from "./_components/LogoutButton";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: Home },
@@ -27,7 +23,28 @@ function PhaseLogo() {
   );
 }
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+function Avatar({ name }: { name: string }) {
+  // Initials from full name — first letter of first word + first letter of last word
+  const parts = name.trim().split(/\s+/);
+  const initials =
+    parts.length === 1
+      ? parts[0].slice(0, 2).toUpperCase()
+      : (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+
+  return (
+    <div className="w-9 h-9 rounded-full bg-[#2D6A4F] text-white flex items-center justify-center text-xs font-semibold flex-shrink-0">
+      {initials}
+    </div>
+  );
+}
+
+export default async function AppLayout({ children }: { children: React.ReactNode }) {
+  const currentUser = await getCurrentUser();
+
+  if (!currentUser) {
+    redirect("/login");
+  }
+
   return (
     <div className="flex h-screen bg-[#F7F9F7]">
       {/* Sidebar */}
@@ -50,8 +67,24 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </Link>
           ))}
         </nav>
-        <div className="px-5 py-4 border-t border-white/[0.06]">
-          <p className="text-[10px] text-white/30 tracking-wider uppercase font-medium">Phasewise v0.1.0</p>
+
+        {/* User identity widget */}
+        <div className="border-t border-white/[0.06] px-3 py-4">
+          <div className="flex items-center gap-3 px-2 py-2 rounded-lg">
+            <Avatar name={currentUser.fullName} />
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-medium text-white truncate">{currentUser.fullName}</div>
+              <div className="text-[11px] text-white/50 truncate">{currentUser.email}</div>
+            </div>
+          </div>
+          {currentUser.organization && (
+            <div className="mt-2 px-2 text-[11px] text-white/40 truncate">
+              {currentUser.organization.name}
+            </div>
+          )}
+          <div className="mt-3 px-2">
+            <LogoutButton />
+          </div>
         </div>
       </aside>
 

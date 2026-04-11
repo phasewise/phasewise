@@ -12,6 +12,7 @@ import {
 import RevealOnScroll from "./_components/RevealOnScroll";
 import NavScrollEffect from "./_components/NavScrollEffect";
 import PricingButton from "./_components/PricingButton";
+import WaitlistForm from "./_components/WaitlistForm";
 
 const PRICE_STARTER = process.env.NEXT_PUBLIC_STRIPE_PRICE_STARTER ?? "";
 const PRICE_PROFESSIONAL = process.env.NEXT_PUBLIC_STRIPE_PRICE_PROFESSIONAL ?? "";
@@ -157,7 +158,7 @@ export default function HomePage() {
         id="pw-nav"
         className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur border-b border-[#E2EBE4] transition-shadow"
       >
-        <div className="max-w-[1120px] mx-auto px-5 sm:px-10 h-[64px] sm:h-[68px] flex items-center justify-between">
+        <div className="max-w-[1120px] mx-auto px-5 sm:px-10 h-[56px] sm:h-[68px] flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5 no-underline">
             <PhaseLogo />
             <span className="text-[18px] sm:text-[19px] font-semibold tracking-[-0.4px] text-[#1A2E22]">
@@ -199,37 +200,37 @@ export default function HomePage() {
       </nav>
 
       {/* ── Hero ────────────────────────────────────── */}
-      <section className="pt-24 sm:pt-32 lg:pt-40 pb-16 sm:pb-20 px-6 sm:px-10 bg-white relative overflow-hidden">
-        <div className="max-w-[1120px] mx-auto grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+      <section className="pt-[80px] sm:pt-32 lg:pt-40 pb-12 sm:pb-20 px-6 sm:px-10 bg-white relative overflow-hidden">
+        <div className="max-w-[1120px] mx-auto grid lg:grid-cols-2 gap-10 lg:gap-20 items-center">
           <div>
-            <div className="inline-flex items-center gap-2 bg-[#F0FAF4] border border-[#52B788]/30 rounded-full px-3.5 py-[5px] text-xs font-medium text-[#2D6A4F] mb-6 sm:mb-7">
+            <div className="inline-flex items-center gap-2 bg-[#F0FAF4] border border-[#52B788]/30 rounded-full px-3 py-[4px] text-[11px] sm:text-xs font-medium text-[#2D6A4F] mb-4 sm:mb-7">
               <span className="w-1.5 h-1.5 rounded-full bg-[#52B788]" />
               Built by a landscape architect
             </div>
-            <h1 className="font-serif text-[clamp(34px,7vw,58px)] font-normal leading-[1.1] text-[#1A2E22] mb-5 sm:mb-6 tracking-[-0.5px]">
+            <h1 className="font-serif text-[clamp(30px,8vw,58px)] font-normal leading-[1.1] text-[#1A2E22] mb-4 sm:mb-6 tracking-[-0.5px]">
               Focus on the <em className="italic text-[#2D6A4F]">design.</em>
               <br />
               We&apos;ll handle everything else.
             </h1>
-            <p className="text-base sm:text-lg leading-[1.7] sm:leading-[1.75] text-[#6B8C74] mb-8 sm:mb-10 max-w-[480px]">
+            <p className="text-[15px] sm:text-lg leading-[1.6] sm:leading-[1.75] text-[#6B8C74] mb-6 sm:mb-10 max-w-[480px]">
               Phasewise is the operating system for landscape architecture firms.
               Project management, budgets, time tracking, billing, and client coordination — automated, so you can spend more time designing.
             </p>
-            <div className="flex gap-3.5 items-center flex-wrap">
+            <div className="flex gap-3 sm:gap-3.5 items-center flex-wrap">
               <Link
                 href="/signup"
-                className="inline-flex items-center gap-2 text-base font-medium px-9 py-[15px] rounded-[7px] bg-[#2D6A4F] text-white hover:bg-[#40916C] hover:-translate-y-0.5 hover:shadow-[0_10px_32px_rgba(45,106,79,0.3)] transition-all"
+                className="inline-flex items-center gap-2 text-sm sm:text-base font-medium px-6 sm:px-9 py-3 sm:py-[15px] rounded-[7px] bg-[#2D6A4F] text-white hover:bg-[#40916C] hover:-translate-y-0.5 hover:shadow-[0_10px_32px_rgba(45,106,79,0.3)] transition-all"
               >
                 Start 14-Day Free Trial
               </Link>
               <a
                 href="#features"
-                className="inline-flex items-center gap-2 text-base font-medium px-9 py-[14px] rounded-[7px] bg-transparent text-[#3D5C48] border border-[#E2EBE4] hover:border-[#52B788] hover:text-[#2D6A4F] hover:bg-[#F0FAF4] transition-all"
+                className="inline-flex items-center gap-2 text-sm sm:text-base font-medium px-6 sm:px-9 py-3 sm:py-[14px] rounded-[7px] bg-transparent text-[#3D5C48] border border-[#E2EBE4] hover:border-[#52B788] hover:text-[#2D6A4F] hover:bg-[#F0FAF4] transition-all"
               >
                 See Features
               </a>
             </div>
-            <p className="text-xs text-[#A3BEA9] mt-4 tracking-wide">
+            <p className="text-[11px] sm:text-xs text-[#A3BEA9] mt-3 sm:mt-4 tracking-wide">
               No credit card required · Cancel anytime
             </p>
           </div>
@@ -523,6 +524,22 @@ export default function HomePage() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* ── Waitlist ─────────────────────────── */}
+      <section id="waitlist" className="py-16 sm:py-24 px-6 sm:px-10 bg-white">
+        <div className="max-w-[640px] mx-auto">
+          <div className="text-center mb-8 sm:mb-10">
+            <p className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[#40916C] mb-3 sm:mb-4">Beta access</p>
+            <h2 className="font-serif text-[clamp(28px,6vw,40px)] font-normal leading-[1.15] text-[#1A2E22] mb-3 sm:mb-4">
+              Join the <em className="italic text-[#2D6A4F]">waitlist.</em>
+            </h2>
+            <p className="text-sm sm:text-base text-[#6B8C74] leading-[1.65] max-w-[480px] mx-auto">
+              We&apos;re onboarding landscape architecture firms in small batches. Drop your firm and we&apos;ll let you know the moment a spot opens.
+            </p>
+          </div>
+          <WaitlistForm />
         </div>
       </section>
 

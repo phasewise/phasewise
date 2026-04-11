@@ -29,10 +29,17 @@ export async function handleAuth(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Redirect unauthenticated users to login (except public pages)
-  const publicPaths = ["/", "/login", "/signup", "/invite"];
-  const isPublicPath = publicPaths.some((p) =>
-    request.nextUrl.pathname === p || request.nextUrl.pathname.startsWith("/invite/")
+  // Public routes: anyone can access these without being logged in.
+  const publicPaths = [
+    "/",
+    "/login",
+    "/signup",
+    "/forgot-password",
+    "/reset-password",
+    "/invite",
+  ];
+  const isPublicPath = publicPaths.some(
+    (p) => request.nextUrl.pathname === p || request.nextUrl.pathname.startsWith("/invite/")
   );
 
   if (!user && !isPublicPath) {
@@ -41,8 +48,14 @@ export async function handleAuth(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Redirect authenticated users away from login/signup
-  if (user && (request.nextUrl.pathname === "/login" || request.nextUrl.pathname === "/signup")) {
+  // Redirect authenticated users away from login/signup, but NOT away from
+  // /reset-password — that page is reached via a recovery link and the user
+  // is technically signed in via the recovery session, so we need to let
+  // them through to actually update their password.
+  if (
+    user &&
+    (request.nextUrl.pathname === "/login" || request.nextUrl.pathname === "/signup")
+  ) {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
     return NextResponse.redirect(url);
