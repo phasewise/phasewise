@@ -207,10 +207,10 @@ export default function HomePage() {
               <span className="w-1.5 h-1.5 rounded-full bg-[#52B788]" />
               Built by a landscape architect
             </div>
-            <h1 className="font-serif text-[clamp(30px,8vw,58px)] font-normal leading-[1.1] text-[#1A2E22] mb-4 sm:mb-6 tracking-[-0.5px]">
+            <h1 className="font-serif text-[clamp(28px,7.5vw,58px)] font-normal leading-[1.1] text-[#1A2E22] mb-4 sm:mb-6 tracking-[-0.5px] [text-wrap:balance]">
               Focus on the <em className="italic text-[#2D6A4F]">design.</em>
-              <br />
-              We&apos;ll handle everything else.
+              <br className="hidden sm:inline" />
+              {" "}We&apos;ll handle everything else.
             </h1>
             <p className="text-[15px] sm:text-lg leading-[1.6] sm:leading-[1.75] text-[#6B8C74] mb-6 sm:mb-10 max-w-[480px]">
               Phasewise is the operating system for landscape architecture firms.
@@ -235,9 +235,9 @@ export default function HomePage() {
             </p>
           </div>
 
-          {/* Hero mockup */}
+          {/* Hero mockup — hidden on mobile (it'd be too cramped to read) */}
           <RevealOnScroll>
-            <div className="bg-[#1A2E22] rounded-[14px] overflow-hidden shadow-[0_32px_80px_rgba(26,46,34,0.25),0_8px_24px_rgba(26,46,34,0.12)] border border-white/[0.06]">
+            <div className="hidden lg:block bg-[#1A2E22] rounded-[14px] overflow-hidden shadow-[0_32px_80px_rgba(26,46,34,0.25),0_8px_24px_rgba(26,46,34,0.12)] border border-white/[0.06]">
               <div className="bg-white/[0.04] border-b border-white/[0.06] py-3 px-4 flex items-center gap-1.5">
                 <div className="w-2.5 h-2.5 rounded-full bg-[#E76F51]" />
                 <div className="w-2.5 h-2.5 rounded-full bg-[#E9C46A]" />

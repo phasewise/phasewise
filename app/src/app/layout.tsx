@@ -26,19 +26,13 @@ export const metadata: Metadata = {
     title: "Phasewise",
     statusBarStyle: "black-translucent",
   },
+  // Note: Most icon registration happens automatically via Next.js's
+  // file-based icon convention (app/icon.tsx, app/icon-192.tsx,
+  // app/icon-512.tsx, app/apple-icon.tsx). The manifest.ts also lists
+  // them so PWA installers (Brave, Chrome on Android) find them. We
+  // only need explicit `apple-touch-icon-precomposed` here as a fallback
+  // for older iOS versions that don't honor the auto-generated link.
   icons: {
-    // Browser tab icon
-    icon: [
-      { url: "/icon.svg", type: "image/svg+xml" },
-    ],
-    // iOS home screen icon — points to the Next.js-generated apple-icon route.
-    // We include explicit sizes so iOS picks the right one and doesn't fall
-    // back to a screenshot of the page. Cache-busted via the Next.js icon
-    // file convention which fingerprints the URL on each deploy.
-    apple: [
-      { url: "/apple-icon", sizes: "180x180", type: "image/png" },
-    ],
-    // Microsoft tile icon (helpful for Windows pinned sites too)
     other: [
       { rel: "apple-touch-icon-precomposed", url: "/apple-icon" },
     ],
@@ -60,7 +54,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${outfit.variable} ${dmSerifDisplay.variable} h-full`}>
-      <body className="min-h-full bg-white font-sans antialiased text-[#1A2E22]">
+      <body className="min-h-full bg-white font-sans antialiased text-[#1A2E22] overflow-x-hidden">
         {children}
       </body>
     </html>
