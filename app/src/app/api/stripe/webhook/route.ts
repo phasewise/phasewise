@@ -70,21 +70,17 @@ export async function POST(request: Request) {
         // Stripe stores "cancel scheduled at end of period" in two related
         // ways depending on how the cancellation was initiated:
         //
-        // 1. API call setting `cancel_at_period_end: true` → that boolean
+        // 1. API call with `cancel_at_period_end: true` → that boolean
         //    flips to true on the subscription.
         // 2. Customer Portal cancel → Stripe sets `cancel_at` to a unix
-        //    timestamp (the period end time). `cancel_at_period_end` may
-        //    or may not flip in this case.
+        //    timestamp (the period end time). The boolean may not flip.
         //
-        // We need to detect a FRESH transition into "canceling" state.
-        // The reliable signal is `previous_attributes` on the event:
-        // if cancel_at was null/undefined before and is non-null now, the
-        // user just cancelled. Same for cancel_at_period_end.
-        //
-        // A "Don't cancel subscription" undo is the inverse — cancel_at
-        // was set, now it's null — and we should NOT send the canceled
-        // email for that.
-
+        // To detect a FRESH cancellation we use `previous_attributes` on
+        // the event: if a cancel field was null/false before this update
+        // and is non-null/true now, the user just clicked Cancel. This
+        // also correctly skips the inverse case ("Don't cancel" undo)
+        // because previous_attributes.cancel_at would be a timestamp
+        // and the new value would be null.
         const subRaw = subscription as unknown as {
           cancel_at_period_end?: boolean;
           cancel_at?: number | null;
@@ -99,61 +95,24 @@ export async function POST(request: Request) {
         };
         const prev = eventWithPrev.data.previous_attributes ?? {};
 
-        // Current state — is this subscription now scheduled to cancel?
         const isCancelingNow =
           subRaw.cancel_at_period_end === true || (subRaw.cancel_at != null && subRaw.cancel_at > 0);
 
-        // Did previous_attributes contain a cancel field that was either
-        // null or false? If so, this update just transitioned INTO the
-        // canceling state. (If previous_attributes is missing the field
-        // entirely, the field didn't change in this event — so it's not
-        // a fresh cancel.)
         const hadCancelAtBefore =
           "cancel_at" in prev && prev.cancel_at != null && prev.cancel_at > 0;
         const hadCancelFlagBefore =
           "cancel_at_period_end" in prev && prev.cancel_at_period_end === true;
         const wasNotCancelingBefore = !hadCancelAtBefore && !hadCancelFlagBefore;
 
-        // Detect transition: previous_attributes touched a cancel field
-        // (so the field changed) AND the previous value was non-canceling
-        // AND the current value IS canceling.
         const cancelFieldChanged =
           "cancel_at" in prev || "cancel_at_period_end" in prev;
         const isFreshCancellation =
           isCancelingNow && cancelFieldChanged && wasNotCancelingBefore;
 
-        const customerId =
-          typeof subscription.customer === "string"
-            ? subscription.customer
-            : subscription.customer.id;
-        const existingOrg = await prisma.organization.findFirst({
-          where: { stripeCustomerId: customerId },
-          select: { cancelAtPeriodEnd: true },
-        });
-
-        console.log("[stripe webhook] customer.subscription.updated", {
-          subscriptionId: subscription.id,
-          customerId,
-          eventId: event.id,
-          orgFound: !!existingOrg,
-          dbCancelAtPeriodEnd: existingOrg?.cancelAtPeriodEnd,
-          rawCancelAtPeriodEnd: subRaw.cancel_at_period_end,
-          rawCancelAt: subRaw.cancel_at,
-          isCancelingNow,
-          hadCancelAtBefore,
-          hadCancelFlagBefore,
-          wasNotCancelingBefore,
-          cancelFieldChanged,
-          isFreshCancellation,
-          previousAttributes: prev,
-        });
-
         await syncSubscriptionToOrg(subscription);
 
         if (isFreshCancellation) {
-          console.log("[stripe webhook] sending canceled email");
-          const result = await sendCanceledEmail(subscription);
-          console.log("[stripe webhook] sendCanceledEmail returned", result);
+          await sendCanceledEmail(subscription);
         }
         break;
       }
@@ -360,20 +319,9 @@ async function sendTrialStartedEmail(subscription: Stripe.Subscription) {
 
 async function sendCanceledEmail(subscription: Stripe.Subscription) {
   const ctx = await getOwnerForSubscription(subscription);
-  if (!ctx) {
-    console.warn("[stripe webhook] sendCanceledEmail: no owner found for subscription", subscription.id);
-    return { success: false, reason: "no owner" };
-  }
+  if (!ctx) return;
 
-  console.log("[stripe webhook] sendCanceledEmail attempting send", {
-    to: ctx.owner.email,
-    templateId: LOOPS_TEMPLATES.SUBSCRIPTION_CANCELED,
-    templateIdSet: !!LOOPS_TEMPLATES.SUBSCRIPTION_CANCELED,
-    firstName: ctx.firstName,
-    firmName: ctx.org.name,
-  });
-
-  const result = await sendTransactional({
+  await sendTransactional({
     email: ctx.owner.email,
     transactionalId: LOOPS_TEMPLATES.SUBSCRIPTION_CANCELED,
     dataVariables: {
@@ -381,9 +329,6 @@ async function sendCanceledEmail(subscription: Stripe.Subscription) {
       firmName: ctx.org.name,
     },
   });
-
-  console.log("[stripe webhook] sendCanceledEmail result", result);
-  return result;
 }
 
 async function sendPaymentFailedEmail(subscription: Stripe.Subscription) {
