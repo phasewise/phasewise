@@ -329,9 +329,13 @@ Most meaningful first. Strikethrough = done.
 11. ~~End-to-end test: checkout → trial active → trial started email~~ ✅ 2026-04-10
 12. ~~End-to-end test: Customer Portal opens, cancellation flow~~ ✅ 2026-04-10
 13. ~~End-to-end test: cancellation → "Sorry to see you go" email~~ ✅ 2026-04-11 (commit `979c65c`)
-14. **Waitlist + contact capture on landing page** ⏳ NEXT — Loops contacts API (one form, no auth required)
-15. **Replace `/brand` v1 assets with v2 versions** — single source of truth
-16. **Project editing** — currently only create + view
+14. ~~Waitlist + contact capture on landing page~~ ✅ 2026-04-11 (commit `e96dc00`)
+15. ~~Forgot password flow (Supabase resetPasswordForEmail + reset page)~~ ✅ 2026-04-11
+16. ~~User identity widget (name + email + logout) in authenticated sidebar~~ ✅ 2026-04-11
+17. ~~Mobile landing page clipping (round 2 fix)~~ ✅ 2026-04-11
+18. ~~PWA icon improvements (icons metadata + redesigned apple-icon)~~ ✅ 2026-04-11
+19. **Replace `/brand` v1 assets with v2 versions** — single source of truth
+20. **Project editing** — currently only create + view
 17. **Profitability reporting dashboard** — the core value prop demands a real report
 18. **Client management module** — contacts, communications, automations
 19. **Onboarding flow** — first-run experience after signup
@@ -343,11 +347,23 @@ Most meaningful first. Strikethrough = done.
 25. **Google Workspace setup** — kevin@phasewise.io for business email
 26. **USPTO trademark filing** — protect the name
 
-## Where We Left Off (2026-04-11)
+## Where We Left Off (2026-04-11 — second pass)
 
-**Status: Stripe + Loops integration is FULLY VERIFIED end-to-end.** All 4 transactional emails working in production with Stripe test cards. The cancellation bug from yesterday is fixed. Ready to move on to the next feature.
+**Status: Big batch of user-facing improvements deployed.** Stripe + Loops fully verified, plus 5 new user-facing features added today.
 
-**Latest commit:** `cb8c56c` "Remove diagnostic logging from Stripe webhook handler"
+**Latest commit:** `e96dc00` "Add waitlist + forgot password + user identity widget; fix mobile + PWA icon"
+
+### What's new today (2026-04-11)
+
+1. **Waitlist form** on landing page (`/api/waitlist` → Loops `upsertContact`)
+2. **Forgot password** flow: `/forgot-password` → email link → `/reset-password`
+3. **User identity widget** in app sidebar (avatar, name, email, org, logout button)
+4. **Mobile clipping fix (round 2)**: nav 64→56px, hero pt-24→pt-[80px], H1 clamp tightened
+5. **PWA icon improvements**: explicit `metadata.icons` config + redesigned apple-icon (centered) + black-translucent status bar
+
+**Note on iOS PWA icon caching:** Even after the deploy, iOS will keep showing the old/missing icon for any home screen shortcut that already exists. To see the new icon: long-press the home screen icon → Remove → then re-add via Safari → Share → Add to Home Screen.
+
+### Earlier today (2026-04-11 — first pass)
 
 ### What got fixed today
 
@@ -389,7 +405,7 @@ Most meaningful first. Strikethrough = done.
 
 ### Next session priority
 
-**#14 from build order: Add waitlist/contact capture to landing page.** Use the Loops contacts API (`upsertContact` already exists in `lib/loops.ts`). One form, no auth required. Should be a quick build now that Loops is fully wired up.
+**#19 from build order: Replace `/brand` v1 assets with v2 versions.** Or jump straight to **#20 (Project editing)** if you want a substantive feature. The waitlist, forgot password, identity widget, mobile and PWA fixes are all done.
 
 ## TODO (Operational, non-code)
 
