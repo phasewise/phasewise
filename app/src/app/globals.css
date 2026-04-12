@@ -152,6 +152,15 @@
   }
 }
 
+/* Phasewise mobile sidebar slide-in */
+@keyframes pw-slide-in {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+.pw-slide-in {
+  animation: pw-slide-in 0.2s ease-out;
+}
+
 /* Phasewise scroll reveal animation */
 .pw-reveal {
   opacity: 0;
