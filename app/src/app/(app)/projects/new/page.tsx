@@ -226,17 +226,20 @@ export default function NewProjectPage() {
                       />
                       {phase.label}
                     </label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={phase.budgetedFee}
-                      onChange={(event) =>
-                        updatePhase(index, { budgetedFee: event.target.value })
-                      }
-                      placeholder="Budgeted fee"
-                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-emerald-500"
-                    />
+                    <div className="relative w-full">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={phase.budgetedFee}
+                        onChange={(event) =>
+                          updatePhase(index, { budgetedFee: event.target.value })
+                        }
+                        placeholder="Budgeted fee"
+                        className="w-full rounded-2xl border border-slate-200 bg-white pl-8 pr-4 py-3 text-sm text-slate-900 outline-none focus:border-emerald-500"
+                      />
+                    </div>
                     <input
                       type="number"
                       min="0"
