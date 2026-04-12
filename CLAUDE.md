@@ -334,18 +334,68 @@ Most meaningful first. Strikethrough = done.
 16. ~~User identity widget (name + email + logout) in authenticated sidebar~~ ✅ 2026-04-11
 17. ~~Mobile landing page clipping (round 2 fix)~~ ✅ 2026-04-11
 18. ~~PWA icon improvements (icons metadata + redesigned apple-icon)~~ ✅ 2026-04-11
-19. **Replace `/brand` v1 assets with v2 versions** — single source of truth
-20. **Project editing** — currently only create + view
-17. **Profitability reporting dashboard** — the core value prop demands a real report
-18. **Client management module** — contacts, communications, automations
-19. **Onboarding flow** — first-run experience after signup
-20. **Empty states + loading states** — production polish
-21. **Privacy Policy + Terms** — legal pages before launch
-22. **Stripe Tax: revisit before going live** — currently a placeholder CA registration; SaaS in CA is 0% but other states may need real registration. Consider Anrok or TaxJar at $50K+ revenue.
-23. **Switch Stripe to live mode** — env var swap only
-24. **Social media automation (n8n)** — scheduled posts to LinkedIn/X/Instagram
-25. **Google Workspace setup** — kevin@phasewise.io for business email
-26. **USPTO trademark filing** — protect the name
+19. ~~PWA icons (round 2 — real PNG routes for Brave/Chrome)~~ ✅ 2026-04-11
+20. ~~Mobile horizontal overflow fix (body overflow-x-hidden, mockup hidden, H1 text-wrap)~~ ✅ 2026-04-11
+
+### Active Build Queue (re-prioritized 2026-04-12)
+
+**Tier 1 — Mobile usability + Core features (highest impact)**
+
+21. **Collapsible mobile sidebar** — hamburger menu that slides in/out. Without this, the app is barely usable on phones. Every other mobile improvement depends on this.
+22. **Staff management + billing rates** — Add/manage staff with salary, billing rate, and role. Industry-standard defaults pre-populated (see Billing Rates section below). Privacy: staff cannot see each other's salary/billing info, only OWNER/ADMIN can view/edit rates. This is core to the profitability tracking value prop.
+23. **Auto-estimate billing from staff assignments** — When staff are assigned to a phase, auto-populate budgetedFee based on staff count × billing rate × budgetedHours. Owner can override. System tracks estimate vs actual automatically.
+24. **Auto-numbering projects** — System generates sequential project numbers (e.g., PW-001, PW-002...) when creating a new project. User can accept the auto-number or enter their own custom number.
+
+**Tier 2 — Feature completeness**
+
+25. **Project editing** — currently only create + view
+26. **Profitability reporting dashboard** — the core value prop demands a real report
+27. **Client management module** — contacts, communications, automations
+28. **Onboarding flow** — first-run experience after signup
+
+**Tier 3 — Polish + Operations**
+
+29. **Empty states + loading states** — production polish
+30. **Privacy Policy + Terms** — legal pages before launch
+31. **Replace `/brand` v1 assets with v2 versions** — single source of truth
+32. **Fix: PWA icon still wrong on Brave Android** — may need to serve static PNGs from `/public` instead of dynamic ImageResponse routes; Brave may not follow the `icon.tsx` convention
+33. **Stripe Tax: revisit before going live** — placeholder CA registration only
+34. **Switch Stripe to live mode** — env var swap only
+35. **Social media automation (n8n)** — scheduled posts to LinkedIn/X/Instagram
+36. **Google Workspace setup** — kevin@phasewise.io for business email
+37. **USPTO trademark filing** — protect the name
+
+## Billing Rates — Industry Reference Data
+
+Standard billing rates for landscape architecture firms. Pre-populated as defaults in the staff management module. Owner can modify per-staff.
+
+**Net multiplier:** 2.5x–3.5x base hourly salary (industry standard). The "Rule of Thirds" splits the billing rate into: 1/3 raw salary, 1/3 overhead (office, insurance, benefits ~20-25% on top of base), 1/3 profit & revenue.
+
+| Staff Level | Default Annual Salary | Approx Hourly Pay | Default Billing Rate |
+|-------------|----------------------|-------------------|---------------------|
+| Principal / Owner | $120,000 | $58 | $200 |
+| Senior Associate / PM | $100,000 | $48 | $175 |
+| Landscape Architect | $85,000 | $41 | $150 |
+| Designer (2-4 yrs) | $67,000 | $32 | $115 |
+| Entry Level / Junior | $57,000 | $27 | $90 |
+
+**Key factors:**
+- Utilization target: 85-95% for production staff
+- Location adjustments: +30-50% in SF/NY/LA markets
+- Freelancers: typically $40-75/hour (lower multiplier, lower overhead)
+
+**Privacy model:**
+- OWNER and ADMIN can view/edit all staff salary + billing rates
+- SUPERVISOR and PM can see billing rates only (not salary)
+- STAFF can see only their own rate (not others')
+- No salary information is ever exposed in client-facing features (reports, invoices, etc.)
+
+**Auto-estimation logic:**
+When staff are assigned to a phase:
+1. `estimatedFee = sum(assignedStaff[i].billingRate × phase.budgetedHours / numberOfAssignedStaff)`
+2. If hours are specified per-staff: `estimatedFee = sum(staff[i].billingRate × staff[i].assignedHours)`
+3. Owner can override the auto-calculated estimate with a manual value
+4. System always shows both "estimated" and "budgeted" so the owner can compare
 
 ## Where We Left Off (2026-04-11 — second pass)
 
