@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, FolderPlus } from "lucide-react";
+import { ArrowLeft, FolderPlus, RefreshCw } from "lucide-react";
 import { PHASE_LABELS, PHASE_ORDER } from "@/lib/constants";
 
 const defaultPhases = PHASE_ORDER.map((phase, index) => ({
@@ -21,6 +21,23 @@ export default function NewProjectPage() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [projectNumber, setProjectNumber] = useState("");
+  const [autoNumber, setAutoNumber] = useState("");
+  const [isCustomNumber, setIsCustomNumber] = useState(false);
+
+  // Fetch the next sequential project number on page load
+  useEffect(() => {
+    fetch("/api/projects/next-number")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.nextNumber) {
+          setAutoNumber(data.nextNumber);
+          setProjectNumber(data.nextNumber);
+        }
+      })
+      .catch(() => {
+        // Silently fail — user can still enter their own number
+      });
+  }, []);
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -101,11 +118,33 @@ export default function NewProjectPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label className="text-sm font-medium text-slate-700">Project number</label>
-                  <input
-                    value={projectNumber}
-                    onChange={(event) => setProjectNumber(event.target.value)}
-                    className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none focus:border-emerald-500"
-                  />
+                  <div className="relative mt-2">
+                    <input
+                      value={projectNumber}
+                      onChange={(event) => {
+                        setProjectNumber(event.target.value);
+                        setIsCustomNumber(event.target.value !== autoNumber);
+                      }}
+                      placeholder={autoNumber || "PW-001"}
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none focus:border-emerald-500 pr-10"
+                    />
+                    {isCustomNumber && autoNumber && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setProjectNumber(autoNumber);
+                          setIsCustomNumber(false);
+                        }}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-emerald-600 transition-colors"
+                        title="Reset to auto-generated number"
+                      >
+                        <RefreshCw className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                  {!isCustomNumber && autoNumber && (
+                    <p className="mt-1 text-xs text-slate-400">Auto-generated. Edit to use your own.</p>
+                  )}
                 </div>
                 <div>
                   <label className="text-sm font-medium text-slate-700">Status</label>
