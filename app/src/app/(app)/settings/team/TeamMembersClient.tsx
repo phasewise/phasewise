@@ -1,0 +1,268 @@
+"use client";
+
+import { useState } from "react";
+import { Plus, UserMinus, UserPlus } from "lucide-react";
+
+type TeamUser = {
+  id: string;
+  fullName: string;
+  email: string;
+  role: string;
+  isActive?: boolean;
+};
+
+type Props = {
+  users: TeamUser[];
+  canManage: boolean;
+};
+
+const ROLES = [
+  { value: "ADMIN", label: "Admin" },
+  { value: "SUPERVISOR", label: "Supervisor" },
+  { value: "PM", label: "Project Manager" },
+  { value: "STAFF", label: "Staff" },
+];
+
+export default function TeamMembersClient({ users: initialUsers, canManage }: Props) {
+  const [users, setUsers] = useState(initialUsers);
+  const [showForm, setShowForm] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newEmail, setNewEmail] = useState("");
+  const [newRole, setNewRole] = useState("STAFF");
+  const [saving, setSaving] = useState(false);
+  const [actionId, setActionId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function addMember(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setSaving(true);
+
+    const res = await fetch("/api/team/members", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fullName: newName, email: newEmail, role: newRole }),
+    });
+
+    const data = await res.json();
+    setSaving(false);
+
+    if (!res.ok) {
+      setError(data.error || "Failed to add team member.");
+      return;
+    }
+
+    setUsers((prev) => [
+      ...prev,
+      {
+        id: data.user.id,
+        fullName: data.user.fullName,
+        email: data.user.email,
+        role: data.user.role,
+        isActive: true,
+      },
+    ]);
+    setNewName("");
+    setNewEmail("");
+    setNewRole("STAFF");
+    setShowForm(false);
+  }
+
+  async function toggleActive(userId: string, currentlyActive: boolean) {
+    setError(null);
+    setActionId(userId);
+
+    const res = await fetch("/api/team/members", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId, isActive: !currentlyActive }),
+    });
+
+    const data = await res.json();
+    setActionId(null);
+
+    if (!res.ok) {
+      setError(data.error || "Failed to update.");
+      return;
+    }
+
+    setUsers((prev) =>
+      prev.map((u) => (u.id === userId ? { ...u, isActive: !currentlyActive } : u))
+    );
+  }
+
+  if (!canManage) return null;
+
+  const activeUsers = users.filter((u) => u.isActive !== false);
+  const inactiveUsers = users.filter((u) => u.isActive === false);
+
+  return (
+    <div className="mb-10">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h2 className="text-lg font-semibold text-[#1A2E22]">Team Members</h2>
+          <p className="text-sm text-[#6B8C74]">{activeUsers.length} active member{activeUsers.length !== 1 ? "s" : ""}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowForm(!showForm)}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-[#2D6A4F] text-white hover:bg-[#40916C] transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          Add member
+        </button>
+      </div>
+
+      {error && (
+        <div className="mb-4 bg-rose-50 border border-rose-200 rounded-xl p-3 text-sm text-rose-700">
+          {error}
+        </div>
+      )}
+
+      {/* Add member form */}
+      {showForm && (
+        <form
+          onSubmit={addMember}
+          className="mb-6 bg-[#F0FAF4] border border-[#52B788]/30 rounded-2xl p-6"
+        >
+          <div className="flex items-center gap-2 mb-4 text-[#2D6A4F]">
+            <UserPlus className="w-5 h-5" />
+            <h3 className="text-sm font-semibold">Add a new team member</h3>
+          </div>
+          <div className="grid sm:grid-cols-3 gap-4 mb-4">
+            <div>
+              <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Full name</label>
+              <input
+                type="text"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                required
+                className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-[#1A2E22] text-sm focus:outline-none focus:border-[#52B788] transition-colors"
+                placeholder="Jordan Reyes"
+              />
+            </div>
+            <div>
+              <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Email</label>
+              <input
+                type="email"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                required
+                className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-[#1A2E22] text-sm focus:outline-none focus:border-[#52B788] transition-colors"
+                placeholder="jordan@firm.com"
+              />
+            </div>
+            <div>
+              <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Role</label>
+              <select
+                value={newRole}
+                onChange={(e) => setNewRole(e.target.value)}
+                className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-[#1A2E22] text-sm focus:outline-none focus:border-[#52B788] transition-colors"
+              >
+                {ROLES.map((r) => (
+                  <option key={r.value} value={r.value}>
+                    {r.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <button
+              type="submit"
+              disabled={saving}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-[#2D6A4F] text-white hover:bg-[#40916C] transition-colors disabled:opacity-50"
+            >
+              {saving ? "Adding..." : "Add to team"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowForm(false)}
+              className="px-4 py-2 rounded-lg text-sm text-[#6B8C74] hover:text-[#1A2E22] transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+          <p className="mt-3 text-xs text-[#A3BEA9]">
+            The team member&apos;s billing rate and salary will be auto-populated based on their role. You can edit them in the Billing Rates section below.
+          </p>
+        </form>
+      )}
+
+      {/* Active members list */}
+      <div className="rounded-2xl border border-[#E2EBE4] bg-white overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-left text-sm">
+            <thead className="border-b border-[#E2EBE4] bg-[#F7F9F7] text-[#6B8C74]">
+              <tr>
+                <th className="px-4 sm:px-6 py-3 font-medium">Name</th>
+                <th className="px-4 sm:px-6 py-3 font-medium">Email</th>
+                <th className="px-4 sm:px-6 py-3 font-medium">Role</th>
+                <th className="px-4 sm:px-6 py-3 font-medium w-24"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {activeUsers.map((user) => (
+                <tr key={user.id} className="border-b border-[#E8EDE9] last:border-0">
+                  <td className="px-4 sm:px-6 py-4 font-medium text-[#1A2E22]">{user.fullName}</td>
+                  <td className="px-4 sm:px-6 py-4 text-[#6B8C74]">{user.email}</td>
+                  <td className="px-4 sm:px-6 py-4">
+                    <span className="text-xs font-medium px-2 py-1 rounded-full bg-[#F0FAF4] text-[#2D6A4F]">
+                      {user.role}
+                    </span>
+                  </td>
+                  <td className="px-4 sm:px-6 py-4">
+                    {user.role !== "OWNER" && (
+                      <button
+                        type="button"
+                        onClick={() => toggleActive(user.id, true)}
+                        disabled={actionId === user.id}
+                        className="inline-flex items-center gap-1 text-xs text-rose-500 hover:text-rose-700 transition-colors disabled:opacity-50"
+                        title="Deactivate team member"
+                      >
+                        <UserMinus className="w-3.5 h-3.5" />
+                        Deactivate
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Inactive members */}
+      {inactiveUsers.length > 0 && (
+        <div className="mt-6">
+          <h3 className="text-sm font-medium text-[#A3BEA9] mb-3">Deactivated ({inactiveUsers.length})</h3>
+          <div className="rounded-2xl border border-[#E8EDE9] bg-[#F7F9F7] overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-left text-sm">
+                <tbody>
+                  {inactiveUsers.map((user) => (
+                    <tr key={user.id} className="border-b border-[#E8EDE9] last:border-0">
+                      <td className="px-4 sm:px-6 py-3 text-[#A3BEA9]">{user.fullName}</td>
+                      <td className="px-4 sm:px-6 py-3 text-[#A3BEA9]">{user.email}</td>
+                      <td className="px-4 sm:px-6 py-3">
+                        <button
+                          type="button"
+                          onClick={() => toggleActive(user.id, false)}
+                          disabled={actionId === user.id}
+                          className="inline-flex items-center gap-1 text-xs text-[#2D6A4F] hover:text-[#40916C] transition-colors disabled:opacity-50"
+                        >
+                          <UserPlus className="w-3.5 h-3.5" />
+                          Reactivate
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

@@ -1,5 +1,6 @@
 import { getCurrentUser } from "@/lib/supabase/auth";
 import { prisma } from "@/lib/prisma";
+import TeamMembersClient from "./TeamMembersClient";
 import TeamRoleClient from "./TeamRoleClient";
 import TeamBillingClient from "./TeamBillingClient";
 
@@ -28,12 +29,13 @@ export default async function TeamSettingsPage() {
   // Query all users with billing info appropriate to the current user's access level
   const users = await prisma.user.findMany({
     where: { organizationId: currentUser.organizationId },
-    orderBy: { fullName: "asc" },
+    orderBy: [{ isActive: "desc" }, { fullName: "asc" }],
     select: {
       id: true,
       fullName: true,
       email: true,
       role: true,
+      isActive: true,
       billingRate: canSeeBillingRate,
       salary: canManageBilling, // Only OWNER/ADMIN see salary
       costRate: canManageBilling,
@@ -46,6 +48,7 @@ export default async function TeamSettingsPage() {
     fullName: u.fullName,
     email: u.email,
     role: u.role,
+    isActive: u.isActive,
     billingRate: canSeeBillingRate && "billingRate" in u ? Number(u.billingRate ?? 0) : null,
     salary: canManageBilling && "salary" in u ? Number(u.salary ?? 0) : null,
     costRate: canManageBilling && "costRate" in u ? Number(u.costRate ?? 0) : null,
@@ -59,6 +62,9 @@ export default async function TeamSettingsPage() {
           Manage staff roles{canManageBilling ? ", billing rates, and salary information" : " and team assignments"}.
         </p>
       </div>
+
+      {/* Team members: add, view, deactivate */}
+      <TeamMembersClient users={usersForClient} canManage={canManageBilling} />
 
       {/* Role management */}
       <div className="mb-10">
