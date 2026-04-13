@@ -16,7 +16,16 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
   const project = await prisma.project.findUnique({
     where: { id },
     include: {
-      phases: { orderBy: { sortOrder: "asc" } },
+      phases: {
+        orderBy: { sortOrder: "asc" },
+        include: {
+          workPlan: {
+            include: {
+              user: { select: { id: true, fullName: true, billingRate: true } },
+            },
+          },
+        },
+      },
     },
   });
 
@@ -125,22 +134,75 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
             </div>
           </div>
 
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-slate-900 mb-4">Project phases</h2>
+          <div className="rounded-3xl border border-[#E2EBE4] bg-white p-6 shadow-sm">
+            <h2 className="text-lg font-semibold text-[#1A2E22] mb-4">Project Phases & Work Plan</h2>
             <div className="space-y-4">
-              {project.phases.map((phase) => (
-                <div key={phase.id} className="rounded-3xl border border-slate-100 bg-slate-50 p-4">
-                  <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div>
-                      <h3 className="text-sm font-semibold text-slate-900">{PHASE_LABELS[phase.phaseType]}</h3>
-                      <p className="text-xs uppercase tracking-[0.24em] text-slate-500 mt-1">{phase.status.replace("_", " ")}</p>
+              {project.phases.map((phase) => {
+                const phaseHours = Number(phase.budgetedHours ?? 0);
+                const phaseFee = Number(phase.budgetedFee ?? 0);
+                const workPlanEntries = phase.workPlan ?? [];
+                const workPlanCost = workPlanEntries.reduce(
+                  (sum: number, wp: { plannedHours: unknown; user: { billingRate: unknown } }) =>
+                    sum + Number(wp.plannedHours) * Number(wp.user.billingRate ?? 0),
+                  0
+                );
+                const workPlanHours = workPlanEntries.reduce(
+                  (sum: number, wp: { plannedHours: unknown }) => sum + Number(wp.plannedHours),
+                  0
+                );
+
+                return (
+                  <div key={phase.id} className="rounded-2xl border border-[#E8EDE9] bg-[#F7F9F7] p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-4 mb-3">
+                      <div>
+                        <h3 className="text-sm font-semibold text-[#1A2E22]">{PHASE_LABELS[phase.phaseType]}</h3>
+                        <p className="text-xs uppercase tracking-[0.24em] text-[#6B8C74] mt-1">{phase.status.replace("_", " ")}</p>
+                      </div>
+                      <div className="text-right text-sm">
+                        <div className="text-[#1A2E22] font-medium">{phaseHours.toFixed(1)}h · ${phaseFee.toLocaleString()}</div>
+                        {workPlanCost > 0 && phaseFee > 0 && (
+                          <div className={`text-xs mt-0.5 ${workPlanCost > phaseFee ? "text-rose-500" : "text-[#2D6A4F]"}`}>
+                            Work plan: ${workPlanCost.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                            {workPlanCost > phaseFee ? " (over budget)" : ""}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <div className="text-sm text-slate-600">
-                      {Number(phase.budgetedHours ?? 0).toFixed(1)}h · ${Number(phase.budgetedFee ?? 0).toLocaleString()}
-                    </div>
+
+                    {/* Work Plan — assigned staff for this phase */}
+                    {workPlanEntries.length > 0 ? (
+                      <div className="border-t border-[#E2EBE4] pt-3 mt-2">
+                        <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6B8C74] mb-2">
+                          Work Plan
+                        </div>
+                        <div className="space-y-1.5">
+                          {workPlanEntries.map((wp: { user: { id: string; fullName: string; billingRate: unknown }; plannedHours: unknown }) => {
+                            const hrs = Number(wp.plannedHours);
+                            const rate = Number(wp.user.billingRate ?? 0);
+                            const cost = hrs * rate;
+                            return (
+                              <div key={wp.user.id} className="flex items-center justify-between text-xs">
+                                <span className="text-[#3D5C48]">{wp.user.fullName}</span>
+                                <span className="text-[#6B8C74]">
+                                  {hrs.toFixed(1)}h × ${rate.toFixed(0)}/hr = <span className="font-medium text-[#1A2E22]">${cost.toLocaleString()}</span>
+                                </span>
+                              </div>
+                            );
+                          })}
+                          <div className="flex items-center justify-between text-xs font-semibold pt-1 border-t border-[#E8EDE9]">
+                            <span className="text-[#3D5C48]">Total</span>
+                            <span className="text-[#1A2E22]">{workPlanHours.toFixed(1)}h · ${workPlanCost.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="border-t border-[#E2EBE4] pt-3 mt-2">
+                        <p className="text-[10px] text-[#A3BEA9] italic">No work plan assigned. Edit the project to add staff to this phase.</p>
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 

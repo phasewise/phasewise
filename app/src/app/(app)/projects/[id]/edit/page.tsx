@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
 import { ArrowLeft, Plus, Save, Trash2 } from "lucide-react";
 import { PHASE_LABELS, PHASE_ORDER } from "@/lib/constants";
+import WorkPlanEditor from "./WorkPlanEditor";
 
 type PhaseRow = {
   id?: string; // undefined = new phase
@@ -38,7 +39,18 @@ export default function EditProjectPage() {
   // Phase fields
   const [phases, setPhases] = useState<PhaseRow[]>([]);
 
+  // Team members for work plan
+  const [teamMembers, setTeamMembers] = useState<Array<{ id: string; fullName: string; billingRate: number }>>([]);
+
   useEffect(() => {
+    // Fetch team members for the work plan editor
+    fetch("/api/team/members/list")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.members) setTeamMembers(data.members);
+      })
+      .catch(() => {});
+
     fetch(`/api/projects/${projectId}`)
       .then((res) => {
         if (!res.ok) throw new Error("Failed to load project");
@@ -356,6 +368,22 @@ export default function EditProjectPage() {
             )}
           </div>
         </div>
+
+        {/* Work Plan */}
+        {phases.length > 0 && phases.some((p) => p.id) && teamMembers.length > 0 && (
+          <WorkPlanEditor
+            projectId={projectId}
+            phases={phases
+              .filter((p) => p.id)
+              .map((p) => ({
+                id: p.id!,
+                phaseName: PHASE_LABELS[p.phaseType] ?? p.phaseType,
+                budgetedHours: Number(p.budgetedHours) || 0,
+                budgetedFee: Number(p.budgetedFee) || 0,
+              }))}
+            teamMembers={teamMembers}
+          />
+        )}
 
         {error && <p className="text-sm text-[#B04030]">{error}</p>}
 

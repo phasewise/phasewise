@@ -79,6 +79,7 @@ model User {
   timesheets   WeeklyTimesheet[]
   assignments ProjectAssignment[]
   assignedTasks ProjectTask[]
+  phaseStaffPlans PhaseStaffPlan[]
 
   @@map("users")
 }
@@ -193,10 +194,29 @@ model ProjectPhase {
   sortOrder     Int       @map("sort_order")
   createdAt     DateTime  @default(now()) @map("created_at")
 
-  project     Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  timeEntries TimeEntry[]
+  project       Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  timeEntries   TimeEntry[]
+  workPlan      PhaseStaffPlan[]
 
   @@map("project_phases")
+}
+
+// ── Phase Staff Plan (Work Plan) ─────────────────────────────────────
+// Links staff to specific phases with planned hours. This is the "Work Plan"
+// — the owner's plan for who works on each phase and for how many hours.
+
+model PhaseStaffPlan {
+  id            String   @id @default(uuid()) @db.Uuid
+  phaseId       String   @map("phase_id") @db.Uuid
+  userId        String   @map("user_id") @db.Uuid
+  plannedHours  Decimal  @map("planned_hours") @db.Decimal(8, 2)
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  phase ProjectPhase @relation(fields: [phaseId], references: [id], onDelete: Cascade)
+  user  User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([phaseId, userId])
+  @@map("phase_staff_plans")
 }
 
 enum PhaseType {
