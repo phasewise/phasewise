@@ -11,9 +11,10 @@ function getCurrentPhase(phases: Array<{ phaseType: string; status: string }>) {
 }
 
 function getBurnColor(pct: number) {
-  if (pct >= 95) return "bg-red-500";
-  if (pct >= 80) return "bg-yellow-500";
-  return "bg-emerald-500";
+  if (pct >= 100) return "bg-rose-500";
+  if (pct >= 90) return "bg-rose-400";
+  if (pct >= 75) return "bg-amber-400";
+  return "bg-[#52B788]";
 }
 
 function getBurnBadge(pct: number) {
@@ -88,70 +89,56 @@ export default async function DashboardPage() {
       : 0;
 
   return (
-    <div className="p-8">
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between mb-8">
+    <div className="p-6 sm:p-8 max-w-7xl">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Dashboard</h1>
-          <p className="text-sm text-slate-500 mt-1">Your firm at a glance</p>
+          <h1 className="font-serif text-3xl text-[#1A2E22]">Dashboard</h1>
+          <p className="text-sm text-[#6B8C74] mt-1">Your firm at a glance</p>
         </div>
         <Link
           href="/projects/new"
-          className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-500"
+          className="inline-flex items-center gap-2 rounded-lg bg-[#2D6A4F] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#40916C] transition-colors"
         >
           <FolderKanban className="h-4 w-4" />
           New Project
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-4 mb-8">
-        {[
-          {
-            label: "Active Projects",
-            value: activeProjects.length,
-            color: "text-sky-600 bg-sky-50",
-          },
-          {
-            label: "At Risk",
-            value: atRiskProjects.length,
-            color: "text-rose-600 bg-rose-50",
-          },
-          {
-            label: "Total Fee",
-            value: `$${(totalFee / 1000).toFixed(0)}K`,
-            color: "text-emerald-600 bg-emerald-50",
-          },
-          {
-            label: "Avg Burn Rate",
-            value: `${avgBurn.toFixed(0)}%`,
-            color: "text-violet-600 bg-violet-50",
-          },
-        ].map((stat) => (
-          <div
-            key={stat.label}
-            className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"
-          >
-            <div className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 mb-3">
-              {stat.label}
-            </div>
-            <div className={`text-3xl font-semibold ${stat.color}`}>{stat.value}</div>
+      <div className="grid grid-cols-2 gap-4 xl:grid-cols-4 mb-8">
+        <div className="rounded-2xl border border-[#E2EBE4] bg-white p-5 shadow-sm">
+          <div className="text-xs font-semibold uppercase tracking-[0.24em] text-[#6B8C74] mb-2">Active Projects</div>
+          <div className="text-3xl font-semibold text-[#2D6A4F]">{activeProjects.length}</div>
+        </div>
+        <div className="rounded-2xl border border-[#E2EBE4] bg-white p-5 shadow-sm">
+          <div className="text-xs font-semibold uppercase tracking-[0.24em] text-[#6B8C74] mb-2">At Risk</div>
+          <div className="text-3xl font-semibold text-rose-600">{atRiskProjects.length}</div>
+        </div>
+        <div className="rounded-2xl border border-[#E2EBE4] bg-white p-5 shadow-sm">
+          <div className="text-xs font-semibold uppercase tracking-[0.24em] text-[#6B8C74] mb-2">Total Fee</div>
+          <div className="text-3xl font-semibold text-[#1A2E22]">${(totalFee / 1000).toFixed(0)}K</div>
+        </div>
+        <div className="rounded-2xl border border-[#E2EBE4] bg-white p-5 shadow-sm">
+          <div className="text-xs font-semibold uppercase tracking-[0.24em] text-[#6B8C74] mb-2">Avg Burn Rate</div>
+          <div className={`text-3xl font-semibold ${avgBurn >= 90 ? "text-rose-600" : avgBurn >= 75 ? "text-amber-600" : "text-[#2D6A4F]"}`}>
+            {avgBurn.toFixed(0)}%
           </div>
-        ))}
+        </div>
       </div>
 
-      <div className="rounded-3xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5">
+      <div className="rounded-2xl border border-[#E2EBE4] bg-white shadow-sm overflow-hidden">
+        <div className="flex items-center justify-between border-b border-[#E2EBE4] px-6 py-5">
           <div>
-            <h2 className="text-base font-semibold text-slate-900">Projects</h2>
-            <p className="text-sm text-slate-500">All active work for your organization.</p>
+            <h2 className="text-base font-semibold text-[#1A2E22]">Projects</h2>
+            <p className="text-sm text-[#6B8C74]">All active work for your organization.</p>
           </div>
-          <Link href="/projects" className="text-sm font-semibold text-emerald-600 hover:text-emerald-700 inline-flex items-center gap-1">
+          <Link href="/projects" className="text-sm font-semibold text-[#2D6A4F] hover:text-[#40916C] inline-flex items-center gap-1">
             View all <ArrowUpRight className="h-4 w-4" />
           </Link>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="min-w-full text-left text-sm text-slate-700">
-            <thead className="border-b border-slate-200 bg-slate-50 text-slate-500">
+          <table className="min-w-full text-left text-sm text-[#3D5C48]">
+            <thead className="border-b border-[#E2EBE4] bg-[#F7F9F7] text-[#6B8C74]">
               <tr>
                 <th className="px-6 py-4 font-medium">Project</th>
                 <th className="px-6 py-4 font-medium">Client</th>
@@ -176,16 +163,16 @@ export default async function DashboardPage() {
                 const burnPercent = budgetedHours > 0 ? (hoursUsed / budgetedHours) * 100 : 0;
 
                 return (
-                  <tr key={project.id} className="border-b border-slate-100 hover:bg-slate-50/80 transition-colors">
+                  <tr key={project.id} className="border-b border-[#E8EDE9] last:border-0 hover:bg-[#F7F9F7]/50 transition-colors">
                     <td className="px-6 py-4">
-                      <Link href={`/projects/${project.id}`} className="font-semibold text-slate-900 hover:text-emerald-600">
+                      <Link href={`/projects/${project.id}`} className="font-semibold text-[#1A2E22] hover:text-[#2D6A4F]">
                         {project.name}
                       </Link>
-                      <div className="text-xs text-slate-500 mt-1">{project.projectNumber || "—"}</div>
+                      <div className="text-xs text-[#A3BEA9] mt-1">{project.projectNumber || "—"}</div>
                     </td>
-                    <td className="px-6 py-4 text-slate-600">{project.clientName || "—"}</td>
-                    <td className="px-6 py-4 text-slate-600">
-                      <span className="text-xs font-medium rounded-full bg-slate-100 px-2 py-1">
+                    <td className="px-6 py-4 text-[#6B8C74]">{project.clientName || "—"}</td>
+                    <td className="px-6 py-4">
+                      <span className="text-xs font-medium rounded-full bg-[#F0FAF4] text-[#2D6A4F] px-2 py-1">
                         {PHASE_SHORT_LABELS[currentPhase.phaseType]}
                       </span>
                     </td>
@@ -209,16 +196,16 @@ export default async function DashboardPage() {
                         );
                       })()}
                     </td>
-                    <td className="px-6 py-4 text-slate-600">${budgetedFee.toLocaleString()}</td>
+                    <td className="px-6 py-4 text-[#1A2E22]">${budgetedFee.toLocaleString()}</td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-24 overflow-hidden rounded-full bg-slate-100 h-2">
+                        <div className="w-24 overflow-hidden rounded-full bg-[#E8EDE9] h-2">
                           <div
                             className={`h-2 rounded-full ${getBurnColor(burnPercent)}`}
                             style={{ width: `${Math.min(burnPercent, 100)}%` }}
                           />
                         </div>
-                        <span className="text-xs font-semibold text-slate-700">{burnPercent.toFixed(0)}%</span>
+                        <span className="text-xs font-semibold text-[#1A2E22]">{burnPercent.toFixed(0)}%</span>
                       </div>
                     </td>
                   </tr>
