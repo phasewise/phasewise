@@ -438,12 +438,12 @@ export default function HomePage() {
           <div className="text-center mb-16">
             <p className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[#40916C] mb-4">Pricing</p>
             <h2 className="font-serif text-[clamp(30px,3.5vw,46px)] font-normal leading-[1.15] text-[#1A2E22]">
-              Less than your
+              One subscription
               <br />
-              <em className="italic text-[#2D6A4F]">QuickBooks subscription.</em>
+              <em className="italic text-[#2D6A4F]">instead of three.</em>
             </h2>
             <p className="text-lg text-[#6B8C74] leading-[1.65] max-w-[560px] mx-auto mt-5">
-              Simple, transparent pricing. No per-project fees, no hidden costs. Start free, upgrade when you&apos;re ready.
+              Replace your PM tool, time tracker, and budget spreadsheets with one platform built for landscape architects. Start free, upgrade when you&apos;re ready.
             </p>
           </div>
           <div className="grid md:grid-cols-3 gap-5 items-start">

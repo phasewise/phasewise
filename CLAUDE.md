@@ -354,29 +354,61 @@ Most meaningful first. Strikethrough = done.
 35. ~~Static SVG PWA icons in /public for Brave/Chrome compatibility~~ ✅ 2026-04-12
 36. ~~Prisma generate in build script (prevents stale-client Vercel failures)~~ ✅ 2026-04-12
 
-### Active Build Queue (updated 2026-04-12 EOD)
+37. ~~Work Plan (per-phase staff assignments with hours + cost)~~ ✅ 2026-04-13
+38. ~~Auto-numbering settings UI (prefix, starting number, toggle)~~ ✅ 2026-04-13
+39. ~~Profitability reporting dashboard (summary cards, color-coded, totals footer)~~ ✅ 2026-04-13
+40. ~~Fixed pricing tagline (replaced inaccurate QuickBooks claim with honest "One subscription instead of three")~~ ✅ 2026-04-13
 
-**Tier 1 — Next session priorities**
+### Active Build Queue (re-assessed 2026-04-13)
 
-37. **Work Plan concept** — connect hours budgeted per phase to a staffing plan. Each phase should show which staff are assigned, their hours allocation, and the resulting cost estimate. The term "Work Plan" should appear in the UI alongside the phase budget view so owners can plan staffing per phase.
-38. **Auto-numbering settings UI** — Add a settings page where the owner can configure: prefix (default "PW"), starting number, and toggle to enable/disable auto-numbering. Schema fields exist (`projectNumberPrefix`, `projectNumberNext`, `autoNumberProjects`) but no UI yet.
-39. **Profitability reporting dashboard** — the core value prop demands a real report
+**Strategic reassessment:** The landing page promises 6 core features. Of those, 3 are NOT built yet (budget alerts, submittal/RFI log, plant schedule manager) and 2 others need optimization (compliance tracker, per-phase/per-person profitability). We also need an Admin section for owners. These gaps MUST be filled before driving real traffic.
 
-**Tier 2 — Feature completeness**
+**Tier 1 — Critical feature gaps (landing page promises these)**
 
-40. **Client management module** — contacts, communications, automations
-41. **Onboarding flow** — first-run experience after signup
+41. **Budget alerts** — Notify the owner when a project hits 75%, 90%, 100% of budgeted hours or fee. Show alerts on the dashboard and send email via Loops. This is a core promise: "Real-time budget alerts before you go over."
+42. **Submittal & RFI log** — Create, track, and manage submittals and RFIs per project. Status tracking (received, under review, approved, rejected, resubmit), ball-in-court tracking, automatic reminders for overdue items, searchable history. This is a landing page promise.
+43. **Admin section** — Owner-only sidebar section for business operations: billing/invoicing overview, staff salary visibility, org settings, audit log. OWNER can grant specific admin rights to selected staff.
+44. **Custom phase types** — Allow users to modify, add, or remove phase types beyond the 7 standard LA phases. Store custom types per-organization so each firm can match their specific workflow.
+45. **Per-phase and per-person profitability** — Extend the profitability report to drill down into per-phase burn rates and per-person utilization/cost analysis.
 
-**Tier 3 — Polish + Operations**
+**Tier 2 — Promised features (not yet built)**
 
-42. **Empty states + loading states** — production polish
-43. **Privacy Policy + Terms** — legal pages before launch
-44. **Replace `/brand` v1 assets with v2 versions** — single source of truth
-45. **Stripe Tax: revisit before going live** — placeholder CA registration only
-46. **Switch Stripe to live mode** — env var swap only
-47. **Social media automation (n8n)** — scheduled posts to LinkedIn/X/Instagram
-48. **Google Workspace setup** — kevin@phasewise.io for business email
-49. **USPTO trademark filing** — protect the name
+46. **Plant Schedule Manager** — Plant database with botanical/common names, sizes, spacing, water use. Quantity tracking linked to planting plans. Substitution management with client approval workflow. Nursery availability notes. Export to CAD-compatible format.
+47. **Compliance Tracker** — MWELO water budget calculator, LEED credit documentation tracking, SITES certification tracking, ADA compliance checklist, permit tracking with renewal reminders.
+48. **Client management module** — contacts, communications, automations
+
+**Tier 3 — UX + Polish**
+
+49. **Dashboard optimization** — Add project health badges (on track, at risk, over budget), recent activity feed, upcoming deadlines
+50. **Onboarding flow** — first-run experience after signup
+51. **Empty states + loading states** — production polish
+52. **Privacy Policy + Terms** — legal pages before launch
+
+**Tier 4 — Operations**
+
+53. **Replace `/brand` v1 assets with v2 versions** — single source of truth
+54. **Stripe Tax: revisit before going live** — placeholder CA registration only
+55. **Switch Stripe to live mode** — env var swap only
+56. **Social media automation (n8n)** — scheduled posts to LinkedIn/X/Instagram
+57. **Google Workspace setup** — kevin@phasewise.io for business email
+58. **USPTO trademark filing** — protect the name
+
+## Competitive Positioning
+
+**What Phasewise replaces (honestly):**
+
+| Tool | Monthly Cost | Phasewise Replaces? |
+|------|-------------|---------------------|
+| QuickBooks Plus (job costing) | $90/mo | Partially (billing, profitability tracking) |
+| Monday.com / Asana (PM) | $40-80/mo team | Yes (project phases, tasks, deadlines) |
+| Harvest / Toggl (time tracking) | $30-50/mo | Yes (timesheets, approval, per-phase) |
+| Monograph (architecture PM) | $50-100/seat/mo | Yes (closest competitor — we're LA-specific) |
+| Budget spreadsheets | $0 (but hours of work) | Yes (real-time burn rates, auto-estimation) |
+| **Combined** | **$210-320+/mo** | **Phasewise at $99-199/mo is genuinely cheaper** |
+
+**What Phasewise does NOT replace:** AutoCAD, Land F/X, Bluebeam, SketchUp, Lumion, Enscape, Adobe Acrobat, Microsoft 365. These are design/production tools; Phasewise is the operations layer.
+
+**Honest value prop:** "One subscription instead of three — replaces your PM tool, time tracker, and budget spreadsheets with a platform that understands LA project phases."
 
 ## Billing Rates — Industry Reference Data
 
