@@ -133,8 +133,10 @@ model Project {
   phases       ProjectPhase[]
   assignments  ProjectAssignment[]
   tasks        ProjectTask[]
-  timeEntries  TimeEntry[]
-  submittals   Submittal[]
+  timeEntries     TimeEntry[]
+  submittals      Submittal[]
+  plantEntries    PlantEntry[]
+  complianceItems ComplianceItem[]
 
   @@map("projects")
 }
@@ -244,6 +246,51 @@ enum SubmittalStatus {
   REJECTED
   RESUBMIT
   CLOSED
+}
+
+// ── Plant Schedule ───────────────────────────────────────────────────
+
+model PlantEntry {
+  id              String   @id @default(uuid()) @db.Uuid
+  projectId       String   @map("project_id") @db.Uuid
+  organizationId  String   @map("organization_id") @db.Uuid
+  botanicalName   String   @map("botanical_name")
+  commonName      String   @map("common_name")
+  size            String?  // e.g., "24" box", "5 gal", "#15"
+  quantity        Int      @default(1)
+  spacing         String?  // e.g., "6' O.C."
+  waterUse        String?  @map("water_use") // LOW, MODERATE, HIGH
+  unitCost        Decimal? @map("unit_cost") @db.Decimal(10, 2)
+  notes           String?
+  substitution    String?  // Approved substitute plant
+  approvalStatus  String?  @map("approval_status") // PENDING, APPROVED, REJECTED
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  project      Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("plant_entries")
+}
+
+// ── Compliance Tracker ──────────────────────────────────────────────
+
+model ComplianceItem {
+  id              String   @id @default(uuid()) @db.Uuid
+  projectId       String   @map("project_id") @db.Uuid
+  organizationId  String   @map("organization_id") @db.Uuid
+  category        String   // MWELO, LEED, SITES, ADA, PERMIT, OTHER
+  name            String
+  description     String?
+  status          String   @default("NOT_STARTED") // NOT_STARTED, IN_PROGRESS, COMPLETE, N_A
+  dueDate         DateTime? @map("due_date") @db.Date
+  documentUrl     String?  @map("document_url")
+  notes           String?
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  project      Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("compliance_items")
 }
 
 // ── Phase Staff Plan (Work Plan) ─────────────────────────────────────
