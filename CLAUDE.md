@@ -337,33 +337,46 @@ Most meaningful first. Strikethrough = done.
 19. ~~PWA icons (round 2 — real PNG routes for Brave/Chrome)~~ ✅ 2026-04-11
 20. ~~Mobile horizontal overflow fix (body overflow-x-hidden, mockup hidden, H1 text-wrap)~~ ✅ 2026-04-11
 
-### Active Build Queue (re-prioritized 2026-04-12)
+21. ~~Collapsible mobile sidebar (hamburger menu + slide-in drawer)~~ ✅ 2026-04-12
+22. ~~Staff billing rates + salary management with privacy controls~~ ✅ 2026-04-12
+23. ~~Auto-numbering projects (PW-001, PW-002... with org-level prefix + counter)~~ ✅ 2026-04-12
+24. ~~Add/edit/deactivate team members~~ ✅ 2026-04-12
+25. ~~Log in link visible on mobile nav~~ ✅ 2026-04-12
+26. ~~$ prefix on fee inputs~~ ✅ 2026-04-12
+27. ~~Time Sheets redesign (dropdowns, single-row entry, + button)~~ ✅ 2026-04-12
+28. ~~LA firm title expansion (18 industry-specific titles with defaults)~~ ✅ 2026-04-12
+29. ~~Admin time entry visibility (supervisors/admins view others' timesheets)~~ ✅ 2026-04-12
+30. ~~Project editing (edit page + GET/PATCH/DELETE API + phase editing)~~ ✅ 2026-04-12
+31. ~~Auto-estimate billing from staff assignments per phase~~ ✅ 2026-04-12
+32. ~~Hourly cost display in billing rates section~~ ✅ 2026-04-12
+33. ~~Customizable auto-numbering prefix (org-level settings + API)~~ ✅ 2026-04-12
+34. ~~Phase editing (add/edit/remove phases with budget + hours on project edit page)~~ ✅ 2026-04-12
+35. ~~Static SVG PWA icons in /public for Brave/Chrome compatibility~~ ✅ 2026-04-12
+36. ~~Prisma generate in build script (prevents stale-client Vercel failures)~~ ✅ 2026-04-12
 
-**Tier 1 — Mobile usability + Core features (highest impact)**
+### Active Build Queue (updated 2026-04-12 EOD)
 
-21. **Collapsible mobile sidebar** — hamburger menu that slides in/out. Without this, the app is barely usable on phones. Every other mobile improvement depends on this.
-22. **Staff management + billing rates** — Add/manage staff with salary, billing rate, and role. Industry-standard defaults pre-populated (see Billing Rates section below). Privacy: staff cannot see each other's salary/billing info, only OWNER/ADMIN can view/edit rates. This is core to the profitability tracking value prop.
-23. **Auto-estimate billing from staff assignments** — When staff are assigned to a phase, auto-populate budgetedFee based on staff count × billing rate × budgetedHours. Owner can override. System tracks estimate vs actual automatically.
-24. **Auto-numbering projects** — System generates sequential project numbers (e.g., PW-001, PW-002...) when creating a new project. User can accept the auto-number or enter their own custom number.
+**Tier 1 — Next session priorities**
+
+37. **Work Plan concept** — connect hours budgeted per phase to a staffing plan. Each phase should show which staff are assigned, their hours allocation, and the resulting cost estimate. The term "Work Plan" should appear in the UI alongside the phase budget view so owners can plan staffing per phase.
+38. **Auto-numbering settings UI** — Add a settings page where the owner can configure: prefix (default "PW"), starting number, and toggle to enable/disable auto-numbering. Schema fields exist (`projectNumberPrefix`, `projectNumberNext`, `autoNumberProjects`) but no UI yet.
+39. **Profitability reporting dashboard** — the core value prop demands a real report
 
 **Tier 2 — Feature completeness**
 
-25. **Project editing** — currently only create + view
-26. **Profitability reporting dashboard** — the core value prop demands a real report
-27. **Client management module** — contacts, communications, automations
-28. **Onboarding flow** — first-run experience after signup
+40. **Client management module** — contacts, communications, automations
+41. **Onboarding flow** — first-run experience after signup
 
 **Tier 3 — Polish + Operations**
 
-29. **Empty states + loading states** — production polish
-30. **Privacy Policy + Terms** — legal pages before launch
-31. **Replace `/brand` v1 assets with v2 versions** — single source of truth
-32. **Fix: PWA icon still wrong on Brave Android** — may need to serve static PNGs from `/public` instead of dynamic ImageResponse routes; Brave may not follow the `icon.tsx` convention
-33. **Stripe Tax: revisit before going live** — placeholder CA registration only
-34. **Switch Stripe to live mode** — env var swap only
-35. **Social media automation (n8n)** — scheduled posts to LinkedIn/X/Instagram
-36. **Google Workspace setup** — kevin@phasewise.io for business email
-37. **USPTO trademark filing** — protect the name
+42. **Empty states + loading states** — production polish
+43. **Privacy Policy + Terms** — legal pages before launch
+44. **Replace `/brand` v1 assets with v2 versions** — single source of truth
+45. **Stripe Tax: revisit before going live** — placeholder CA registration only
+46. **Switch Stripe to live mode** — env var swap only
+47. **Social media automation (n8n)** — scheduled posts to LinkedIn/X/Instagram
+48. **Google Workspace setup** — kevin@phasewise.io for business email
+49. **USPTO trademark filing** — protect the name
 
 ## Billing Rates — Industry Reference Data
 
@@ -397,27 +410,45 @@ When staff are assigned to a phase:
 3. Owner can override the auto-calculated estimate with a manual value
 4. System always shows both "estimated" and "budgeted" so the owner can compare
 
-## Where We Left Off (2026-04-11 — second pass)
+## Where We Left Off (2026-04-12 EOD)
 
-**Status: Big batch of user-facing improvements deployed.** Stripe + Loops fully verified, plus 5 new user-facing features added today.
+**Status: Massive feature day.** 16 features shipped in one session, covering mobile UX, team management, billing, timesheets, project editing, and auto-estimation.
 
-**Latest commit:** `e96dc00` "Add waitlist + forgot password + user identity widget; fix mobile + PWA icon"
+**Latest commit:** `aaf46bb` "Add phase editing on project edit page"
 
-### What's new today (2026-04-11)
+### What shipped today (2026-04-12)
 
-1. **Waitlist form** on landing page (`/api/waitlist` → Loops `upsertContact`)
-2. **Forgot password** flow: `/forgot-password` → email link → `/reset-password`
-3. **User identity widget** in app sidebar (avatar, name, email, org, logout button)
-4. **Mobile clipping fix (round 2)**: nav 64→56px, hero pt-24→pt-[80px], H1 clamp tightened
-5. **PWA icon improvements**: explicit `metadata.icons` config + redesigned apple-icon (centered) + black-translucent status bar
+1. ✅ **Collapsible mobile sidebar** — hamburger menu, slide-in drawer with dark overlay, active route highlighting, smooth animation
+2. ✅ **Auto-numbering projects** — PW-001, PW-002... with org-level prefix + counter, reset button, auto-increment on create
+3. ✅ **Staff billing rates + salary management** — editable table, auto-suggest billing rate from salary (3.0x multiplier), privacy by role
+4. ✅ **Add/edit/deactivate team members** — inline form, deactivate/reactivate, prevents deactivating only owner
+5. ✅ **Log in link visible on mobile nav** — was hidden below sm breakpoint
+6. ✅ **$ prefix on fee inputs** — budgeted fee now shows $ inside the input
+7. ✅ **Time Sheets redesign** — renamed from "Time", dropdown-based row entry, + button to add rows, clean empty state
+8. ✅ **LA firm title expansion** — 18 industry-specific titles with default salary + billing rates per title
+9. ✅ **Admin time entry visibility** — OWNER/ADMIN/SUPERVISOR can view any team member's timesheet via dropdown, read-only mode with status banner
+10. ✅ **Project editing** — full edit page with all project fields, GET/PATCH/DELETE API routes
+11. ✅ **Phase editing** — add/edit/remove phases with budget + hours on project edit page, PUT API with transactional create/update/delete
+12. ✅ **Auto-estimate billing** — estimated fee shown on project detail page based on assigned staff billing rates × budgeted hours
+13. ✅ **Hourly cost display** — salary/2080 shown alongside billing rate in team billing section
+14. ✅ **Customizable auto-numbering prefix** — org-level settings (projectNumberPrefix, projectNumberNext, autoNumberProjects) in schema + API
+15. ✅ **Static SVG PWA icons** — /public/icon-192.svg + icon-512.svg for Brave/Chrome compatibility
+16. ✅ **Prisma generate in build script** — prevents stale-client Vercel build failures after schema changes
 
-**Note on iOS PWA icon caching:** Even after the deploy, iOS will keep showing the old/missing icon for any home screen shortcut that already exists. To see the new icon: long-press the home screen icon → Remove → then re-add via Safari → Share → Add to Home Screen.
+### To resume tomorrow
 
-### Earlier today (2026-04-11 — first pass)
+**Priority #37: Work Plan concept.** Kevin requested that each project phase should have a "Work Plan" view that connects the budgeted hours to a staffing plan — showing which staff are assigned to each phase, their hours allocation, and the resulting cost estimate. The term "Work Plan" should appear in the UI alongside the phase budget view.
 
-### What got fixed today
+This builds on the auto-estimation feature already shipped today. The key difference is that auto-estimation currently works at the project level (average billing rate × total hours). The Work Plan would be **per-phase, per-staff** — allowing the owner to say "Designer A works 40 hours on SD, Senior LA B works 60 hours on DD" and see the cost impact per phase.
 
-**The cancellation email bug.** Stripe's Customer Portal cancellation sets `cancel_at` (a unix timestamp) NOT `cancel_at_period_end` (a boolean), as I had assumed. My original code only checked the boolean, so the canceled email never fired.
+**Also pending:** Auto-numbering settings UI (prefix, starting number, toggle), profitability reporting dashboard.
+
+### Known good state
+
+- Production URL: https://phasewise.io — fully deployed
+- Latest commit: `aaf46bb`
+- Code compiles clean (`npx tsc --noEmit` returns 0 errors)
+- Vercel build includes `prisma generate` — no more stale-client failures
 
 **The fix (commit `979c65c`):** Detect a fresh cancellation by inspecting the webhook event's `previous_attributes` object. If a cancel field (either `cancel_at` or `cancel_at_period_end`) was null/false before this update and is now non-null/true, it's a fresh cancel. This also correctly skips the inverse case (clicking "Don't cancel subscription") because previous_attributes.cancel_at would be a non-null timestamp in that scenario.
 
