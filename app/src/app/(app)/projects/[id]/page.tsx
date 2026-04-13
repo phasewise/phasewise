@@ -59,12 +59,20 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
           <h1 className="text-3xl font-semibold text-slate-900">{project.name}</h1>
           <p className="text-sm text-slate-500 mt-1">{project.projectNumber || "No project number"}</p>
         </div>
-        <Link
-          href="/projects"
-          className="text-sm font-semibold text-emerald-600 hover:text-emerald-700"
-        >
-          Back to projects
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link
+            href={`/projects/${id}/edit`}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-[#2D6A4F] text-white hover:bg-[#40916C] transition-colors"
+          >
+            Edit project
+          </Link>
+          <Link
+            href="/projects"
+            className="text-sm font-semibold text-[#2D6A4F] hover:text-[#40916C]"
+          >
+            Back to projects
+          </Link>
+        </div>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1fr_420px]">
