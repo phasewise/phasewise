@@ -189,6 +189,7 @@ model ProjectPhase {
   id            String    @id @default(uuid()) @db.Uuid
   projectId     String    @map("project_id") @db.Uuid
   phaseType     PhaseType @map("phase_type")
+  customName    String?   @map("custom_name") // Override display name for standard types, or the name for OTHER type
   status        PhaseStatus @default(NOT_STARTED)
   budgetedFee   Decimal?  @map("budgeted_fee") @db.Decimal(12, 2)
   budgetedHours Decimal?  @map("budgeted_hours") @db.Decimal(8, 2)
@@ -271,6 +272,7 @@ enum PhaseType {
   BIDDING
   CONSTRUCTION_ADMIN
   CLOSEOUT
+  OTHER // For fully custom phase types
 }
 
 enum PhaseStatus {

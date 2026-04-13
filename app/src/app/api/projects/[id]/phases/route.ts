@@ -8,6 +8,7 @@ export const dynamic = "force-dynamic";
 type PhaseInput = {
   id?: string;
   phaseType: string;
+  customName?: string;
   status: string;
   budgetedFee?: string | number;
   budgetedHours?: string | number;
@@ -83,6 +84,7 @@ export async function PUT(
 
         const data = {
           phaseType: phase.phaseType as PhaseType,
+          customName: phase.customName || null,
           status: (phase.status || "NOT_STARTED") as PhaseStatus,
           sortOrder: phase.sortOrder ?? i,
           budgetedFee: fee,

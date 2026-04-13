@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/supabase/auth";
 import { prisma } from "@/lib/prisma";
-import { PHASE_LABELS, STATUS_COLORS } from "@/lib/constants";
+import { STATUS_COLORS, getPhaseDisplayName } from "@/lib/constants";
 import ProjectTasksClient from "./ProjectTasksClient";
 
 export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -155,7 +155,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
                   <div key={phase.id} className="rounded-2xl border border-[#E8EDE9] bg-[#F7F9F7] p-4">
                     <div className="flex flex-wrap items-center justify-between gap-4 mb-3">
                       <div>
-                        <h3 className="text-sm font-semibold text-[#1A2E22]">{PHASE_LABELS[phase.phaseType]}</h3>
+                        <h3 className="text-sm font-semibold text-[#1A2E22]">{getPhaseDisplayName(phase.phaseType, phase.customName)}</h3>
                         <p className="text-xs uppercase tracking-[0.24em] text-[#6B8C74] mt-1">{phase.status.replace("_", " ")}</p>
                       </div>
                       <div className="text-right text-sm">

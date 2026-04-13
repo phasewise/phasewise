@@ -6,6 +6,7 @@ export const PHASE_LABELS: Record<string, string> = {
   BIDDING: "Bidding & Negotiation",
   CONSTRUCTION_ADMIN: "Construction Administration",
   CLOSEOUT: "Closeout",
+  OTHER: "Custom Phase",
 };
 
 export const PHASE_SHORT_LABELS: Record<string, string> = {
@@ -16,6 +17,7 @@ export const PHASE_SHORT_LABELS: Record<string, string> = {
   BIDDING: "Bid",
   CONSTRUCTION_ADMIN: "CA",
   CLOSEOUT: "CL",
+  OTHER: "OTH",
 };
 
 export const PHASE_ORDER = [
@@ -26,7 +28,19 @@ export const PHASE_ORDER = [
   "BIDDING",
   "CONSTRUCTION_ADMIN",
   "CLOSEOUT",
+  "OTHER",
 ] as const;
+
+/**
+ * Get the display name for a phase, preferring customName if set.
+ */
+export function getPhaseDisplayName(
+  phaseType: string,
+  customName?: string | null
+): string {
+  if (customName) return customName;
+  return PHASE_LABELS[phaseType] ?? phaseType;
+}
 
 export const STATUS_COLORS: Record<string, string> = {
   ACTIVE: "bg-green-100 text-green-800",

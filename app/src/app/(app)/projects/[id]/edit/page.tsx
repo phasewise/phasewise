@@ -10,6 +10,7 @@ import WorkPlanEditor from "./WorkPlanEditor";
 type PhaseRow = {
   id?: string; // undefined = new phase
   phaseType: string;
+  customName: string;
   status: string;
   budgetedFee: string;
   budgetedHours: string;
@@ -67,9 +68,10 @@ export default function EditProjectPage() {
         setTargetCompletion(p.targetCompletion ? p.targetCompletion.split("T")[0] : "");
         setDescription(p.description || "");
         setPhases(
-          (p.phases || []).map((phase: { id: string; phaseType: string; status: string; budgetedFee: string | number | null; budgetedHours: string | number | null; sortOrder: number }) => ({
+          (p.phases || []).map((phase: { id: string; phaseType: string; customName?: string | null; status: string; budgetedFee: string | number | null; budgetedHours: string | number | null; sortOrder: number }) => ({
             id: phase.id,
             phaseType: phase.phaseType,
+            customName: phase.customName || "",
             status: phase.status,
             budgetedFee: phase.budgetedFee ? String(phase.budgetedFee) : "",
             budgetedHours: phase.budgetedHours ? String(phase.budgetedHours) : "",
@@ -91,13 +93,14 @@ export default function EditProjectPage() {
   }
 
   function addPhase() {
-    // Find a phase type not already in use
+    // Find a phase type not already in use, default to OTHER for fully custom
     const usedTypes = new Set(phases.map((p) => p.phaseType));
-    const availableType = PHASE_ORDER.find((t) => !usedTypes.has(t)) || PHASE_ORDER[0];
+    const availableType = PHASE_ORDER.find((t) => !usedTypes.has(t)) || "OTHER";
     setPhases((prev) => [
       ...prev,
       {
         phaseType: availableType,
+        customName: availableType === "OTHER" ? "" : "",
         status: "NOT_STARTED",
         budgetedFee: "",
         budgetedHours: "",
@@ -294,12 +297,15 @@ export default function EditProjectPage() {
                 key={phase.id || `new-${index}`}
                 className="rounded-xl border border-[#E8EDE9] bg-[#F7F9F7] p-4"
               >
-                <div className="grid gap-3 sm:grid-cols-[1fr_120px_120px_120px_40px] items-end">
+                <div className="grid gap-3 sm:grid-cols-[1fr_1fr_120px_120px_120px_40px] items-end">
                   <div>
-                    <label className="text-xs font-medium text-[#6B8C74]">Phase</label>
+                    <label className="text-xs font-medium text-[#6B8C74]">Phase type</label>
                     <select
                       value={phase.phaseType}
-                      onChange={(e) => updatePhase(index, { phaseType: e.target.value })}
+                      onChange={(e) => updatePhase(index, {
+                        phaseType: e.target.value,
+                        customName: e.target.value === "OTHER" ? phase.customName : "",
+                      })}
                       className="mt-1 w-full bg-white border border-[#E2EBE4] rounded-lg px-3 py-2 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]"
                     >
                       {PHASE_ORDER.map((type) => (
@@ -308,6 +314,18 @@ export default function EditProjectPage() {
                         </option>
                       ))}
                     </select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-[#6B8C74]">
+                      {phase.phaseType === "OTHER" ? "Phase name *" : "Custom name (optional)"}
+                    </label>
+                    <input
+                      value={phase.customName}
+                      onChange={(e) => updatePhase(index, { customName: e.target.value })}
+                      required={phase.phaseType === "OTHER"}
+                      placeholder={phase.phaseType === "OTHER" ? "e.g., Site Analysis" : "Override name"}
+                      className="mt-1 w-full bg-white border border-[#E2EBE4] rounded-lg px-3 py-2 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]"
+                    />
                   </div>
                   <div>
                     <label className="text-xs font-medium text-[#6B8C74]">Status</label>
