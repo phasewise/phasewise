@@ -167,7 +167,7 @@ export default async function ProfitabilityReportPage() {
               {projectRows.map((project) => (
                 <tr key={project.id} className="border-b border-[#E8EDE9] last:border-0 hover:bg-[#F7F9F7]/50 transition-colors">
                   <td className="px-4 sm:px-6 py-4">
-                    <Link href={`/projects/${project.id}`} className="font-semibold text-[#1A2E22] hover:text-[#2D6A4F]">
+                    <Link href={`/reports/project/${project.id}`} className="font-semibold text-[#1A2E22] hover:text-[#2D6A4F]">
                       {project.name}
                     </Link>
                     {project.projectNumber && (

@@ -213,6 +213,18 @@ export default async function DashboardPage() {
               </tr>
             </thead>
             <tbody>
+              {projects.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-6 py-12 text-center">
+                    <FolderKanban className="w-10 h-10 text-[#A3BEA9] mx-auto mb-3" />
+                    <h3 className="font-semibold text-[#1A2E22] mb-1">No projects yet</h3>
+                    <p className="text-sm text-[#6B8C74] mb-3">Create your first project to start tracking work, budgets, and timelines.</p>
+                    <Link href="/projects/new" className="text-sm font-medium text-[#2D6A4F] hover:text-[#40916C]">
+                      Create a project &rarr;
+                    </Link>
+                  </td>
+                </tr>
+              )}
               {projects.map((project) => {
                 const currentPhase = getCurrentPhase(project.phases || []);
                 const budgetedFee = project.phases.reduce(

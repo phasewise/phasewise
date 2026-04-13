@@ -153,6 +153,18 @@ export default async function ProjectsPage() {
               </tr>
             </thead>
             <tbody>
+              {projects.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-6 py-12 text-center">
+                    <FolderPlus className="w-10 h-10 text-[#A3BEA9] mx-auto mb-3" />
+                    <h3 className="font-semibold text-slate-900 mb-1">No projects yet</h3>
+                    <p className="text-sm text-slate-500 mb-3">Get started by creating your first project.</p>
+                    <Link href="/projects/new" className="text-sm font-semibold text-emerald-600 hover:text-emerald-700">
+                      Create a project &rarr;
+                    </Link>
+                  </td>
+                </tr>
+              )}
               {projects.map((project) => {
                 const currentPhase = getCurrentPhase(project.phases || []);
                 const budgetedFee = project.phases.reduce(

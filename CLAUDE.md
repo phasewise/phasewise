@@ -392,9 +392,9 @@ Most meaningful first. Strikethrough = done.
 
 ### Remaining items
 
-56. **Submittal reminders** — automated email reminders for overdue submittals via Loops
-57. **Project detail report** — per-phase burn breakdown for a single project
-58. **Empty states + loading states** — production polish across all pages
+56. ~~Submittal reminders — automated email reminders for overdue submittals via Loops~~ ✅ 2026-04-13
+57. ~~Project detail report — per-phase burn breakdown for a single project~~ ✅ 2026-04-13
+58. ~~Empty states + loading states — production polish across all pages~~ ✅ 2026-04-13
 
 **Operations:**
 
@@ -454,55 +454,53 @@ When staff are assigned to a phase:
 3. Owner can override the auto-calculated estimate with a manual value
 4. System always shows both "estimated" and "budgeted" so the owner can compare
 
-## Where We Left Off (2026-04-12 EOD)
+## Where We Left Off (2026-04-13 EOD)
 
-**Status: Massive feature day.** 16 features shipped in one session, covering mobile UX, team management, billing, timesheets, project editing, and auto-estimation.
+**Status: All 58 build queue items complete.** The entire feature build queue is done. Only operational items remain (brand asset cleanup, Stripe live mode, social media, Google Workspace, trademark).
 
-**Latest commit:** `aaf46bb` "Add phase editing on project edit page"
+### What shipped today (2026-04-13)
 
-### What shipped today (2026-04-12)
+**Earlier in the session (before context compaction):**
+1. ✅ **Work Plan** — per-phase staff assignments with hours + cost (PhaseStaffPlan model + WorkPlanEditor component)
+2. ✅ **Auto-numbering settings UI** — prefix, starting number, toggle in Settings
+3. ✅ **Profitability reporting dashboard** — summary cards, color-coded burn/margin, totals footer
+4. ✅ **Fixed pricing tagline** — honest "One subscription instead of three"
+5. ✅ **Budget alerts** — dashboard health badges + email on 75%/90%/100% threshold
+6. ✅ **Admin section** — owner-only sidebar + business ops dashboard
+7. ✅ **Submittal & RFI log** — CRUD + status tracking + ball-in-court + overdue
+8. ✅ **Custom phase types** — OTHER enum + customName override
+9. ✅ **Team Utilization report** — per-person hours, utilization %, revenue, profit
+10. ✅ **Plant Schedule Manager** — model + CRUD API + page with approval tracking
+11. ✅ **Compliance Tracker** — MWELO/LEED/SITES/ADA/PERMIT + status + due dates
+12. ✅ **Client management module** — model + API + card grid page
+13. ✅ **Dashboard v2 brand polish** — color-coded health visualization
+14. ✅ **Onboarding checklist** — 3-step, auto-dismisses when complete
+15. ✅ **Privacy Policy page** + **Terms of Service page**
+16. ✅ **Plant Schedule: interactive create form + inline status updates**
+17. ✅ **Compliance Tracker: interactive create form + inline status updates**
 
-1. ✅ **Collapsible mobile sidebar** — hamburger menu, slide-in drawer with dark overlay, active route highlighting, smooth animation
-2. ✅ **Auto-numbering projects** — PW-001, PW-002... with org-level prefix + counter, reset button, auto-increment on create
-3. ✅ **Staff billing rates + salary management** — editable table, auto-suggest billing rate from salary (3.0x multiplier), privacy by role
-4. ✅ **Add/edit/deactivate team members** — inline form, deactivate/reactivate, prevents deactivating only owner
-5. ✅ **Log in link visible on mobile nav** — was hidden below sm breakpoint
-6. ✅ **$ prefix on fee inputs** — budgeted fee now shows $ inside the input
-7. ✅ **Time Sheets redesign** — renamed from "Time", dropdown-based row entry, + button to add rows, clean empty state
-8. ✅ **LA firm title expansion** — 18 industry-specific titles with default salary + billing rates per title
-9. ✅ **Admin time entry visibility** — OWNER/ADMIN/SUPERVISOR can view any team member's timesheet via dropdown, read-only mode with status banner
-10. ✅ **Project editing** — full edit page with all project fields, GET/PATCH/DELETE API routes
-11. ✅ **Phase editing** — add/edit/remove phases with budget + hours on project edit page, PUT API with transactional create/update/delete
-12. ✅ **Auto-estimate billing** — estimated fee shown on project detail page based on assigned staff billing rates × budgeted hours
-13. ✅ **Hourly cost display** — salary/2080 shown alongside billing rate in team billing section
-14. ✅ **Customizable auto-numbering prefix** — org-level settings (projectNumberPrefix, projectNumberNext, autoNumberProjects) in schema + API
-15. ✅ **Static SVG PWA icons** — /public/icon-192.svg + icon-512.svg for Brave/Chrome compatibility
-16. ✅ **Prisma generate in build script** — prevents stale-client Vercel build failures after schema changes
-
-### To resume tomorrow
-
-**Priority #37: Work Plan concept.** Kevin requested that each project phase should have a "Work Plan" view that connects the budgeted hours to a staffing plan — showing which staff are assigned to each phase, their hours allocation, and the resulting cost estimate. The term "Work Plan" should appear in the UI alongside the phase budget view.
-
-This builds on the auto-estimation feature already shipped today. The key difference is that auto-estimation currently works at the project level (average billing rate × total hours). The Work Plan would be **per-phase, per-staff** — allowing the owner to say "Designer A works 40 hours on SD, Senior LA B works 60 hours on DD" and see the cost impact per phase.
-
-**Also pending:** Auto-numbering settings UI (prefix, starting number, toggle), profitability reporting dashboard.
+**Later in the session (after context compaction):**
+18. ✅ **Submittal reminders cron** — `/api/cron/submittal-reminders` scans overdue items (last 7 days), sends Loops emails, bearer token auth via CRON_SECRET
+19. ✅ **Project detail report** — `/reports/project/[id]` with 6 summary cards, phase breakdown table (budget vs actual + remaining), time by team member table, phase × person matrix. Reports hub updated with project selector. Profitability table rows link to detail reports.
+20. ✅ **Empty states** — dashboard projects table + projects list table (icon + CTA)
+21. ✅ **Loading skeletons** — 11 `loading.tsx` files: dashboard, projects, reports, reports/profitability, reports/utilization, time, clients, submittals, plants, compliance, settings/team
 
 ### Known good state
 
-- Production URL: https://phasewise.io — fully deployed
-- Latest commit: `aaf46bb`
+- Production URL: https://phasewise.io
 - Code compiles clean (`npx tsc --noEmit` returns 0 errors)
-- Vercel build includes `prisma generate` — no more stale-client failures
+- Vercel build includes `prisma generate` — no stale-client failures
+- **Note:** Changes from this session are NOT yet committed or pushed. Run `git status` to see all new/modified files.
 
-**The fix (commit `979c65c`):** Detect a fresh cancellation by inspecting the webhook event's `previous_attributes` object. If a cancel field (either `cancel_at` or `cancel_at_period_end`) was null/false before this update and is now non-null/true, it's a fresh cancel. This also correctly skips the inverse case (clicking "Don't cancel subscription") because previous_attributes.cancel_at would be a non-null timestamp in that scenario.
+### To resume next session
 
-**Verified working:**
-- Welcome email on signup ✅
-- Trial Started email on Stripe checkout completion ✅
-- Sorry to see you go email on Customer Portal cancellation ✅
-- All emails render data variables correctly (firstName, firmName, planName, trialEndDate)
-- Customer Portal "Don't cancel subscription" undo correctly does NOT re-send the cancellation email
-- Webhook delivery rate: 100% (0% error)
+**All feature work is done.** The build queue (items 1-58) is complete. Next priorities are operational:
+
+1. **Commit and push** all today's work to `main` for Vercel deployment
+2. **Set CRON_SECRET env var** in Vercel for the submittal reminders endpoint
+3. **Set up Vercel Cron** (or external scheduler) to call `/api/cron/submittal-reminders` daily
+4. **Review and test** — Kevin is reviewing all features; address any feedback
+5. **Operations:** Replace `/brand` v1 assets, Stripe Tax revisit, Stripe live mode, social media (n8n), Google Workspace, USPTO trademark
 
 ### Test cards for future testing
 
@@ -517,20 +515,6 @@ This builds on the auto-estimation feature already shipped today. The key differ
 - `kgallo22+pwtest1@gmail.com` through `kgallo22+pwtest5@gmail.com` (Gmail aliases routing to your inbox)
 - All exist in Supabase Auth + app database
 - Can be deleted via Supabase Authentication > Users when no longer needed
-
-### Known good state end of 2026-04-11
-
-- Production URL: https://phasewise.io — fully deployed
-- Latest commit: `cb8c56c` (clean — diagnostic logging removed)
-- Code compiles clean (`npx tsc --noEmit` returns 0 errors)
-- All Stripe sandbox products + webhook + tax registration live
-- All Loops templates published with correct data variables
-- Local `.env` has all required keys including LOOPS_TEMPLATE_*
-- Vercel env vars match local
-
-### Next session priority
-
-**#19 from build order: Replace `/brand` v1 assets with v2 versions.** Or jump straight to **#20 (Project editing)** if you want a substantive feature. The waitlist, forgot password, identity widget, mobile and PWA fixes are all done.
 
 ## TODO (Operational, non-code)
 

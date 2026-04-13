@@ -1,7 +1,23 @@
 import Link from "next/link";
 import { DollarSign, Users, BarChart3 } from "lucide-react";
+import { getCurrentUser } from "@/lib/supabase/auth";
+import { prisma } from "@/lib/prisma";
 
-export default function ReportsPage() {
+export default async function ReportsPage() {
+  const currentUser = await getCurrentUser();
+
+  // Fetch active projects for the project detail selector
+  const projects = currentUser
+    ? await prisma.project.findMany({
+        where: {
+          organizationId: currentUser.organizationId,
+          status: { not: "ARCHIVED" },
+        },
+        select: { id: true, name: true, projectNumber: true },
+        orderBy: { name: "asc" },
+      })
+    : [];
+
   return (
     <div className="p-6 sm:p-8 max-w-5xl">
       <div className="mb-8">
@@ -36,14 +52,32 @@ export default function ReportsPage() {
           </p>
         </Link>
 
-        <div className="rounded-2xl border border-[#E2EBE4] bg-white p-6 opacity-50">
+        <div className="rounded-2xl border border-[#E2EBE4] bg-white p-6 hover:border-[#52B788] transition-all">
           <div className="w-10 h-10 rounded-lg bg-[#F0FAF4] border border-[#52B788]/20 flex items-center justify-center mb-4 text-[#2D6A4F]">
             <BarChart3 className="w-5 h-5" strokeWidth={1.75} />
           </div>
-          <h2 className="font-semibold text-[#1A2E22]">Project Detail</h2>
-          <p className="mt-2 text-sm text-[#6B8C74]">
-            Coming soon: phase-level burn rate and per-person time breakdown for a single project.
+          <h2 className="font-semibold text-[#1A2E22] mb-2">Project Detail</h2>
+          <p className="text-sm text-[#6B8C74] mb-3">
+            Phase-level burn rate and per-person time breakdown for a single project.
           </p>
+          {projects.length > 0 ? (
+            <div className="space-y-1.5">
+              {projects.slice(0, 6).map((p) => (
+                <Link
+                  key={p.id}
+                  href={`/reports/project/${p.id}`}
+                  className="block text-sm text-[#2D6A4F] hover:text-[#40916C] hover:underline transition-colors truncate"
+                >
+                  {p.projectNumber ? `${p.projectNumber} — ` : ""}{p.name}
+                </Link>
+              ))}
+              {projects.length > 6 && (
+                <p className="text-xs text-[#A3BEA9]">+ {projects.length - 6} more projects</p>
+              )}
+            </div>
+          ) : (
+            <p className="text-xs text-[#A3BEA9] italic">No active projects.</p>
+          )}
         </div>
       </div>
     </div>
