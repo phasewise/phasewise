@@ -382,24 +382,28 @@ Most meaningful first. Strikethrough = done.
 
 **Remaining priorities (UX polish + operations):**
 
-49. **Client management module** — contacts, communications, automations
-50. **Dashboard optimization** — recent activity feed, upcoming deadlines, improved cards
-51. **Onboarding flow** — first-run experience after signup
-52. **Empty states + loading states** — production polish across all pages
-53. **Privacy Policy + Terms** — legal pages before launch
-54. **Plant Schedule: add inline create/edit forms** (currently read-only display)
-55. **Compliance: add inline create/edit forms** (currently read-only display)
+49. ~~Client management module (model + API + page with card grid)~~ ✅ 2026-04-13
+50. ~~Dashboard v2 brand polish + color-coded health visualization~~ ✅ 2026-04-13
+51. ~~Onboarding checklist (3-step, auto-dismisses when complete)~~ ✅ 2026-04-13
+52. ~~Privacy Policy page~~ ✅ 2026-04-13
+53. ~~Terms of Service page~~ ✅ 2026-04-13
+54. ~~Plant Schedule: interactive create form + inline status updates~~ ✅ 2026-04-13
+55. ~~Compliance Tracker: interactive create form + inline status updates~~ ✅ 2026-04-13
+
+### Remaining items
+
 56. **Submittal reminders** — automated email reminders for overdue submittals via Loops
 57. **Project detail report** — per-phase burn breakdown for a single project
+58. **Empty states + loading states** — production polish across all pages
 
 **Operations:**
 
-58. **Replace `/brand` v1 assets with v2 versions** — single source of truth
-59. **Stripe Tax: revisit before going live** — placeholder CA registration only
-60. **Switch Stripe to live mode** — env var swap only
-56. **Social media automation (n8n)** — scheduled posts to LinkedIn/X/Instagram
-57. **Google Workspace setup** — kevin@phasewise.io for business email
-58. **USPTO trademark filing** — protect the name
+59. **Replace `/brand` v1 assets with v2 versions** — single source of truth
+60. **Stripe Tax: revisit before going live** — placeholder CA registration only
+61. **Switch Stripe to live mode** — env var swap only
+62. **Social media automation (n8n)** — scheduled posts to LinkedIn/X/Instagram
+63. **Google Workspace setup** — kevin@phasewise.io for business email
+64. **USPTO trademark filing** — protect the name
 
 ## Competitive Positioning
 
