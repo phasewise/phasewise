@@ -61,6 +61,7 @@ model User {
   fullName        String   @map("full_name")
   email           String
   role            UserRole @default(STAFF)
+  title           String?  // Display title (e.g., "Senior Associate", "Landscape Architect")
   billingRate     Decimal? @map("billing_rate") @db.Decimal(10, 2)
   salary          Decimal? @map("salary") @db.Decimal(12, 2) // Annual salary — OWNER/ADMIN only
   costRate        Decimal? @map("cost_rate") @db.Decimal(10, 2) // Hourly cost (salary / 2080)

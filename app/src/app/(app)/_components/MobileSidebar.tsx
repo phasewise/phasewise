@@ -18,7 +18,7 @@ import LogoutButton from "./LogoutButton";
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: Home },
   { name: "Projects", href: "/projects", icon: FolderKanban },
-  { name: "Time", href: "/time", icon: Clock },
+  { name: "Time Sheets", href: "/time", icon: Clock },
   { name: "Reports", href: "/reports", icon: BarChart3 },
   { name: "Team", href: "/settings/team", icon: Users },
   { name: "Settings", href: "/settings", icon: Settings },
