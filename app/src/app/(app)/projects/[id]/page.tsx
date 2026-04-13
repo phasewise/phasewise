@@ -26,7 +26,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
 
   const assignments = await prisma.projectAssignment.findMany({
     where: { projectId: project.id },
-    include: { user: true },
+    include: { user: { select: { id: true, fullName: true, billingRate: true } } },
   });
 
   const tasks = await prisma.projectTask.findMany({
@@ -50,6 +50,25 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
     (sum, phase) => sum + Number(phase.budgetedHours ?? 0),
     0
   );
+
+  // Auto-estimate: calculate estimated fee per phase based on assigned
+  // staff billing rates. If N staff are assigned and a phase has H budgeted
+  // hours, each staff member is assumed to work H/N hours at their billing
+  // rate. Total estimated fee = sum(staff_rate × hours_per_staff).
+  const assignedRates = assignments
+    .map((a) => Number(a.user.billingRate ?? 0))
+    .filter((r) => r > 0);
+  const avgBillingRate =
+    assignedRates.length > 0
+      ? assignedRates.reduce((sum, r) => sum + r, 0) / assignedRates.length
+      : 0;
+
+  const estimatedFee = avgBillingRate > 0
+    ? project.phases.reduce(
+        (sum, phase) => sum + avgBillingRate * Number(phase.budgetedHours ?? 0),
+        0
+      )
+    : 0;
 
   return (
     <div className="p-8">
@@ -85,7 +104,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
               {project.clientName && <span className="text-sm text-slate-500">Client: {project.clientName}</span>}
               {project.clientEmail && <span className="text-sm text-slate-500">{project.clientEmail}</span>}
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-3">
               <div>
                 <div className="text-xs uppercase tracking-[0.24em] text-slate-500">Budgeted fee</div>
                 <div className="mt-2 text-xl font-semibold text-slate-900">${budgetedFee.toLocaleString()}</div>
@@ -94,6 +113,15 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
                 <div className="text-xs uppercase tracking-[0.24em] text-slate-500">Budgeted hours</div>
                 <div className="mt-2 text-xl font-semibold text-slate-900">{budgetedHours.toFixed(1)}h</div>
               </div>
+              {estimatedFee > 0 && (
+                <div>
+                  <div className="text-xs uppercase tracking-[0.24em] text-slate-500">Estimated fee</div>
+                  <div className="mt-2 text-xl font-semibold text-[#2D6A4F]">${estimatedFee.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                  <div className="text-[11px] text-slate-400 mt-1">
+                    Based on {assignedRates.length} staff × avg ${avgBillingRate.toFixed(0)}/hr
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
