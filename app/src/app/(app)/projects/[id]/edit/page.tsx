@@ -3,7 +3,17 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Plus, Save, Trash2 } from "lucide-react";
+import { PHASE_LABELS, PHASE_ORDER } from "@/lib/constants";
+
+type PhaseRow = {
+  id?: string; // undefined = new phase
+  phaseType: string;
+  status: string;
+  budgetedFee: string;
+  budgetedHours: string;
+  sortOrder: number;
+};
 
 export default function EditProjectPage() {
   const router = useRouter();
@@ -15,6 +25,7 @@ export default function EditProjectPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
+  // Project fields
   const [name, setName] = useState("");
   const [projectNumber, setProjectNumber] = useState("");
   const [clientName, setClientName] = useState("");
@@ -24,7 +35,9 @@ export default function EditProjectPage() {
   const [targetCompletion, setTargetCompletion] = useState("");
   const [description, setDescription] = useState("");
 
-  // Fetch existing project data
+  // Phase fields
+  const [phases, setPhases] = useState<PhaseRow[]>([]);
+
   useEffect(() => {
     fetch(`/api/projects/${projectId}`)
       .then((res) => {
@@ -41,6 +54,16 @@ export default function EditProjectPage() {
         setStartDate(p.startDate ? p.startDate.split("T")[0] : "");
         setTargetCompletion(p.targetCompletion ? p.targetCompletion.split("T")[0] : "");
         setDescription(p.description || "");
+        setPhases(
+          (p.phases || []).map((phase: { id: string; phaseType: string; status: string; budgetedFee: string | number | null; budgetedHours: string | number | null; sortOrder: number }) => ({
+            id: phase.id,
+            phaseType: phase.phaseType,
+            status: phase.status,
+            budgetedFee: phase.budgetedFee ? String(phase.budgetedFee) : "",
+            budgetedHours: phase.budgetedHours ? String(phase.budgetedHours) : "",
+            sortOrder: phase.sortOrder,
+          }))
+        );
         setLoading(false);
       })
       .catch(() => {
@@ -49,13 +72,40 @@ export default function EditProjectPage() {
       });
   }, [projectId]);
 
+  function updatePhase(index: number, update: Partial<PhaseRow>) {
+    setPhases((prev) =>
+      prev.map((p, i) => (i === index ? { ...p, ...update } : p))
+    );
+  }
+
+  function addPhase() {
+    // Find a phase type not already in use
+    const usedTypes = new Set(phases.map((p) => p.phaseType));
+    const availableType = PHASE_ORDER.find((t) => !usedTypes.has(t)) || PHASE_ORDER[0];
+    setPhases((prev) => [
+      ...prev,
+      {
+        phaseType: availableType,
+        status: "NOT_STARTED",
+        budgetedFee: "",
+        budgetedHours: "",
+        sortOrder: prev.length,
+      },
+    ]);
+  }
+
+  function removePhase(index: number) {
+    setPhases((prev) => prev.filter((_, i) => i !== index));
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     setSaving(true);
     setSuccess(false);
 
-    const res = await fetch(`/api/projects/${projectId}`, {
+    // Save project details
+    const projectRes = await fetch(`/api/projects/${projectId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -70,14 +120,28 @@ export default function EditProjectPage() {
       }),
     });
 
-    const data = await res.json();
-    setSaving(false);
-
-    if (!res.ok) {
+    if (!projectRes.ok) {
+      const data = await projectRes.json();
       setError(data.error || "Failed to update project.");
+      setSaving(false);
       return;
     }
 
+    // Save phases
+    const phasesRes = await fetch(`/api/projects/${projectId}/phases`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phases }),
+    });
+
+    if (!phasesRes.ok) {
+      const data = await phasesRes.json();
+      setError(data.error || "Failed to update phases.");
+      setSaving(false);
+      return;
+    }
+
+    setSaving(false);
     setSuccess(true);
     setTimeout(() => {
       router.push(`/projects/${projectId}`);
@@ -95,7 +159,7 @@ export default function EditProjectPage() {
 
   return (
     <div className="p-6 sm:p-8 max-w-3xl">
-      <div className="flex items-center gap-3 mb-8 text-[#1A2E22]">
+      <div className="flex items-center gap-3 mb-8">
         <Link
           href={`/projects/${projectId}`}
           className="inline-flex items-center gap-2 text-sm text-[#6B8C74] hover:text-[#1A2E22]"
@@ -107,113 +171,211 @@ export default function EditProjectPage() {
 
       <h1 className="font-serif text-3xl text-[#1A2E22] mb-6">Edit project</h1>
 
-      <div className="rounded-2xl border border-[#E2EBE4] bg-white p-6 sm:p-8 shadow-[0_4px_24px_rgba(26,46,34,0.04)]">
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label className="text-sm font-medium text-[#3D5C48]">Project name</label>
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              className="mt-2 w-full rounded-lg border border-[#E2EBE4] bg-[#F7F9F7] px-4 py-3 text-sm text-[#1A2E22] outline-none focus:border-[#52B788] focus:bg-white"
-            />
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
+      <form onSubmit={handleSubmit} className="space-y-8">
+        {/* Project details */}
+        <div className="rounded-2xl border border-[#E2EBE4] bg-white p-6 sm:p-8 shadow-[0_4px_24px_rgba(26,46,34,0.04)]">
+          <h2 className="text-lg font-semibold text-[#1A2E22] mb-4">Project details</h2>
+          <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium text-[#3D5C48]">Project number</label>
+              <label className="text-sm font-medium text-[#3D5C48]">Project name</label>
               <input
-                value={projectNumber}
-                onChange={(e) => setProjectNumber(e.target.value)}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
                 className="mt-2 w-full rounded-lg border border-[#E2EBE4] bg-[#F7F9F7] px-4 py-3 text-sm text-[#1A2E22] outline-none focus:border-[#52B788] focus:bg-white"
               />
             </div>
-            <div>
-              <label className="text-sm font-medium text-[#3D5C48]">Status</label>
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-                className="mt-2 w-full rounded-lg border border-[#E2EBE4] bg-[#F7F9F7] px-4 py-3 text-sm text-[#1A2E22] outline-none focus:border-[#52B788] focus:bg-white"
-              >
-                <option value="ACTIVE">Active</option>
-                <option value="ON_HOLD">On hold</option>
-                <option value="COMPLETED">Completed</option>
-                <option value="ARCHIVED">Archived</option>
-              </select>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="text-sm font-medium text-[#3D5C48]">Project number</label>
+                <input
+                  value={projectNumber}
+                  onChange={(e) => setProjectNumber(e.target.value)}
+                  className="mt-2 w-full rounded-lg border border-[#E2EBE4] bg-[#F7F9F7] px-4 py-3 text-sm text-[#1A2E22] outline-none focus:border-[#52B788] focus:bg-white"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-[#3D5C48]">Status</label>
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value)}
+                  className="mt-2 w-full rounded-lg border border-[#E2EBE4] bg-[#F7F9F7] px-4 py-3 text-sm text-[#1A2E22] outline-none focus:border-[#52B788] focus:bg-white"
+                >
+                  <option value="ACTIVE">Active</option>
+                  <option value="ON_HOLD">On hold</option>
+                  <option value="COMPLETED">Completed</option>
+                  <option value="ARCHIVED">Archived</option>
+                </select>
+              </div>
             </div>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="text-sm font-medium text-[#3D5C48]">Client name</label>
+                <input
+                  value={clientName}
+                  onChange={(e) => setClientName(e.target.value)}
+                  className="mt-2 w-full rounded-lg border border-[#E2EBE4] bg-[#F7F9F7] px-4 py-3 text-sm text-[#1A2E22] outline-none focus:border-[#52B788] focus:bg-white"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-[#3D5C48]">Client email</label>
+                <input
+                  type="email"
+                  value={clientEmail}
+                  onChange={(e) => setClientEmail(e.target.value)}
+                  className="mt-2 w-full rounded-lg border border-[#E2EBE4] bg-[#F7F9F7] px-4 py-3 text-sm text-[#1A2E22] outline-none focus:border-[#52B788] focus:bg-white"
+                />
+              </div>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="text-sm font-medium text-[#3D5C48]">Start date</label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="mt-2 w-full rounded-lg border border-[#E2EBE4] bg-[#F7F9F7] px-4 py-3 text-sm text-[#1A2E22] outline-none focus:border-[#52B788] focus:bg-white"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-[#3D5C48]">Target completion</label>
+                <input
+                  type="date"
+                  value={targetCompletion}
+                  onChange={(e) => setTargetCompletion(e.target.value)}
+                  className="mt-2 w-full rounded-lg border border-[#E2EBE4] bg-[#F7F9F7] px-4 py-3 text-sm text-[#1A2E22] outline-none focus:border-[#52B788] focus:bg-white"
+                />
+              </div>
+            </div>
             <div>
-              <label className="text-sm font-medium text-[#3D5C48]">Client name</label>
-              <input
-                value={clientName}
-                onChange={(e) => setClientName(e.target.value)}
-                className="mt-2 w-full rounded-lg border border-[#E2EBE4] bg-[#F7F9F7] px-4 py-3 text-sm text-[#1A2E22] outline-none focus:border-[#52B788] focus:bg-white"
+              <label className="text-sm font-medium text-[#3D5C48]">Description</label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={3}
+                className="mt-2 w-full rounded-lg border border-[#E2EBE4] bg-[#F7F9F7] px-4 py-3 text-sm text-[#1A2E22] outline-none focus:border-[#52B788] focus:bg-white resize-y"
               />
             </div>
-            <div>
-              <label className="text-sm font-medium text-[#3D5C48]">Client email</label>
-              <input
-                type="email"
-                value={clientEmail}
-                onChange={(e) => setClientEmail(e.target.value)}
-                className="mt-2 w-full rounded-lg border border-[#E2EBE4] bg-[#F7F9F7] px-4 py-3 text-sm text-[#1A2E22] outline-none focus:border-[#52B788] focus:bg-white"
-              />
-            </div>
           </div>
+        </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+        {/* Phases */}
+        <div className="rounded-2xl border border-[#E2EBE4] bg-white p-6 sm:p-8 shadow-[0_4px_24px_rgba(26,46,34,0.04)]">
+          <div className="flex items-center justify-between mb-4">
             <div>
-              <label className="text-sm font-medium text-[#3D5C48]">Start date</label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="mt-2 w-full rounded-lg border border-[#E2EBE4] bg-[#F7F9F7] px-4 py-3 text-sm text-[#1A2E22] outline-none focus:border-[#52B788] focus:bg-white"
-              />
+              <h2 className="text-lg font-semibold text-[#1A2E22]">Phases</h2>
+              <p className="text-sm text-[#6B8C74]">Manage project phases, budgets, and hours.</p>
             </div>
-            <div>
-              <label className="text-sm font-medium text-[#3D5C48]">Target completion</label>
-              <input
-                type="date"
-                value={targetCompletion}
-                onChange={(e) => setTargetCompletion(e.target.value)}
-                className="mt-2 w-full rounded-lg border border-[#E2EBE4] bg-[#F7F9F7] px-4 py-3 text-sm text-[#1A2E22] outline-none focus:border-[#52B788] focus:bg-white"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-[#3D5C48]">Description</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={3}
-              className="mt-2 w-full rounded-lg border border-[#E2EBE4] bg-[#F7F9F7] px-4 py-3 text-sm text-[#1A2E22] outline-none focus:border-[#52B788] focus:bg-white resize-y"
-            />
-          </div>
-
-          {error && <p className="text-sm text-[#B04030]">{error}</p>}
-
-          <div className="flex items-center gap-3">
             <button
-              type="submit"
-              disabled={saving}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-medium bg-[#2D6A4F] text-white hover:bg-[#40916C] hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(45,106,79,0.3)] transition-all disabled:opacity-60"
+              type="button"
+              onClick={addPhase}
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-[#F0FAF4] text-[#2D6A4F] border border-[#52B788]/30 hover:bg-[#2D6A4F] hover:text-white transition-all"
             >
-              <Save className="w-4 h-4" />
-              {saving ? "Saving..." : success ? "Saved ✓" : "Save changes"}
+              <Plus className="w-4 h-4" />
+              Add phase
             </button>
-            <Link
-              href={`/projects/${projectId}`}
-              className="px-6 py-3 rounded-lg text-sm text-[#6B8C74] hover:text-[#1A2E22] transition-colors"
-            >
-              Cancel
-            </Link>
           </div>
-        </form>
-      </div>
+
+          <div className="space-y-3">
+            {phases.map((phase, index) => (
+              <div
+                key={phase.id || `new-${index}`}
+                className="rounded-xl border border-[#E8EDE9] bg-[#F7F9F7] p-4"
+              >
+                <div className="grid gap-3 sm:grid-cols-[1fr_120px_120px_120px_40px] items-end">
+                  <div>
+                    <label className="text-xs font-medium text-[#6B8C74]">Phase</label>
+                    <select
+                      value={phase.phaseType}
+                      onChange={(e) => updatePhase(index, { phaseType: e.target.value })}
+                      className="mt-1 w-full bg-white border border-[#E2EBE4] rounded-lg px-3 py-2 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]"
+                    >
+                      {PHASE_ORDER.map((type) => (
+                        <option key={type} value={type}>
+                          {PHASE_LABELS[type]}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-[#6B8C74]">Status</label>
+                    <select
+                      value={phase.status}
+                      onChange={(e) => updatePhase(index, { status: e.target.value })}
+                      className="mt-1 w-full bg-white border border-[#E2EBE4] rounded-lg px-3 py-2 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]"
+                    >
+                      <option value="NOT_STARTED">Not started</option>
+                      <option value="IN_PROGRESS">In progress</option>
+                      <option value="COMPLETE">Complete</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-[#6B8C74]">Fee ($)</label>
+                    <div className="relative mt-1">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A3BEA9] text-sm">$</span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={phase.budgetedFee}
+                        onChange={(e) => updatePhase(index, { budgetedFee: e.target.value })}
+                        className="w-full bg-white border border-[#E2EBE4] rounded-lg pl-7 pr-3 py-2 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]"
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-[#6B8C74]">Hours</label>
+                    <input
+                      type="number"
+                      step="0.5"
+                      min="0"
+                      value={phase.budgetedHours}
+                      onChange={(e) => updatePhase(index, { budgetedHours: e.target.value })}
+                      className="mt-1 w-full bg-white border border-[#E2EBE4] rounded-lg px-3 py-2 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]"
+                      placeholder="0"
+                    />
+                  </div>
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => removePhase(index)}
+                      className="mt-5 text-[#A3BEA9] hover:text-rose-500 transition-colors p-1"
+                      title="Remove phase"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {phases.length === 0 && (
+              <div className="text-center py-8 text-[#A3BEA9] text-sm">
+                No phases. Click &quot;Add phase&quot; to get started.
+              </div>
+            )}
+          </div>
+        </div>
+
+        {error && <p className="text-sm text-[#B04030]">{error}</p>}
+
+        <div className="flex items-center gap-3">
+          <button
+            type="submit"
+            disabled={saving}
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-medium bg-[#2D6A4F] text-white hover:bg-[#40916C] hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(45,106,79,0.3)] transition-all disabled:opacity-60"
+          >
+            <Save className="w-4 h-4" />
+            {saving ? "Saving..." : success ? "Saved ✓" : "Save all changes"}
+          </button>
+          <Link
+            href={`/projects/${projectId}`}
+            className="px-6 py-3 rounded-lg text-sm text-[#6B8C74] hover:text-[#1A2E22] transition-colors"
+          >
+            Cancel
+          </Link>
+        </div>
+      </form>
     </div>
   );
 }
