@@ -88,6 +88,15 @@ export default async function DashboardPage() {
         }, 0) / activeProjects.length
       : 0;
 
+  // Onboarding checklist data
+  const teamCount = await prisma.user.count({
+    where: { organizationId: currentUser.organizationId, isActive: true },
+  });
+  const hasMultipleMembers = teamCount > 1;
+  const hasProjects = projects.length > 0;
+  const hasTimeEntries = timeTotals.length > 0;
+  const onboardingComplete = hasProjects && hasMultipleMembers && hasTimeEntries;
+
   return (
     <div className="p-6 sm:p-8 max-w-7xl">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
@@ -103,6 +112,61 @@ export default async function DashboardPage() {
           New Project
         </Link>
       </div>
+
+      {/* Onboarding checklist — shown until setup is complete */}
+      {!onboardingComplete && (
+        <div className="mb-8 rounded-2xl border border-[#52B788]/30 bg-[#F0FAF4] p-6">
+          <h2 className="font-serif text-lg text-[#1A2E22] mb-1">Get started with Phasewise</h2>
+          <p className="text-sm text-[#6B8C74] mb-4">Complete these steps to get the most out of your firm&apos;s new project management platform.</p>
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${hasProjects ? "bg-[#2D6A4F] text-white" : "bg-white border-2 border-[#E2EBE4] text-[#A3BEA9]"}`}>
+                {hasProjects ? "✓" : "1"}
+              </div>
+              <div className="flex-1">
+                <span className={`text-sm font-medium ${hasProjects ? "text-[#6B8C74] line-through" : "text-[#1A2E22]"}`}>
+                  Create your first project
+                </span>
+              </div>
+              {!hasProjects && (
+                <Link href="/projects/new" className="text-xs font-medium text-[#2D6A4F] hover:underline">
+                  Create project →
+                </Link>
+              )}
+            </div>
+            <div className="flex items-center gap-3">
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${hasMultipleMembers ? "bg-[#2D6A4F] text-white" : "bg-white border-2 border-[#E2EBE4] text-[#A3BEA9]"}`}>
+                {hasMultipleMembers ? "✓" : "2"}
+              </div>
+              <div className="flex-1">
+                <span className={`text-sm font-medium ${hasMultipleMembers ? "text-[#6B8C74] line-through" : "text-[#1A2E22]"}`}>
+                  Add your team
+                </span>
+              </div>
+              {!hasMultipleMembers && (
+                <Link href="/settings/team" className="text-xs font-medium text-[#2D6A4F] hover:underline">
+                  Add team →
+                </Link>
+              )}
+            </div>
+            <div className="flex items-center gap-3">
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${hasTimeEntries ? "bg-[#2D6A4F] text-white" : "bg-white border-2 border-[#E2EBE4] text-[#A3BEA9]"}`}>
+                {hasTimeEntries ? "✓" : "3"}
+              </div>
+              <div className="flex-1">
+                <span className={`text-sm font-medium ${hasTimeEntries ? "text-[#6B8C74] line-through" : "text-[#1A2E22]"}`}>
+                  Log your first time entry
+                </span>
+              </div>
+              {!hasTimeEntries && (
+                <Link href="/time" className="text-xs font-medium text-[#2D6A4F] hover:underline">
+                  Log time →
+                </Link>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-4 xl:grid-cols-4 mb-8">
         <div className="rounded-2xl border border-[#E2EBE4] bg-white p-5 shadow-sm">
