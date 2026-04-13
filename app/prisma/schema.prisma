@@ -32,6 +32,7 @@ model Organization {
   projects    Project[]
   invitations Invitation[]
   timeEntries TimeEntry[]
+  clients     Client[]
 
   @@map("organizations")
 }
@@ -205,6 +206,28 @@ model ProjectPhase {
   workPlan      PhaseStaffPlan[]
 
   @@map("project_phases")
+}
+
+// ── Clients ─────────────────────────────────────────────────────────
+
+model Client {
+  id              String   @id @default(uuid()) @db.Uuid
+  organizationId  String   @map("organization_id") @db.Uuid
+  name            String   // Company or individual name
+  contactPerson   String?  @map("contact_person")
+  email           String?
+  phone           String?
+  address         String?
+  city            String?
+  state           String?
+  zip             String?
+  notes           String?
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@map("clients")
 }
 
 // ── Submittals & RFIs ────────────────────────────────────────────────

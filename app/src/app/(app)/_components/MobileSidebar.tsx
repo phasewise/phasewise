@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BarChart3,
+  Building2,
   ClipboardList,
   Clock,
   FolderKanban,
@@ -22,6 +23,7 @@ import LogoutButton from "./LogoutButton";
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: Home },
   { name: "Projects", href: "/projects", icon: FolderKanban },
+  { name: "Clients", href: "/clients", icon: Building2 },
   { name: "Submittals", href: "/submittals", icon: ClipboardList },
   { name: "Plants", href: "/plants", icon: Leaf },
   { name: "Compliance", href: "/compliance", icon: ShieldCheck },
