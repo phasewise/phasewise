@@ -10,6 +10,7 @@ import {
   Home,
   Menu,
   Settings,
+  Shield,
   Users,
   X,
 } from "lucide-react";
@@ -24,10 +25,15 @@ const navigation = [
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 
+const adminNavigation = [
+  { name: "Admin", href: "/admin", icon: Shield },
+];
+
 type Props = {
   user: {
     fullName: string;
     email: string;
+    role: string;
     organization?: { name: string } | null;
   };
 };
@@ -58,6 +64,7 @@ function Avatar({ name }: { name: string }) {
 
 function SidebarContent({ user, onNavigate }: Props & { onNavigate?: () => void }) {
   const pathname = usePathname();
+  const isAdmin = user.role === "OWNER" || user.role === "ADMIN";
 
   return (
     <>
@@ -89,6 +96,35 @@ function SidebarContent({ user, onNavigate }: Props & { onNavigate?: () => void 
             </Link>
           );
         })}
+
+        {/* Admin section — owner/admin only */}
+        {isAdmin && (
+          <>
+            <div className="pt-3 mt-3 border-t border-white/[0.06]">
+              <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/30">
+                Admin
+              </div>
+            </div>
+            {adminNavigation.map((item) => {
+              const isActive = pathname.startsWith(item.href);
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  onClick={onNavigate}
+                  className={`flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg transition-colors ${
+                    isActive
+                      ? "text-white bg-white/[0.08]"
+                      : "text-white/55 hover:text-white hover:bg-white/[0.06]"
+                  }`}
+                >
+                  <item.icon className="h-4 w-4" strokeWidth={1.75} />
+                  {item.name}
+                </Link>
+              );
+            })}
+          </>
+        )}
       </nav>
 
       {/* User identity widget */}
