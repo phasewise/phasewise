@@ -15,6 +15,7 @@ type Props = {
   dateLabels: string[];
   initialEntries: Record<string, string>;
   initialRows: Array<{ projectId: string; phaseId: string }>;
+  readOnly?: boolean;
 };
 
 const formatKey = (projectId: string, phaseId: string, date: string) =>
@@ -26,6 +27,7 @@ export default function TimeSheetClient({
   dateLabels,
   initialEntries,
   initialRows,
+  readOnly = false,
 }: Props) {
   const [rows, setRows] = useState<Array<{ projectId: string; phaseId: string }>>(
     initialRows.length > 0 ? initialRows : []
@@ -168,7 +170,8 @@ export default function TimeSheetClient({
                       <select
                         value={row.projectId}
                         onChange={(e) => updateRow(index, "projectId", e.target.value)}
-                        className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-2 py-2 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]"
+                        disabled={readOnly}
+                        className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-2 py-2 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788] disabled:opacity-60"
                       >
                         <option value="">Select project</option>
                         {projects.map((p) => (
@@ -184,7 +187,7 @@ export default function TimeSheetClient({
                       <select
                         value={row.phaseId}
                         onChange={(e) => updateRow(index, "phaseId", e.target.value)}
-                        disabled={!row.projectId}
+                        disabled={!row.projectId || readOnly}
                         className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-2 py-2 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788] disabled:opacity-50"
                       >
                         <option value="">Select phase</option>
@@ -200,7 +203,7 @@ export default function TimeSheetClient({
                     {dates.map((date) => {
                       const key = formatKey(row.projectId, row.phaseId, date);
                       const isSaving = saving[key];
-                      const isDisabled = !row.projectId || !row.phaseId;
+                      const isDisabled = !row.projectId || !row.phaseId || readOnly;
 
                       return (
                         <td key={date} className="px-1 py-2">
@@ -233,14 +236,16 @@ export default function TimeSheetClient({
 
                     {/* Remove button */}
                     <td className="px-2 py-2">
-                      <button
-                        type="button"
-                        onClick={() => removeRow(index)}
-                        className="text-[#A3BEA9] hover:text-rose-500 transition-colors p-1"
-                        title="Remove row"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {!readOnly && (
+                        <button
+                          type="button"
+                          onClick={() => removeRow(index)}
+                          className="text-[#A3BEA9] hover:text-rose-500 transition-colors p-1"
+                          title="Remove row"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </td>
                   </tr>
                 );
@@ -281,14 +286,16 @@ export default function TimeSheetClient({
       </div>
 
       {/* Add row button */}
-      <button
-        type="button"
-        onClick={addRow}
-        className="mt-4 inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-[#F0FAF4] text-[#2D6A4F] border border-[#52B788]/30 hover:bg-[#2D6A4F] hover:text-white transition-all"
-      >
-        <Plus className="w-4 h-4" />
-        Add time entry row
-      </button>
+      {!readOnly && (
+        <button
+          type="button"
+          onClick={addRow}
+          className="mt-4 inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-[#F0FAF4] text-[#2D6A4F] border border-[#52B788]/30 hover:bg-[#2D6A4F] hover:text-white transition-all"
+        >
+          <Plus className="w-4 h-4" />
+          Add time entry row
+        </button>
+      )}
     </div>
   );
 }

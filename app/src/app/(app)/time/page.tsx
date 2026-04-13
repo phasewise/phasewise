@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { PHASE_LABELS } from "@/lib/constants";
 import TimeSheetClient from "./TimeSheetClient";
 import TimesheetSubmitClient from "./TimesheetSubmitClient";
+import TimesheetUserSelector from "./TimesheetUserSelector";
 
 function getWeekStart(date: Date) {
   return startOfWeek(date, { weekStartsOn: 1 });
@@ -11,7 +12,14 @@ function getWeekStart(date: Date) {
 
 const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-export default async function TimePage() {
+const ADMIN_ROLES = ["OWNER", "ADMIN", "SUPERVISOR"];
+
+export default async function TimePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ userId?: string }>;
+}) {
+  const params = await searchParams;
   const currentUser = await getCurrentUser();
 
   if (!currentUser) {
@@ -25,6 +33,36 @@ export default async function TimePage() {
     );
   }
 
+  const canViewOthers = ADMIN_ROLES.includes(currentUser.role);
+
+  // Determine which user's timesheet to display
+  let viewingUserId = currentUser.id;
+  let viewingUserName = "your";
+  let isViewingOther = false;
+
+  if (canViewOthers && params.userId && params.userId !== currentUser.id) {
+    // Verify the selected user belongs to the same org
+    const selectedUser = await prisma.user.findUnique({
+      where: { id: params.userId },
+      select: { id: true, fullName: true, organizationId: true },
+    });
+    if (selectedUser && selectedUser.organizationId === currentUser.organizationId) {
+      viewingUserId = selectedUser.id;
+      viewingUserName = `${selectedUser.fullName}'s`;
+      isViewingOther = true;
+    }
+  }
+
+  // Fetch team members for the admin selector
+  let teamMembers: Array<{ id: string; fullName: string }> = [];
+  if (canViewOthers) {
+    teamMembers = await prisma.user.findMany({
+      where: { organizationId: currentUser.organizationId, isActive: true },
+      select: { id: true, fullName: true },
+      orderBy: { fullName: "asc" },
+    });
+  }
+
   const weekStartDate = getWeekStart(new Date());
   const weekDates = Array.from({ length: 7 }, (_, index) =>
     addDays(weekStartDate, index)
@@ -33,13 +71,12 @@ export default async function TimePage() {
   const timesheet = await prisma.weeklyTimesheet.findUnique({
     where: {
       userId_weekStart: {
-        userId: currentUser.id,
+        userId: viewingUserId,
         weekStart: weekStartDate,
       },
     },
   });
 
-  // Fetch active (non-archived) projects with their phases
   const projects = await prisma.project.findMany({
     where: { organizationId: currentUser.organizationId, status: { not: "ARCHIVED" } },
     include: {
@@ -50,15 +87,13 @@ export default async function TimePage() {
     orderBy: { name: "asc" },
   });
 
-  // Fetch existing time entries for this week
   const entries = await prisma.timeEntry.findMany({
     where: {
-      userId: currentUser.id,
+      userId: viewingUserId,
       date: { gte: weekStartDate, lte: addDays(weekStartDate, 6) },
     },
   });
 
-  // Format projects for the client
   const projectsForClient = projects.map((p) => ({
     id: p.id,
     name: p.name,
@@ -68,14 +103,12 @@ export default async function TimePage() {
     })),
   }));
 
-  // Build initial entries map (key: projectId:phaseId:date → value: hours)
   const initialEntries: Record<string, string> = {};
   entries.forEach((entry) => {
     const key = `${entry.projectId}:${entry.phaseId}:${format(entry.date, "yyyy-MM-dd")}`;
     initialEntries[key] = entry.hours.toString();
   });
 
-  // Build initial rows from existing entries (unique project+phase combos)
   const seenRows = new Set<string>();
   const initialRows: Array<{ projectId: string; phaseId: string }> = [];
   entries.forEach((entry) => {
@@ -95,14 +128,41 @@ export default async function TimePage() {
         <div>
           <h1 className="font-serif text-3xl text-[#1A2E22]">Time Sheets</h1>
           <p className="mt-1 text-sm text-[#6B8C74]">
-            Week of {format(weekStartDate, "MMMM d, yyyy")}
+            {isViewingOther ? (
+              <>Viewing {viewingUserName} timesheet · Week of {format(weekStartDate, "MMMM d, yyyy")}</>
+            ) : (
+              <>Week of {format(weekStartDate, "MMMM d, yyyy")}</>
+            )}
           </p>
         </div>
-        <TimesheetSubmitClient
-          weekStart={format(weekStartDate, "yyyy-MM-dd")}
-          status={timesheet?.status ?? "DRAFT"}
-        />
+        <div className="flex items-center gap-3 flex-wrap">
+          {canViewOthers && teamMembers.length > 1 && (
+            <TimesheetUserSelector
+              teamMembers={teamMembers}
+              currentUserId={currentUser.id}
+              selectedUserId={viewingUserId}
+            />
+          )}
+          {!isViewingOther && (
+            <TimesheetSubmitClient
+              weekStart={format(weekStartDate, "yyyy-MM-dd")}
+              status={timesheet?.status ?? "DRAFT"}
+            />
+          )}
+        </div>
       </div>
+
+      {isViewingOther && (
+        <div className="mb-4 bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-amber-800">
+          You are viewing {viewingUserName} timesheet in read-only mode.
+          {timesheet?.status === "SUBMITTED" && (
+            <> This timesheet has been <span className="font-semibold">submitted</span> for approval.</>
+          )}
+          {timesheet?.status === "APPROVED" && (
+            <> This timesheet has been <span className="font-semibold">approved</span>.</>
+          )}
+        </div>
+      )}
 
       <TimeSheetClient
         projects={projectsForClient}
@@ -110,6 +170,7 @@ export default async function TimePage() {
         dateLabels={dateLabels}
         initialEntries={initialEntries}
         initialRows={initialRows}
+        readOnly={isViewingOther}
       />
     </div>
   );
