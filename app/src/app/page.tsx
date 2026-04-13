@@ -626,10 +626,16 @@ export default function HomePage() {
             <div>
               <div className="text-[10px] font-semibold tracking-[0.18em] uppercase text-white/30 mb-5">Support</div>
               <ul className="list-none space-y-3">
-                {["Documentation", "Help Center", "System Status", "Privacy Policy", "Terms of Service"].map((item) => (
-                  <li key={item}>
-                    <a href="#" className="text-[13px] text-white/35 hover:text-white/75 transition-colors">
-                      {item}
+                {[
+                  { name: "Documentation", href: "#" },
+                  { name: "Help Center", href: "#" },
+                  { name: "System Status", href: "#" },
+                  { name: "Privacy Policy", href: "/privacy" },
+                  { name: "Terms of Service", href: "/terms" },
+                ].map((item) => (
+                  <li key={item.name}>
+                    <a href={item.href} className="text-[13px] text-white/35 hover:text-white/75 transition-colors">
+                      {item.name}
                     </a>
                   </li>
                 ))}
