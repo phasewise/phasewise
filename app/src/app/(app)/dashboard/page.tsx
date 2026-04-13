@@ -1,8 +1,9 @@
-import { ArrowUpRight, FolderKanban } from "lucide-react";
+import { ArrowUpRight, FolderKanban, AlertTriangle, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { PHASE_SHORT_LABELS, STATUS_COLORS } from "@/lib/constants";
 import { getCurrentUser } from "@/lib/supabase/auth";
 import { prisma } from "@/lib/prisma";
+import { getBudgetAlertLevel, ALERT_LABELS } from "@/lib/budget-alerts";
 
 function getCurrentPhase(phases: Array<{ phaseType: string; status: string }>) {
   const activePhase = phases.find((phase) => phase.status !== "COMPLETE");
@@ -155,7 +156,7 @@ export default async function DashboardPage() {
                 <th className="px-6 py-4 font-medium">Project</th>
                 <th className="px-6 py-4 font-medium">Client</th>
                 <th className="px-6 py-4 font-medium">Phase</th>
-                <th className="px-6 py-4 font-medium">Status</th>
+                <th className="px-6 py-4 font-medium">Health</th>
                 <th className="px-6 py-4 font-medium">Budget</th>
                 <th className="px-6 py-4 font-medium">Burn</th>
               </tr>
@@ -189,9 +190,24 @@ export default async function DashboardPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`text-xs font-semibold px-2 py-1 rounded-full ${STATUS_COLORS[project.status]}`}>
-                        {project.status.replace("_", " ")}
-                      </span>
+                      {(() => {
+                        const alertLevel = getBudgetAlertLevel(hoursUsed, budgetedHours);
+                        if (alertLevel) {
+                          const alert = ALERT_LABELS[alertLevel];
+                          return (
+                            <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full border ${alert.bgColor}`}>
+                              <AlertTriangle className="w-3 h-3" />
+                              {alertLevel === "OVER_100" ? "Over budget" : alertLevel === "CRITICAL_90" ? "At risk" : "Watch"}
+                            </span>
+                          );
+                        }
+                        return (
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full bg-[#F0FAF4] text-[#2D6A4F] border border-[#52B788]/20">
+                            <CheckCircle2 className="w-3 h-3" />
+                            On track
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td className="px-6 py-4 text-slate-600">${budgetedFee.toLocaleString()}</td>
                     <td className="px-6 py-4">

@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { Prisma, PrismaClient } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { createClient } from "@/lib/supabase/server";
+import { checkAndSendBudgetAlert } from "@/lib/budget-alerts";
 
 export const dynamic = "force-dynamic";
 
@@ -89,6 +90,12 @@ export async function POST(request: Request) {
         data: entryData,
       })
     : await prisma.timeEntry.create({ data: entryData });
+
+  // Fire-and-forget: check if this time entry pushed the project past
+  // a budget alert threshold (75%, 90%, 100%). Never blocks the response.
+  void checkAndSendBudgetAlert(projectId).catch((err) => {
+    console.error("[time] Budget alert check failed:", err);
+  });
 
   return NextResponse.json({ success: true, entry: savedEntry });
 }
