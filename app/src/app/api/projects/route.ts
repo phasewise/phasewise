@@ -103,6 +103,22 @@ export async function POST(request: Request) {
       },
     });
 
+    // If auto-numbering is enabled, increment the org's counter
+    const org = await prisma.organization.findUnique({
+      where: { id: currentUser.organizationId },
+      select: { autoNumberProjects: true, projectNumberPrefix: true, projectNumberNext: true },
+    });
+    if (org?.autoNumberProjects && projectNumber) {
+      // Only increment if the project number matches the auto-generated format
+      const expectedNumber = `${org.projectNumberPrefix}-${String(org.projectNumberNext).padStart(3, "0")}`;
+      if (projectNumber === expectedNumber) {
+        await prisma.organization.update({
+          where: { id: currentUser.organizationId },
+          data: { projectNumberNext: { increment: 1 } },
+        });
+      }
+    }
+
     return NextResponse.json({ projectId: project.id });
   } catch (error) {
     console.error("Failed to create project:", error);

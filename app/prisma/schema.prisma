@@ -22,6 +22,9 @@ model Organization {
   currentPeriodEnd         DateTime?           @map("current_period_end")
   cancelAtPeriodEnd        Boolean             @default(false) @map("cancel_at_period_end")
   trialEndsAt              DateTime?           @map("trial_ends_at")
+  projectNumberPrefix      String              @default("PW") @map("project_number_prefix")
+  projectNumberNext        Int                 @default(1) @map("project_number_next")
+  autoNumberProjects       Boolean             @default(true) @map("auto_number_projects")
   createdAt                DateTime            @default(now()) @map("created_at")
   updatedAt                DateTime            @updatedAt @map("updated_at")
 

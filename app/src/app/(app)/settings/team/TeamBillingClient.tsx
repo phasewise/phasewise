@@ -103,6 +103,7 @@ export default function TeamBillingClient({
               <th className="px-4 sm:px-6 py-3 font-medium">Role</th>
               <th className="px-4 sm:px-6 py-3 font-medium">Billing Rate ($/hr)</th>
               {canSeeSalary && <th className="px-4 sm:px-6 py-3 font-medium">Annual Salary</th>}
+              {canSeeSalary && <th className="px-4 sm:px-6 py-3 font-medium">Hourly Cost</th>}
               {canManage && <th className="px-4 sm:px-6 py-3 font-medium w-28"></th>}
             </tr>
           </thead>
@@ -162,6 +163,15 @@ export default function TeamBillingClient({
                         <span className="text-[#1A2E22]">
                           ${Number(state.salary || 0).toLocaleString()}
                         </span>
+                      )}
+                    </td>
+                  )}
+                  {canSeeSalary && (
+                    <td className="px-4 sm:px-6 py-4 text-[#6B8C74]">
+                      {state.salary && Number(state.salary) > 0 ? (
+                        <span>${(Number(state.salary) / 2080).toFixed(2)}/hr</span>
+                      ) : (
+                        <span className="text-[#A3BEA9]">—</span>
                       )}
                     </td>
                   )}
