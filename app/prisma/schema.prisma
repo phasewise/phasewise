@@ -80,6 +80,8 @@ model User {
   assignments ProjectAssignment[]
   assignedTasks ProjectTask[]
   phaseStaffPlans PhaseStaffPlan[]
+  createdSubmittals Submittal[] @relation("SubmittalCreator")
+  assignedSubmittals Submittal[] @relation("SubmittalAssignee")
 
   @@map("users")
 }
@@ -132,6 +134,7 @@ model Project {
   assignments  ProjectAssignment[]
   tasks        ProjectTask[]
   timeEntries  TimeEntry[]
+  submittals   Submittal[]
 
   @@map("projects")
 }
@@ -199,6 +202,47 @@ model ProjectPhase {
   workPlan      PhaseStaffPlan[]
 
   @@map("project_phases")
+}
+
+// ── Submittals & RFIs ────────────────────────────────────────────────
+
+model Submittal {
+  id              String           @id @default(uuid()) @db.Uuid
+  projectId       String           @map("project_id") @db.Uuid
+  organizationId  String           @map("organization_id") @db.Uuid
+  type            SubmittalType    @default(SUBMITTAL)
+  number          String           // e.g., "SUB-001", "RFI-003"
+  subject         String
+  description     String?
+  status          SubmittalStatus  @default(PENDING)
+  ballInCourt     String?          @map("ball_in_court") // Who needs to act next
+  dueDate         DateTime?        @map("due_date") @db.Date
+  submittedDate   DateTime?        @map("submitted_date") @db.Date
+  responseDate    DateTime?        @map("response_date") @db.Date
+  createdById     String           @map("created_by_id") @db.Uuid
+  assignedToId    String?          @map("assigned_to_id") @db.Uuid
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+
+  project      Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy    User    @relation("SubmittalCreator", fields: [createdById], references: [id])
+  assignedTo   User?   @relation("SubmittalAssignee", fields: [assignedToId], references: [id])
+
+  @@map("submittals")
+}
+
+enum SubmittalType {
+  SUBMITTAL
+  RFI
+}
+
+enum SubmittalStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  RESUBMIT
+  CLOSED
 }
 
 // ── Phase Staff Plan (Work Plan) ─────────────────────────────────────
