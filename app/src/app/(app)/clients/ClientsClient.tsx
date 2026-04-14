@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Building2, Mail, MapPin, Phone, Plus } from "lucide-react";
+import { Building2, Mail, MapPin, Pencil, Phone, Plus, X } from "lucide-react";
 
 type Client = {
   id: string;
@@ -25,6 +25,7 @@ export default function ClientsClient({ clients: initialClients }: Props) {
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
 
   const [formName, setFormName] = useState("");
   const [formContact, setFormContact] = useState("");
@@ -35,6 +36,71 @@ export default function ClientsClient({ clients: initialClients }: Props) {
   const [formState, setFormState] = useState("");
   const [formZip, setFormZip] = useState("");
   const [formNotes, setFormNotes] = useState("");
+
+  function openEdit(client: Client) {
+    setEditingClient(client);
+    setFormName(client.name);
+    setFormContact(client.contactPerson ?? "");
+    setFormEmail(client.email ?? "");
+    setFormPhone(client.phone ?? "");
+    setFormAddress(client.address ?? "");
+    setFormCity(client.city ?? "");
+    setFormState(client.state ?? "");
+    setFormZip(client.zip ?? "");
+    setFormNotes(client.notes ?? "");
+    setError(null);
+  }
+
+  function closeEdit() {
+    setEditingClient(null);
+    setFormName("");
+    setFormContact("");
+    setFormEmail("");
+    setFormPhone("");
+    setFormAddress("");
+    setFormCity("");
+    setFormState("");
+    setFormZip("");
+    setFormNotes("");
+  }
+
+  async function handleUpdate(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingClient) return;
+    setError(null);
+    setSaving(true);
+
+    const res = await fetch("/api/clients", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: editingClient.id,
+        name: formName,
+        contactPerson: formContact || null,
+        email: formEmail || null,
+        phone: formPhone || null,
+        address: formAddress || null,
+        city: formCity || null,
+        state: formState || null,
+        zip: formZip || null,
+        notes: formNotes || null,
+      }),
+    });
+
+    const data = await res.json();
+    setSaving(false);
+
+    if (!res.ok) {
+      setError(data.error || "Failed to update client.");
+      return;
+    }
+
+    setClients((prev) =>
+      prev.map((c) => (c.id === editingClient.id ? data.client : c))
+        .sort((a, b) => a.name.localeCompare(b.name))
+    );
+    closeEdit();
+  }
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -163,9 +229,13 @@ export default function ClientsClient({ clients: initialClients }: Props) {
         {clients.map((client) => (
           <div
             key={client.id}
-            className="rounded-2xl border border-[#E2EBE4] bg-white p-5 hover:border-[#52B788] hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(45,106,79,0.06)] transition-all"
+            onClick={() => openEdit(client)}
+            className="rounded-2xl border border-[#E2EBE4] bg-white p-5 hover:border-[#52B788] hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(45,106,79,0.06)] transition-all cursor-pointer group"
           >
-            <h3 className="font-semibold text-[#1A2E22] mb-1">{client.name}</h3>
+            <div className="flex items-start justify-between">
+              <h3 className="font-semibold text-[#1A2E22] mb-1">{client.name}</h3>
+              <Pencil className="w-3.5 h-3.5 text-[#A3BEA9] opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-1" />
+            </div>
             {client.contactPerson && (
               <p className="text-sm text-[#6B8C74] mb-3">{client.contactPerson}</p>
             )}
@@ -201,6 +271,71 @@ export default function ClientsClient({ clients: initialClients }: Props) {
           <Building2 className="w-10 h-10 text-[#A3BEA9] mx-auto mb-3" />
           <h3 className="font-semibold text-[#1A2E22] mb-1">No clients yet</h3>
           <p className="text-sm text-[#6B8C74]">Add your first client to start tracking contacts and project relationships.</p>
+        </div>
+      )}
+
+      {/* Edit modal */}
+      {editingClient && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4" onClick={closeEdit}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-6 pb-0">
+              <h2 className="font-serif text-xl text-[#1A2E22]">Edit Client</h2>
+              <button type="button" onClick={closeEdit} className="text-[#A3BEA9] hover:text-[#1A2E22] transition-colors"><X size={18} /></button>
+            </div>
+            <form onSubmit={handleUpdate} className="p-6 space-y-4">
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Company / Client name *</label>
+                  <input value={formName} onChange={(e) => setFormName(e.target.value)} required className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+                </div>
+                <div>
+                  <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Contact person</label>
+                  <input value={formContact} onChange={(e) => setFormContact(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+                </div>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Email</label>
+                  <input type="email" value={formEmail} onChange={(e) => setFormEmail(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+                </div>
+                <div>
+                  <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Phone</label>
+                  <input value={formPhone} onChange={(e) => setFormPhone(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+                </div>
+              </div>
+              <div className="grid sm:grid-cols-4 gap-4">
+                <div className="sm:col-span-2">
+                  <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Address</label>
+                  <input value={formAddress} onChange={(e) => setFormAddress(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+                </div>
+                <div>
+                  <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">City</label>
+                  <input value={formCity} onChange={(e) => setFormCity(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">State</label>
+                    <input value={formState} onChange={(e) => setFormState(e.target.value)} maxLength={2} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] uppercase focus:outline-none focus:border-[#52B788]" />
+                  </div>
+                  <div>
+                    <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">ZIP</label>
+                    <input value={formZip} onChange={(e) => setFormZip(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Notes</label>
+                <textarea value={formNotes} onChange={(e) => setFormNotes(e.target.value)} rows={2} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788] resize-y" />
+              </div>
+              {error && <p className="text-[#B04030] text-sm">{error}</p>}
+              <div className="flex gap-3 pt-2">
+                <button type="submit" disabled={saving} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium bg-[#2D6A4F] text-white hover:bg-[#40916C] transition-colors disabled:opacity-50">
+                  {saving ? "Saving..." : "Save changes"}
+                </button>
+                <button type="button" onClick={closeEdit} className="px-4 py-2.5 rounded-lg text-sm text-[#6B8C74] hover:text-[#1A2E22]">Cancel</button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

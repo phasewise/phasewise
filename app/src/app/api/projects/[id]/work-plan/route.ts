@@ -105,6 +105,18 @@ export async function PUT(
 
     const validPhaseIds = new Set(project.phases.map((p) => p.id));
 
+    // Fetch billing rates for staff to calculate estimated fee
+    const allUserIds = new Set(
+      plan.flatMap((e) => e.staff.map((s) => s.userId).filter(Boolean))
+    );
+    const users = await prisma.user.findMany({
+      where: { id: { in: [...allUserIds] } },
+      select: { id: true, billingRate: true },
+    });
+    const rateMap = new Map(
+      users.map((u) => [u.id, Number(u.billingRate ?? 0)])
+    );
+
     await prisma.$transaction(async (tx) => {
       for (const entry of plan) {
         if (!validPhaseIds.has(entry.phaseId)) continue;
@@ -114,16 +126,39 @@ export async function PUT(
           where: { phaseId: entry.phaseId },
         });
 
+        const validStaff = entry.staff.filter(
+          (s) => s.userId && s.plannedHours > 0
+        );
+
         // Create new staff plans
-        if (entry.staff && entry.staff.length > 0) {
+        if (validStaff.length > 0) {
           await tx.phaseStaffPlan.createMany({
-            data: entry.staff
-              .filter((s) => s.userId && s.plannedHours > 0)
-              .map((s) => ({
-                phaseId: entry.phaseId,
-                userId: s.userId,
-                plannedHours: new Prisma.Decimal(s.plannedHours),
-              })),
+            data: validStaff.map((s) => ({
+              phaseId: entry.phaseId,
+              userId: s.userId,
+              plannedHours: new Prisma.Decimal(s.plannedHours),
+            })),
+          });
+        }
+
+        // Auto-sync: update phase budgetedHours and budgetedFee
+        // from the work plan so they stay consistent
+        const totalHours = validStaff.reduce(
+          (sum, s) => sum + s.plannedHours,
+          0
+        );
+        const totalFee = validStaff.reduce(
+          (sum, s) => sum + s.plannedHours * (rateMap.get(s.userId) ?? 0),
+          0
+        );
+
+        if (validStaff.length > 0) {
+          await tx.projectPhase.update({
+            where: { id: entry.phaseId },
+            data: {
+              budgetedHours: new Prisma.Decimal(totalHours),
+              budgetedFee: new Prisma.Decimal(totalFee),
+            },
           });
         }
       }

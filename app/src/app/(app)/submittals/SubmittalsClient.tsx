@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Send } from "lucide-react";
+import { Pencil, Plus, Send, X } from "lucide-react";
 
 type Submittal = {
   id: string;
@@ -48,6 +48,8 @@ export default function SubmittalsClient({
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const [editingItem, setEditingItem] = useState<Submittal | null>(null);
+
   // Form state
   const [formType, setFormType] = useState<"SUBMITTAL" | "RFI">("SUBMITTAL");
   const [formProjectId, setFormProjectId] = useState("");
@@ -56,6 +58,71 @@ export default function SubmittalsClient({
   const [formBallInCourt, setFormBallInCourt] = useState("");
   const [formDueDate, setFormDueDate] = useState("");
   const [formAssignedTo, setFormAssignedTo] = useState("");
+
+  function openEdit(item: Submittal) {
+    setEditingItem(item);
+    setFormSubject(item.subject);
+    setFormDescription(item.description ?? "");
+    setFormBallInCourt(item.ballInCourt ?? "");
+    setFormDueDate(item.dueDate ? item.dueDate.split("T")[0] : "");
+    setFormAssignedTo(item.assignedToId ?? "");
+    setError(null);
+  }
+
+  function closeEdit() {
+    setEditingItem(null);
+    setFormSubject("");
+    setFormDescription("");
+    setFormBallInCourt("");
+    setFormDueDate("");
+    setFormAssignedTo("");
+  }
+
+  async function handleUpdate(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingItem) return;
+    setError(null);
+    setSaving(true);
+
+    const res = await fetch("/api/submittals", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: editingItem.id,
+        subject: formSubject,
+        description: formDescription || null,
+        ballInCourt: formBallInCourt || null,
+        dueDate: formDueDate || null,
+        assignedToId: formAssignedTo || null,
+      }),
+    });
+
+    const data = await res.json();
+    setSaving(false);
+
+    if (!res.ok) {
+      setError(data.error || "Failed to update.");
+      return;
+    }
+
+    const updated = data.submittal;
+    setSubmittals((prev) =>
+      prev.map((s) =>
+        s.id === editingItem.id
+          ? {
+              ...s,
+              subject: updated.subject,
+              description: updated.description,
+              ballInCourt: updated.ballInCourt,
+              dueDate: updated.dueDate,
+              assignedToId: updated.assignedToId,
+              assignedTo: updated.assignedTo?.fullName ?? null,
+            }
+          : s
+      )
+    );
+    closeEdit();
+  }
 
   async function createSubmittal(e: React.FormEvent) {
     e.preventDefault();
@@ -267,7 +334,7 @@ export default function SubmittalsClient({
                   new Date(item.dueDate) < new Date();
 
                 return (
-                  <tr key={item.id} className="border-b border-[#E8EDE9] last:border-0 hover:bg-[#F7F9F7]/50 transition-colors">
+                  <tr key={item.id} onClick={() => openEdit(item)} className="border-b border-[#E8EDE9] last:border-0 hover:bg-[#F7F9F7]/50 transition-colors cursor-pointer group">
                     <td className="px-4 sm:px-6 py-4">
                       <span className={`font-mono text-xs font-semibold px-2 py-1 rounded ${
                         item.type === "RFI" ? "bg-blue-50 text-blue-700" : "bg-[#F0FAF4] text-[#2D6A4F]"
@@ -276,8 +343,13 @@ export default function SubmittalsClient({
                       </span>
                     </td>
                     <td className="px-4 sm:px-6 py-4">
-                      <div className="font-medium text-[#1A2E22]">{item.subject}</div>
-                      <div className="text-xs text-[#A3BEA9] mt-0.5">by {item.createdBy}</div>
+                      <div className="flex items-center gap-2">
+                        <div>
+                          <div className="font-medium text-[#1A2E22]">{item.subject}</div>
+                          <div className="text-xs text-[#A3BEA9] mt-0.5">by {item.createdBy}</div>
+                        </div>
+                        <Pencil className="w-3 h-3 text-[#A3BEA9] opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                      </div>
                     </td>
                     <td className="px-4 sm:px-6 py-4 text-[#6B8C74]">{item.projectName}</td>
                     <td className="px-4 sm:px-6 py-4 text-[#1A2E22] font-medium">{item.ballInCourt || "—"}</td>
@@ -291,7 +363,7 @@ export default function SubmittalsClient({
                         <span className="text-[#A3BEA9]">—</span>
                       )}
                     </td>
-                    <td className="px-4 sm:px-6 py-4">
+                    <td className="px-4 sm:px-6 py-4" onClick={(e) => e.stopPropagation()}>
                       <select
                         value={item.status}
                         onChange={(e) => updateStatus(item.id, e.target.value)}
@@ -319,6 +391,51 @@ export default function SubmittalsClient({
           </table>
         </div>
       </div>
+      {/* Edit modal */}
+      {editingItem && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4" onClick={closeEdit}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-6 pb-0">
+              <h2 className="font-serif text-xl text-[#1A2E22]">Edit {editingItem.type === "RFI" ? "RFI" : "Submittal"}</h2>
+              <button type="button" onClick={closeEdit} className="text-[#A3BEA9] hover:text-[#1A2E22] transition-colors"><X size={18} /></button>
+            </div>
+            <form onSubmit={handleUpdate} className="p-6 space-y-4">
+              <div>
+                <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Subject *</label>
+                <input value={formSubject} onChange={(e) => setFormSubject(e.target.value)} required className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+              </div>
+              <div>
+                <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Description</label>
+                <textarea value={formDescription} onChange={(e) => setFormDescription(e.target.value)} rows={3} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788] resize-y" />
+              </div>
+              <div className="grid sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Ball in court</label>
+                  <input value={formBallInCourt} onChange={(e) => setFormBallInCourt(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+                </div>
+                <div>
+                  <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Due date</label>
+                  <input type="date" value={formDueDate} onChange={(e) => setFormDueDate(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+                </div>
+                <div>
+                  <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Assigned to</label>
+                  <select value={formAssignedTo} onChange={(e) => setFormAssignedTo(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]">
+                    <option value="">Unassigned</option>
+                    {teamMembers.map((m) => <option key={m.id} value={m.id}>{m.fullName}</option>)}
+                  </select>
+                </div>
+              </div>
+              {error && <p className="text-[#B04030] text-sm">{error}</p>}
+              <div className="flex gap-3 pt-2">
+                <button type="submit" disabled={saving} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium bg-[#2D6A4F] text-white hover:bg-[#40916C] transition-colors disabled:opacity-50">
+                  {saving ? "Saving..." : "Save changes"}
+                </button>
+                <button type="button" onClick={closeEdit} className="px-4 py-2.5 rounded-lg text-sm text-[#6B8C74] hover:text-[#1A2E22]">Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

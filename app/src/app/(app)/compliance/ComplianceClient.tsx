@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Plus, ShieldCheck } from "lucide-react";
+import { useState, useRef } from "react";
+import { FileUp, Paperclip, Pencil, Plus, ShieldCheck, X } from "lucide-react";
 
 type ComplianceItem = {
   id: string;
@@ -52,12 +52,124 @@ export default function ComplianceClient({ items: initialItems, projects }: Prop
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [editingItem, setEditingItem] = useState<ComplianceItem | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
   const [formProjectId, setFormProjectId] = useState("");
   const [formCategory, setFormCategory] = useState("PERMIT");
   const [formName, setFormName] = useState("");
   const [formDescription, setFormDescription] = useState("");
   const [formDueDate, setFormDueDate] = useState("");
   const [formNotes, setFormNotes] = useState("");
+  const [formDocUrl, setFormDocUrl] = useState("");
+
+  function openEdit(item: ComplianceItem) {
+    setEditingItem(item);
+    setFormProjectId(item.projectId);
+    setFormCategory(item.category);
+    setFormName(item.name);
+    setFormDescription(item.description ?? "");
+    setFormDueDate(item.dueDate ? item.dueDate.split("T")[0] : "");
+    setFormNotes(item.notes ?? "");
+    setFormDocUrl(item.documentUrl ?? "");
+    setError(null);
+  }
+
+  function closeEdit() {
+    setEditingItem(null);
+    setFormName("");
+    setFormDescription("");
+    setFormDueDate("");
+    setFormNotes("");
+    setFormDocUrl("");
+  }
+
+  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>, complianceId?: string) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setError(null);
+
+    const formData = new FormData();
+    formData.append("file", file);
+    if (complianceId) formData.append("complianceId", complianceId);
+
+    try {
+      const res = await fetch("/api/compliance/upload", { method: "POST", body: formData });
+      if (!res.ok) {
+        const body = await res.json();
+        throw new Error(body.error || "Upload failed");
+      }
+      const { url } = await res.json();
+      setFormDocUrl(url);
+
+      // If editing, also save the URL to the item
+      if (complianceId) {
+        await fetch("/api/compliance", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: complianceId, documentUrl: url }),
+        });
+        setItems((prev) =>
+          prev.map((i) => (i.id === complianceId ? { ...i, documentUrl: url } : i))
+        );
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  }
+
+  async function handleUpdate(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingItem) return;
+    setError(null);
+    setSaving(true);
+
+    const res = await fetch("/api/compliance", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: editingItem.id,
+        category: formCategory,
+        name: formName,
+        description: formDescription || null,
+        dueDate: formDueDate || null,
+        notes: formNotes || null,
+        documentUrl: formDocUrl || null,
+      }),
+    });
+
+    const data = await res.json();
+    setSaving(false);
+
+    if (!res.ok) {
+      setError(data.error || "Failed to update.");
+      return;
+    }
+
+    const updated = data.item;
+    setItems((prev) =>
+      prev.map((i) =>
+        i.id === editingItem.id
+          ? {
+              ...i,
+              category: updated.category,
+              name: updated.name,
+              description: updated.description,
+              dueDate: updated.dueDate,
+              documentUrl: updated.documentUrl,
+              notes: updated.notes,
+              status: updated.status,
+            }
+          : i
+      )
+    );
+    closeEdit();
+  }
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -207,15 +319,23 @@ export default function ComplianceClient({ items: initialItems, projects }: Prop
               {items.map((item) => {
                 const isOverdue = item.dueDate && item.status !== "COMPLETE" && item.status !== "N_A" && new Date(item.dueDate) < new Date();
                 return (
-                  <tr key={item.id} className="border-b border-[#E8EDE9] last:border-0 hover:bg-[#F7F9F7]/50 transition-colors">
+                  <tr key={item.id} onClick={() => openEdit(item)} className="border-b border-[#E8EDE9] last:border-0 hover:bg-[#F7F9F7]/50 transition-colors cursor-pointer group">
                     <td className="px-4 sm:px-6 py-4">
                       <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${CATEGORY_COLORS[item.category] ?? ""}`}>
                         {item.category}
                       </span>
                     </td>
                     <td className="px-4 sm:px-6 py-4">
-                      <div className="font-medium text-[#1A2E22]">{item.name}</div>
-                      {item.description && <div className="text-xs text-[#A3BEA9] mt-0.5">{item.description}</div>}
+                      <div className="flex items-center gap-2">
+                        <div>
+                          <div className="font-medium text-[#1A2E22] flex items-center gap-1.5">
+                            {item.name}
+                            {item.documentUrl && <Paperclip className="w-3 h-3 text-[#52B788]" />}
+                          </div>
+                          {item.description && <div className="text-xs text-[#A3BEA9] mt-0.5">{item.description}</div>}
+                        </div>
+                        <Pencil className="w-3 h-3 text-[#A3BEA9] opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                      </div>
                     </td>
                     <td className="px-4 sm:px-6 py-4 text-[#6B8C74]">{item.projectName}</td>
                     <td className="px-4 sm:px-6 py-4">
@@ -226,7 +346,7 @@ export default function ComplianceClient({ items: initialItems, projects }: Prop
                         </span>
                       ) : "—"}
                     </td>
-                    <td className="px-4 sm:px-6 py-4">
+                    <td className="px-4 sm:px-6 py-4" onClick={(e) => e.stopPropagation()}>
                       <select
                         value={item.status}
                         onChange={(e) => updateStatus(item.id, e.target.value)}
@@ -249,6 +369,81 @@ export default function ComplianceClient({ items: initialItems, projects }: Prop
           </table>
         </div>
       </div>
+      {/* Edit modal */}
+      {editingItem && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4" onClick={closeEdit}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-6 pb-0">
+              <h2 className="font-serif text-xl text-[#1A2E22]">Edit Compliance Item</h2>
+              <button type="button" onClick={closeEdit} className="text-[#A3BEA9] hover:text-[#1A2E22] transition-colors"><X size={18} /></button>
+            </div>
+            <form onSubmit={handleUpdate} className="p-6 space-y-4">
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Category *</label>
+                  <select value={formCategory} onChange={(e) => setFormCategory(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]">
+                    {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Due date</label>
+                  <input type="date" value={formDueDate} onChange={(e) => setFormDueDate(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+                </div>
+              </div>
+              <div>
+                <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Name *</label>
+                <input value={formName} onChange={(e) => setFormName(e.target.value)} required className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+              </div>
+              <div>
+                <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Description</label>
+                <textarea value={formDescription} onChange={(e) => setFormDescription(e.target.value)} rows={2} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788] resize-y" />
+              </div>
+              <div>
+                <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Notes</label>
+                <textarea value={formNotes} onChange={(e) => setFormNotes(e.target.value)} rows={2} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788] resize-y" />
+              </div>
+              <div>
+                <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Document Attachment</label>
+                {formDocUrl ? (
+                  <div className="flex items-center gap-2 bg-[#F0FAF4] rounded-lg px-3.5 py-2.5 border border-[#52B788]/20">
+                    <Paperclip className="w-4 h-4 text-[#2D6A4F] flex-shrink-0" />
+                    <a href={formDocUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-[#2D6A4F] hover:underline truncate flex-1">
+                      View attached document
+                    </a>
+                    <button type="button" onClick={() => setFormDocUrl("")} className="text-[#A3BEA9] hover:text-rose-500 transition-colors">
+                      <X size={14} />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => fileRef.current?.click()}
+                    disabled={uploading}
+                    className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-[#E2EBE4] rounded-lg py-4 text-sm text-[#6B8C74] hover:border-[#52B788] hover:text-[#2D6A4F] transition-colors"
+                  >
+                    <FileUp className="w-4 h-4" />
+                    {uploading ? "Uploading..." : "Upload PDF, Word, or image (max 10MB)"}
+                  </button>
+                )}
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                  className="hidden"
+                  onChange={(e) => handleFileUpload(e, editingItem?.id)}
+                />
+              </div>
+              {error && <p className="text-[#B04030] text-sm">{error}</p>}
+              <div className="flex gap-3 pt-2">
+                <button type="submit" disabled={saving} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium bg-[#2D6A4F] text-white hover:bg-[#40916C] transition-colors disabled:opacity-50">
+                  {saving ? "Saving..." : "Save changes"}
+                </button>
+                <button type="button" onClick={closeEdit} className="px-4 py-2.5 rounded-lg text-sm text-[#6B8C74] hover:text-[#1A2E22]">Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

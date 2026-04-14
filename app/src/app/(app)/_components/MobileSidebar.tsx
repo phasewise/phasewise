@@ -137,13 +137,18 @@ function SidebarContent({ user, onNavigate }: Props & { onNavigate?: () => void 
 
       {/* User identity widget */}
       <div className="border-t border-white/[0.06] px-3 py-4">
-        <div className="flex items-center gap-3 px-2 py-2 rounded-lg">
+        <Link
+          href="/settings/profile"
+          onClick={onNavigate}
+          className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-white/[0.06] transition-colors cursor-pointer"
+          title="Edit profile"
+        >
           <Avatar name={user.fullName} />
           <div className="min-w-0 flex-1">
             <div className="text-sm font-medium text-white truncate">{user.fullName}</div>
             <div className="text-[11px] text-white/50 truncate">{user.email}</div>
           </div>
-        </div>
+        </Link>
         {user.organization && (
           <div className="mt-2 px-2 text-[11px] text-white/40 truncate">
             {user.organization.name}

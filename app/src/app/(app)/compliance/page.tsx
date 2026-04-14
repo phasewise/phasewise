@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { Droplets } from "lucide-react";
 import { getCurrentUser } from "@/lib/supabase/auth";
 import { prisma } from "@/lib/prisma";
 import ComplianceClient from "./ComplianceClient";
@@ -45,6 +47,16 @@ export default async function CompliancePage() {
 
   return (
     <div className="p-6 sm:p-8 max-w-6xl">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+        <div />
+        <Link
+          href="/tools/mwelo-calculator"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-blue-50 text-blue-700 border border-blue-200/30 hover:bg-blue-100 transition-colors"
+        >
+          <Droplets className="w-4 h-4" />
+          MWELO Calculator
+        </Link>
+      </div>
       <ComplianceClient items={itemsForClient} projects={projects} />
     </div>
   );

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { Eye, EyeOff } from "lucide-react";
 
 function PhaseLogo() {
   return (
@@ -18,29 +19,37 @@ function PhaseLogo() {
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [ready, setReady] = useState(false);
   const router = useRouter();
 
-  // When Supabase sends a password reset email, the link contains a token
-  // that establishes a temporary recovery session when the user lands here.
-  // We check for that session before showing the form so we don't let
-  // random visitors hit this page and try to change a password.
+  // The auth callback route (/api/auth/callback) exchanges the PKCE code
+  // for a session before redirecting here. Check for that session.
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         setReady(true);
       } else {
-        // Listen for the PASSWORD_RECOVERY event that Supabase fires when
-        // the user lands here from a recovery email link.
+        // Fallback: listen for auth state change in case session isn't
+        // immediately available (e.g. cookie propagation delay).
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
           if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") {
             setReady(true);
           }
         });
-        return () => subscription.unsubscribe();
+        // If still not ready after 3 seconds, show an error
+        const timeout = setTimeout(() => {
+          setReady(false);
+          setError("Reset link expired or is invalid. Please request a new one.");
+        }, 3000);
+        return () => {
+          subscription.unsubscribe();
+          clearTimeout(timeout);
+        };
       }
     });
   }, []);
@@ -90,36 +99,68 @@ export default function ResetPasswordPage() {
           </p>
 
           {!ready ? (
-            <div className="text-center text-[#6B8C74] text-sm py-6">
-              Verifying your reset link...
+            <div className="text-center py-6">
+              {error ? (
+                <>
+                  <p className="text-[#B04030] text-sm mb-4">{error}</p>
+                  <Link
+                    href="/forgot-password"
+                    className="text-[#2D6A4F] text-sm font-medium hover:underline"
+                  >
+                    Request a new reset link
+                  </Link>
+                </>
+              ) : (
+                <p className="text-[#6B8C74] text-sm">Verifying your reset link...</p>
+              )}
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">New password</label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  minLength={8}
-                  autoComplete="new-password"
-                  className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-[#1A2E22] text-sm focus:outline-none focus:border-[#52B788] focus:bg-white transition-colors"
-                  placeholder="Min 8 characters"
-                />
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    minLength={8}
+                    autoComplete="new-password"
+                    className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 pr-10 text-[#1A2E22] text-sm focus:outline-none focus:border-[#52B788] focus:bg-white transition-colors"
+                    placeholder="Min 8 characters"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A3BEA9] hover:text-[#3D5C48] transition-colors"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
               </div>
               <div>
                 <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Confirm new password</label>
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                  minLength={8}
-                  autoComplete="new-password"
-                  className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-[#1A2E22] text-sm focus:outline-none focus:border-[#52B788] focus:bg-white transition-colors"
-                  placeholder="Re-enter new password"
-                />
+                <div className="relative">
+                  <input
+                    type={showConfirm ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    minLength={8}
+                    autoComplete="new-password"
+                    className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 pr-10 text-[#1A2E22] text-sm focus:outline-none focus:border-[#52B788] focus:bg-white transition-colors"
+                    placeholder="Re-enter new password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirm(!showConfirm)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A3BEA9] hover:text-[#3D5C48] transition-colors"
+                    tabIndex={-1}
+                  >
+                    {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
               </div>
 
               {error && <p className="text-[#B04030] text-sm">{error}</p>}

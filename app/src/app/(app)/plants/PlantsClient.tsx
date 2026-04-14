@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Leaf, Plus } from "lucide-react";
+import { Leaf, Pencil, Plus, X } from "lucide-react";
 
 type Plant = {
   id: string;
@@ -42,6 +42,8 @@ export default function PlantsClient({ plants: initialPlants, projects }: Props)
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [editingPlant, setEditingPlant] = useState<Plant | null>(null);
+
   // Form state
   const [projectId, setProjectId] = useState("");
   const [botanicalName, setBotanicalName] = useState("");
@@ -52,6 +54,89 @@ export default function PlantsClient({ plants: initialPlants, projects }: Props)
   const [waterUse, setWaterUse] = useState("");
   const [unitCost, setUnitCost] = useState("");
   const [notes, setNotes] = useState("");
+  const [substitution, setSubstitution] = useState("");
+
+  function openEdit(plant: Plant) {
+    setEditingPlant(plant);
+    setProjectId(plant.projectId);
+    setBotanicalName(plant.botanicalName);
+    setCommonName(plant.commonName);
+    setSize(plant.size ?? "");
+    setQuantity(String(plant.quantity));
+    setSpacing(plant.spacing ?? "");
+    setWaterUse(plant.waterUse ?? "");
+    setUnitCost(plant.unitCost != null ? String(plant.unitCost) : "");
+    setNotes(plant.notes ?? "");
+    setSubstitution(plant.substitution ?? "");
+    setError(null);
+  }
+
+  function closeEdit() {
+    setEditingPlant(null);
+    setBotanicalName("");
+    setCommonName("");
+    setSize("");
+    setQuantity("1");
+    setSpacing("");
+    setWaterUse("");
+    setUnitCost("");
+    setNotes("");
+    setSubstitution("");
+  }
+
+  async function handleUpdate(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingPlant) return;
+    setError(null);
+    setSaving(true);
+
+    const res = await fetch("/api/plants", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: editingPlant.id,
+        botanicalName,
+        commonName,
+        size: size || null,
+        quantity: Number(quantity) || 1,
+        spacing: spacing || null,
+        waterUse: waterUse || null,
+        unitCost: unitCost || null,
+        notes: notes || null,
+        substitution: substitution || null,
+      }),
+    });
+
+    const data = await res.json();
+    setSaving(false);
+
+    if (!res.ok) {
+      setError(data.error || "Failed to update.");
+      return;
+    }
+
+    const updated = data.plant;
+    setPlants((prev) =>
+      prev.map((p) =>
+        p.id === editingPlant.id
+          ? {
+              ...p,
+              botanicalName: updated.botanicalName,
+              commonName: updated.commonName,
+              size: updated.size,
+              quantity: updated.quantity,
+              spacing: updated.spacing,
+              waterUse: updated.waterUse,
+              unitCost: updated.unitCost ? Number(updated.unitCost) : null,
+              notes: updated.notes,
+              substitution: updated.substitution,
+              approvalStatus: updated.approvalStatus,
+            }
+          : p
+      )
+    );
+    closeEdit();
+  }
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -238,10 +323,15 @@ export default function PlantsClient({ plants: initialPlants, projects }: Props)
             </thead>
             <tbody>
               {plants.map((plant) => (
-                <tr key={plant.id} className="border-b border-[#E8EDE9] last:border-0 hover:bg-[#F7F9F7]/50 transition-colors">
+                <tr key={plant.id} onClick={() => openEdit(plant)} className="border-b border-[#E8EDE9] last:border-0 hover:bg-[#F7F9F7]/50 transition-colors cursor-pointer group">
                   <td className="px-4 sm:px-6 py-4">
-                    <div className="italic text-[#1A2E22] font-medium">{plant.botanicalName}</div>
-                    <div className="text-xs text-[#6B8C74]">{plant.commonName}</div>
+                    <div className="flex items-center gap-2">
+                      <div>
+                        <div className="italic text-[#1A2E22] font-medium">{plant.botanicalName}</div>
+                        <div className="text-xs text-[#6B8C74]">{plant.commonName}</div>
+                      </div>
+                      <Pencil className="w-3 h-3 text-[#A3BEA9] opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                    </div>
                   </td>
                   <td className="px-4 sm:px-6 py-4 text-[#6B8C74]">{plant.projectName}</td>
                   <td className="px-4 sm:px-6 py-4 text-center text-[#1A2E22]">{plant.size || "—"}</td>
@@ -256,7 +346,7 @@ export default function PlantsClient({ plants: initialPlants, projects }: Props)
                   <td className="px-4 sm:px-6 py-4 text-right text-[#1A2E22]">
                     {plant.unitCost ? `$${(plant.unitCost * plant.quantity).toLocaleString()}` : "—"}
                   </td>
-                  <td className="px-4 sm:px-6 py-4 text-center">
+                  <td className="px-4 sm:px-6 py-4 text-center" onClick={(e) => e.stopPropagation()}>
                     <select
                       value={plant.approvalStatus ?? "PENDING"}
                       onChange={(e) => updateStatus(plant.id, e.target.value)}
@@ -280,6 +370,76 @@ export default function PlantsClient({ plants: initialPlants, projects }: Props)
           </table>
         </div>
       </div>
+      {/* Edit modal */}
+      {editingPlant && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4" onClick={closeEdit}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-6 pb-0">
+              <h2 className="font-serif text-xl text-[#1A2E22]">Edit Plant</h2>
+              <button type="button" onClick={closeEdit} className="text-[#A3BEA9] hover:text-[#1A2E22] transition-colors"><X size={18} /></button>
+            </div>
+            <form onSubmit={handleUpdate} className="p-6 space-y-4">
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Botanical name *</label>
+                  <input value={botanicalName} onChange={(e) => setBotanicalName(e.target.value)} required className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] italic focus:outline-none focus:border-[#52B788]" />
+                </div>
+                <div>
+                  <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Common name *</label>
+                  <input value={commonName} onChange={(e) => setCommonName(e.target.value)} required className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+                </div>
+              </div>
+              <div className="grid sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Size</label>
+                  <input value={size} onChange={(e) => setSize(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+                </div>
+                <div>
+                  <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Quantity</label>
+                  <input type="number" min="1" value={quantity} onChange={(e) => setQuantity(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+                </div>
+                <div>
+                  <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Spacing</label>
+                  <input value={spacing} onChange={(e) => setSpacing(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+                </div>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Water use</label>
+                  <select value={waterUse} onChange={(e) => setWaterUse(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]">
+                    <option value="">--</option>
+                    <option value="LOW">Low</option>
+                    <option value="MODERATE">Moderate</option>
+                    <option value="HIGH">High</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Unit cost ($)</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A3BEA9] text-sm">$</span>
+                    <input type="number" step="0.01" min="0" value={unitCost} onChange={(e) => setUnitCost(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg pl-7 pr-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Substitution</label>
+                <input value={substitution} onChange={(e) => setSubstitution(e.target.value)} placeholder="Alternative plant if unavailable" className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+              </div>
+              <div>
+                <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Notes</label>
+                <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788] resize-y" />
+              </div>
+              {error && <p className="text-[#B04030] text-sm">{error}</p>}
+              <div className="flex gap-3 pt-2">
+                <button type="submit" disabled={saving} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium bg-[#2D6A4F] text-white hover:bg-[#40916C] transition-colors disabled:opacity-50">
+                  {saving ? "Saving..." : "Save changes"}
+                </button>
+                <button type="button" onClick={closeEdit} className="px-4 py-2.5 rounded-lg text-sm text-[#6B8C74] hover:text-[#1A2E22]">Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

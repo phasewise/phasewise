@@ -20,10 +20,13 @@ export default async function ProfitabilityReportPage() {
   const projects = await prisma.project.findMany({
     where: { organizationId: currentUser.organizationId, status: { not: "ARCHIVED" } },
     include: {
-      phases: true,
-      assignments: {
+      phases: {
         include: {
-          user: { select: { billingRate: true } },
+          workPlan: {
+            include: {
+              user: { select: { billingRate: true } },
+            },
+          },
         },
       },
     },
@@ -54,13 +57,18 @@ export default async function ProfitabilityReportPage() {
     const burnRate = budgetedHours > 0 ? (hoursUsed / budgetedHours) * 100 : 0;
     const effectiveRate = hoursUsed > 0 ? budgetedFee / hoursUsed : 0;
 
-    // Estimated cost = avg billing rate of assigned staff × hours used
-    const assignedRates = project.assignments
-      .map((a) => Number(a.user.billingRate ?? 0))
-      .filter((r) => r > 0);
+    // Estimated cost using work plan staff billing rates
+    // Collect all unique staff rates from the work plan across all phases
+    const workPlanRates: number[] = [];
+    for (const phase of project.phases) {
+      for (const wp of phase.workPlan) {
+        const rate = Number(wp.user.billingRate ?? 0);
+        if (rate > 0) workPlanRates.push(rate);
+      }
+    }
     const avgRate =
-      assignedRates.length > 0
-        ? assignedRates.reduce((s, r) => s + r, 0) / assignedRates.length
+      workPlanRates.length > 0
+        ? workPlanRates.reduce((s: number, r: number) => s + r, 0) / workPlanRates.length
         : 0;
     const estimatedCost = avgRate * hoursUsed;
     const estimatedProfit = budgetedFee - estimatedCost;
@@ -79,7 +87,7 @@ export default async function ProfitabilityReportPage() {
       estimatedCost,
       estimatedProfit,
       profitMargin,
-      staffCount: assignedRates.length,
+      staffCount: workPlanRates.length,
     };
   });
 
@@ -259,7 +267,7 @@ export default async function ProfitabilityReportPage() {
       </div>
 
       <p className="mt-4 text-xs text-[#A3BEA9]">
-        Effective rate = budgeted fee ÷ hours used. Profit and margin are estimated based on assigned staff billing rates × hours used. Projects without staff assignments show &quot;—&quot; for profit columns.
+        Effective rate = budgeted fee ÷ hours used. Profit and margin are estimated based on work plan staff billing rates × hours used. Projects without a work plan show &quot;—&quot; for profit columns.
       </p>
     </div>
   );

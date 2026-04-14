@@ -137,12 +137,15 @@ export async function PATCH(request: Request) {
     }
 
     const body = await request.json();
-    const { id, status, ballInCourt, responseDate, assignedToId } = body as {
+    const { id, status, subject, description, ballInCourt, dueDate, responseDate, assignedToId } = body as {
       id: string;
       status?: string;
-      ballInCourt?: string;
+      subject?: string;
+      description?: string | null;
+      ballInCourt?: string | null;
+      dueDate?: string | null;
       responseDate?: string;
-      assignedToId?: string;
+      assignedToId?: string | null;
     };
 
     if (!id) {
@@ -159,7 +162,10 @@ export async function PATCH(request: Request) {
 
     const data: Record<string, unknown> = {};
     if (status !== undefined) data.status = status as SubmittalStatus;
+    if (subject !== undefined) data.subject = subject;
+    if (description !== undefined) data.description = description;
     if (ballInCourt !== undefined) data.ballInCourt = ballInCourt || null;
+    if (dueDate !== undefined) data.dueDate = dueDate ? new Date(dueDate) : null;
     if (responseDate !== undefined) data.responseDate = responseDate ? new Date(responseDate) : null;
     if (assignedToId !== undefined) data.assignedToId = assignedToId || null;
 
