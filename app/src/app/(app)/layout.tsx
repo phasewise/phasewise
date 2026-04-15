@@ -13,6 +13,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     fullName: currentUser.fullName,
     email: currentUser.email,
     role: currentUser.role,
+    photoUrl: currentUser.photoUrl,
     organization: currentUser.organization
       ? { name: currentUser.organization.name }
       : null,

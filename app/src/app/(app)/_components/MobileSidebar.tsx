@@ -42,6 +42,7 @@ type Props = {
     fullName: string;
     email: string;
     role: string;
+    photoUrl?: string | null;
     organization?: { name: string } | null;
   };
 };
@@ -56,7 +57,18 @@ function PhaseLogo() {
   );
 }
 
-function Avatar({ name }: { name: string }) {
+function Avatar({ name, photoUrl }: { name: string; photoUrl?: string | null }) {
+  if (photoUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={photoUrl}
+        alt={name}
+        className="w-9 h-9 rounded-full object-cover flex-shrink-0"
+      />
+    );
+  }
+
   const parts = name.trim().split(/\s+/);
   const initials =
     parts.length === 1
@@ -143,7 +155,7 @@ function SidebarContent({ user, onNavigate }: Props & { onNavigate?: () => void 
           className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-white/[0.06] transition-colors cursor-pointer"
           title="Edit profile"
         >
-          <Avatar name={user.fullName} />
+          <Avatar name={user.fullName} photoUrl={user.photoUrl} />
           <div className="min-w-0 flex-1">
             <div className="text-sm font-medium text-white truncate">{user.fullName}</div>
             <div className="text-[11px] text-white/50 truncate">{user.email}</div>

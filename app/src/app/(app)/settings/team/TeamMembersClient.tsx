@@ -9,7 +9,25 @@ type TeamUser = {
   email: string;
   role: string;
   isActive?: boolean;
+  photoUrl?: string | null;
 };
+
+function MemberAvatar({ name, photoUrl }: { name: string; photoUrl?: string | null }) {
+  if (photoUrl) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={photoUrl} alt={name} className="w-8 h-8 rounded-full object-cover flex-shrink-0" />;
+  }
+  const parts = name.trim().split(/\s+/);
+  const initials =
+    parts.length === 1
+      ? parts[0].slice(0, 2).toUpperCase()
+      : (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  return (
+    <div className="w-8 h-8 rounded-full bg-[#2D6A4F] text-white flex items-center justify-center text-xs font-semibold flex-shrink-0">
+      {initials}
+    </div>
+  );
+}
 
 type Props = {
   users: TeamUser[];
@@ -204,7 +222,12 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
             <tbody>
               {activeUsers.map((user) => (
                 <tr key={user.id} className="border-b border-[#E8EDE9] last:border-0">
-                  <td className="px-4 sm:px-6 py-4 font-medium text-[#1A2E22]">{user.fullName}</td>
+                  <td className="px-4 sm:px-6 py-4 font-medium text-[#1A2E22]">
+                    <div className="flex items-center gap-3">
+                      <MemberAvatar name={user.fullName} photoUrl={user.photoUrl} />
+                      <span>{user.fullName}</span>
+                    </div>
+                  </td>
                   <td className="px-4 sm:px-6 py-4 text-[#6B8C74]">{user.email}</td>
                   <td className="px-4 sm:px-6 py-4">
                     <span className="text-xs font-medium px-2 py-1 rounded-full bg-[#F0FAF4] text-[#2D6A4F]">
@@ -242,7 +265,12 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
                 <tbody>
                   {inactiveUsers.map((user) => (
                     <tr key={user.id} className="border-b border-[#E8EDE9] last:border-0">
-                      <td className="px-4 sm:px-6 py-3 text-[#A3BEA9]">{user.fullName}</td>
+                      <td className="px-4 sm:px-6 py-3 text-[#A3BEA9]">
+                        <div className="flex items-center gap-3 opacity-60">
+                          <MemberAvatar name={user.fullName} photoUrl={user.photoUrl} />
+                          <span>{user.fullName}</span>
+                        </div>
+                      </td>
                       <td className="px-4 sm:px-6 py-3 text-[#A3BEA9]">{user.email}</td>
                       <td className="px-4 sm:px-6 py-3">
                         <button
