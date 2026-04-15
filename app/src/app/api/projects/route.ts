@@ -25,6 +25,7 @@ export async function POST(request: Request) {
       status,
       startDate,
       targetCompletion,
+      contractFee,
       phases,
     } = body;
 
@@ -73,6 +74,10 @@ export async function POST(request: Request) {
         status: status || "ACTIVE",
         startDate: startDate ? new Date(startDate) : undefined,
         targetCompletion: targetCompletion ? new Date(targetCompletion) : undefined,
+        contractFee:
+          contractFee !== undefined && contractFee !== ""
+            ? new Prisma.Decimal(contractFee)
+            : undefined,
         phases: {
           create: (phases as PhaseInput[])
             .filter(

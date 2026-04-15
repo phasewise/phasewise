@@ -10,8 +10,6 @@ const defaultPhases = PHASE_ORDER.map((phase, index) => ({
   phaseType: phase,
   label: PHASE_LABELS[phase],
   selected: true,
-  budgetedFee: "",
-  budgetedHours: "",
   sortOrder: index,
 }));
 
@@ -24,7 +22,6 @@ export default function NewProjectPage() {
   const [autoNumber, setAutoNumber] = useState("");
   const [isCustomNumber, setIsCustomNumber] = useState(false);
 
-  // Fetch the next sequential project number on page load
   useEffect(() => {
     fetch("/api/projects/next-number")
       .then((res) => res.json())
@@ -34,15 +31,14 @@ export default function NewProjectPage() {
           setProjectNumber(data.nextNumber);
         }
       })
-      .catch(() => {
-        // Silently fail — user can still enter their own number
-      });
+      .catch(() => {});
   }, []);
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [startDate, setStartDate] = useState("");
   const [targetCompletion, setTargetCompletion] = useState("");
   const [status, setStatus] = useState("ACTIVE");
+  const [contractFee, setContractFee] = useState("");
   const [phases, setPhases] = useState<PhaseRow[]>(defaultPhases);
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -68,6 +64,7 @@ export default function NewProjectPage() {
         status,
         startDate,
         targetCompletion,
+        contractFee,
         phases,
       }),
     });
@@ -80,7 +77,10 @@ export default function NewProjectPage() {
       return;
     }
 
-    router.push(`/projects/${result.projectId}`);
+    // Send the user straight to the Work Plan, which is the source of
+    // truth for hours + fees. They assign staff there and budgets
+    // flow back to the phases automatically.
+    router.push(`/projects/${result.projectId}/edit#work-plan`);
   }
 
   function updatePhase(index: number, update: Partial<PhaseRow>) {
@@ -201,57 +201,56 @@ export default function NewProjectPage() {
                   />
                 </div>
               </div>
+
+              <div>
+                <label className="text-sm font-medium text-slate-700">
+                  Contract fee <span className="text-slate-400 font-normal">(optional)</span>
+                </label>
+                <div className="relative mt-2">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={contractFee}
+                    onChange={(event) => setContractFee(event.target.value)}
+                    placeholder="Total fee for the project"
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 pl-8 pr-4 py-3 text-sm text-slate-900 outline-none focus:border-emerald-500"
+                  />
+                </div>
+                <p className="mt-1 text-xs text-slate-500">
+                  The fee you&rsquo;ve agreed to bill the client. Your Work Plan estimate will be compared against this as a ceiling.
+                </p>
+              </div>
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h2 className="text-lg font-semibold text-slate-900">Phase budgets</h2>
-                  <p className="text-sm text-slate-500">Choose the phases for this project and assign fee/hours estimates.</p>
+                  <h2 className="text-lg font-semibold text-slate-900">Phases</h2>
+                  <p className="text-sm text-slate-500">
+                    Choose the phases for this project. Hours and fees are set in the Work Plan based on who&rsquo;s assigned.
+                  </p>
                 </div>
                 <span className="text-sm text-slate-500">{selectedPhaseCount} selected</span>
               </div>
 
-              <div className="space-y-3 rounded-3xl border border-slate-200 bg-slate-50 p-4">
+              <div className="space-y-2 rounded-3xl border border-slate-200 bg-slate-50 p-4">
                 {phases.map((phase, index) => (
-                  <div key={phase.phaseType} className="grid gap-3 sm:grid-cols-[auto_1fr_1fr] items-center">
-                    <label className="flex items-center gap-2 text-sm text-slate-700">
-                      <input
-                        type="checkbox"
-                        checked={phase.selected}
-                        onChange={(event) =>
-                          updatePhase(index, { selected: event.target.checked })
-                        }
-                        className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                      />
-                      {phase.label}
-                    </label>
-                    <div className="relative w-full">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={phase.budgetedFee}
-                        onChange={(event) =>
-                          updatePhase(index, { budgetedFee: event.target.value })
-                        }
-                        placeholder="Budgeted fee"
-                        className="w-full rounded-2xl border border-slate-200 bg-white pl-8 pr-4 py-3 text-sm text-slate-900 outline-none focus:border-emerald-500"
-                      />
-                    </div>
+                  <label
+                    key={phase.phaseType}
+                    className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white cursor-pointer transition-colors"
+                  >
                     <input
-                      type="number"
-                      min="0"
-                      step="0.1"
-                      value={phase.budgetedHours}
+                      type="checkbox"
+                      checked={phase.selected}
                       onChange={(event) =>
-                        updatePhase(index, { budgetedHours: event.target.value })
+                        updatePhase(index, { selected: event.target.checked })
                       }
-                      placeholder="Budgeted hours"
-                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-emerald-500"
+                      className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                     />
-                  </div>
+                    <span className="text-sm text-slate-700">{phase.label}</span>
+                  </label>
                 ))}
               </div>
             </div>
@@ -263,7 +262,7 @@ export default function NewProjectPage() {
               disabled={isSaving}
               className="inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isSaving ? "Creating project..." : "Create project"}
+              {isSaving ? "Creating project..." : "Create & build Work Plan"}
             </button>
           </form>
         </div>
@@ -271,10 +270,13 @@ export default function NewProjectPage() {
         <aside className="rounded-3xl border border-slate-200 bg-slate-950 p-6 text-slate-100 shadow-sm">
           <div className="flex items-center gap-3 mb-4 text-emerald-400">
             <FolderPlus className="h-4 w-4" />
-            <h2 className="text-base font-semibold">Project setup</h2>
+            <h2 className="text-base font-semibold">How budgets work</h2>
           </div>
           <p className="text-sm leading-6 text-slate-300">
-            Create a new landscape architecture project and assign phases so your team can start tracking budget and time immediately.
+            Create the project with its phases, then assign staff in the Work Plan. Hours and fees per phase are calculated from staff assignments &times; billing rates &mdash; no more double-entering estimates.
+          </p>
+          <p className="mt-3 text-sm leading-6 text-slate-400">
+            Set an optional contract fee to compare your Work Plan estimate against what the client is paying.
           </p>
         </aside>
       </div>

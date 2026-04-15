@@ -127,6 +127,7 @@ model Project {
   status           ProjectStatus @default(ACTIVE)
   startDate        DateTime?     @map("start_date") @db.Date
   targetCompletion DateTime?     @map("target_completion") @db.Date
+  contractFee      Decimal?      @map("contract_fee") @db.Decimal(12, 2)
   description      String?
   createdById      String        @map("created_by_id") @db.Uuid
   createdAt        DateTime      @default(now()) @map("created_at")

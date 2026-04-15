@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/supabase/auth";
 
@@ -76,6 +77,7 @@ export async function PATCH(
       status,
       startDate,
       targetCompletion,
+      contractFee,
       description,
     } = body;
 
@@ -91,6 +93,10 @@ export async function PATCH(
     }
     if (targetCompletion !== undefined) {
       data.targetCompletion = targetCompletion ? new Date(targetCompletion) : null;
+    }
+    if (contractFee !== undefined) {
+      data.contractFee =
+        contractFee === null || contractFee === "" ? null : new Prisma.Decimal(contractFee);
     }
 
     const updated = await prisma.project.update({

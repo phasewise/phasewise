@@ -35,6 +35,7 @@ export default function EditProjectPage() {
   const [status, setStatus] = useState("ACTIVE");
   const [startDate, setStartDate] = useState("");
   const [targetCompletion, setTargetCompletion] = useState("");
+  const [contractFee, setContractFee] = useState("");
   const [description, setDescription] = useState("");
 
   // Phase fields
@@ -66,6 +67,7 @@ export default function EditProjectPage() {
         setStatus(p.status || "ACTIVE");
         setStartDate(p.startDate ? p.startDate.split("T")[0] : "");
         setTargetCompletion(p.targetCompletion ? p.targetCompletion.split("T")[0] : "");
+        setContractFee(p.contractFee ? String(p.contractFee) : "");
         setDescription(p.description || "");
         setPhases(
           (p.phases || []).map((phase: { id: string; phaseType: string; customName?: string | null; status: string; budgetedFee: string | number | null; budgetedHours: string | number | null; sortOrder: number }) => ({
@@ -131,6 +133,7 @@ export default function EditProjectPage() {
         status,
         startDate: startDate || null,
         targetCompletion: targetCompletion || null,
+        contractFee: contractFee === "" ? null : contractFee,
         description,
       }),
     });
@@ -263,6 +266,24 @@ export default function EditProjectPage() {
               </div>
             </div>
             <div>
+              <label className="text-sm font-medium text-[#3D5C48]">Contract fee (optional)</label>
+              <div className="relative mt-2">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#A3BEA9] text-sm">$</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={contractFee}
+                  onChange={(e) => setContractFee(e.target.value)}
+                  placeholder="Total fee agreed with the client"
+                  className="w-full rounded-lg border border-[#E2EBE4] bg-[#F7F9F7] pl-8 pr-4 py-3 text-sm text-[#1A2E22] outline-none focus:border-[#52B788] focus:bg-white"
+                />
+              </div>
+              <p className="mt-1 text-xs text-[#A3BEA9]">
+                Ceiling to compare against your Work Plan estimate.
+              </p>
+            </div>
+            <div>
               <label className="text-sm font-medium text-[#3D5C48]">Description</label>
               <textarea
                 value={description}
@@ -388,6 +409,7 @@ export default function EditProjectPage() {
         </div>
 
         {/* Work Plan */}
+        <div id="work-plan" />
         {phases.length > 0 && phases.some((p) => p.id) && teamMembers.length > 0 && (
           <WorkPlanEditor
             projectId={projectId}
