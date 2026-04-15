@@ -395,15 +395,24 @@ Most meaningful first. Strikethrough = done.
 56. ~~Submittal reminders — automated email reminders for overdue submittals via Loops~~ ✅ 2026-04-13
 57. ~~Project detail report — per-phase burn breakdown for a single project~~ ✅ 2026-04-13
 58. ~~Empty states + loading states — production polish across all pages~~ ✅ 2026-04-13
+59. ~~Password visibility toggle — eye icon on login, signup, reset-password~~ ✅ 2026-04-14
+60. ~~Forgot password fix — PKCE auth callback route for code exchange~~ ✅ 2026-04-14
+61. ~~User profile page — click avatar to edit name, title, phone, photo~~ ✅ 2026-04-14
+62. ~~Edit modals — click-to-edit for Clients, Plants, Compliance, Submittals~~ ✅ 2026-04-14
+63. ~~Phase & Workplan auto-sync — work plan save updates phase budget/fee~~ ✅ 2026-04-14
+64. ~~Profitability report — uses work plan rates instead of project assignments~~ ✅ 2026-04-14
+65. ~~Invoice model + admin billing page — create invoices, track payments~~ ✅ 2026-04-14
+66. ~~Compliance file attachments — PDF/Word/image upload via Supabase Storage~~ ✅ 2026-04-14
+67. ~~MWELO Water Budget Calculator — hydrozone-based MAWA/ETWU with printable report~~ ✅ 2026-04-14
 
 **Operations:**
 
-59. **Replace `/brand` v1 assets with v2 versions** — single source of truth
-60. **Stripe Tax: revisit before going live** — placeholder CA registration only
-61. **Switch Stripe to live mode** — env var swap only
-62. **Social media automation (n8n)** — scheduled posts to LinkedIn/X/Instagram
-63. **Google Workspace setup** — kevin@phasewise.io for business email
-64. **USPTO trademark filing** — protect the name
+68. **Replace `/brand` v1 assets with v2 versions** — single source of truth
+69. **Stripe Tax: revisit before going live** — placeholder CA registration only
+70. **Switch Stripe to live mode** — env var swap only
+71. **Social media automation (n8n)** — scheduled posts to LinkedIn/X/Instagram
+72. ~~**Google Workspace setup**~~ — ⏳ In progress: trial started, domain verification TXT record added to Cloudflare, waiting for DNS propagation. Retry verification tomorrow.
+73. **USPTO trademark filing** — protect the name
 
 ## Competitive Positioning
 
@@ -454,53 +463,52 @@ When staff are assigned to a phase:
 3. Owner can override the auto-calculated estimate with a manual value
 4. System always shows both "estimated" and "budgeted" so the owner can compare
 
-## Where We Left Off (2026-04-13 EOD)
+## Where We Left Off (2026-04-14 EOD)
 
-**Status: All 58 build queue items complete.** The entire feature build queue is done. Only operational items remain (brand asset cleanup, Stripe live mode, social media, Google Workspace, trademark).
+**Status: All 67 build queue items complete.** Feature build queue is done. Google Workspace setup in progress (DNS verification pending). Only operational items remain.
 
-### What shipped today (2026-04-13)
+### What shipped today (2026-04-14)
 
-**Earlier in the session (before context compaction):**
-1. ✅ **Work Plan** — per-phase staff assignments with hours + cost (PhaseStaffPlan model + WorkPlanEditor component)
-2. ✅ **Auto-numbering settings UI** — prefix, starting number, toggle in Settings
-3. ✅ **Profitability reporting dashboard** — summary cards, color-coded burn/margin, totals footer
-4. ✅ **Fixed pricing tagline** — honest "One subscription instead of three"
-5. ✅ **Budget alerts** — dashboard health badges + email on 75%/90%/100% threshold
-6. ✅ **Admin section** — owner-only sidebar + business ops dashboard
-7. ✅ **Submittal & RFI log** — CRUD + status tracking + ball-in-court + overdue
-8. ✅ **Custom phase types** — OTHER enum + customName override
-9. ✅ **Team Utilization report** — per-person hours, utilization %, revenue, profit
-10. ✅ **Plant Schedule Manager** — model + CRUD API + page with approval tracking
-11. ✅ **Compliance Tracker** — MWELO/LEED/SITES/ADA/PERMIT + status + due dates
-12. ✅ **Client management module** — model + API + card grid page
-13. ✅ **Dashboard v2 brand polish** — color-coded health visualization
-14. ✅ **Onboarding checklist** — 3-step, auto-dismisses when complete
-15. ✅ **Privacy Policy page** + **Terms of Service page**
-16. ✅ **Plant Schedule: interactive create form + inline status updates**
-17. ✅ **Compliance Tracker: interactive create form + inline status updates**
+Commit `a99f3dd` — pushed to `main`, auto-deployed to Vercel.
 
-**Later in the session (after context compaction):**
-18. ✅ **Submittal reminders cron** — `/api/cron/submittal-reminders` scans overdue items (last 7 days), sends Loops emails, bearer token auth via CRON_SECRET
-19. ✅ **Project detail report** — `/reports/project/[id]` with 6 summary cards, phase breakdown table (budget vs actual + remaining), time by team member table, phase × person matrix. Reports hub updated with project selector. Profitability table rows link to detail reports.
-20. ✅ **Empty states** — dashboard projects table + projects list table (icon + CTA)
-21. ✅ **Loading skeletons** — 11 `loading.tsx` files: dashboard, projects, reports, reports/profitability, reports/utilization, time, clients, submittals, plants, compliance, settings/team
+1. ✅ **Password visibility toggle** — Eye icon on login, signup, reset-password (Lucide Eye/EyeOff)
+2. ✅ **Forgot password fix** — Created `/api/auth/callback` route for PKCE code exchange. Flow: email link → callback → code exchange → redirect to `/reset-password` with active session. Updated forgot-password to redirect through callback. Added timeout + error state for invalid/expired links.
+3. ✅ **User profile page** — `/settings/profile` with editable name, title, phone, photo upload. Added `phone` and `photoUrl` fields to User model. Photo upload API at `/api/user/photo` (Supabase Storage `profile-photos` bucket). Sidebar avatar now clickable → links to profile.
+4. ✅ **Edit modals for all modules** — Click any client card / plant row / compliance row / submittal row → modal with all fields pre-filled. Updated submittal PATCH API to support `subject`, `description`, `dueDate` fields. All modals use consistent design (backdrop blur, rounded-2xl, brand colors).
+5. ✅ **Phase & Workplan auto-sync** — When work plan is saved, phase `budgetedHours` and `budgetedFee` are automatically updated to match staff assignments × billing rates. Eliminates manual duplication between phases and work plan.
+6. ✅ **Profitability report update** — Now uses work plan staff billing rates (per-phase) instead of project assignments (project-level) for more accurate cost estimates.
+7. ✅ **Invoice model + admin billing** — `Invoice` + `InvoiceLineItem` models with 6 statuses (DRAFT, SENT, PAID, PARTIALLY_PAID, OVERDUE, VOID). Admin billing page at `/admin/billing` with: create invoices with line items, summary cards (invoiced/paid/outstanding/overdue), click-to-update payment status. API at `/api/invoices` (GET/POST/PATCH, owner/admin only).
+8. ✅ **Compliance file attachments** — Upload API at `/api/compliance/upload` accepts PDF, Word (.doc/.docx), PNG, JPEG up to 10MB. Stored in Supabase Storage `compliance-docs` bucket. Edit modal has upload dropzone + view/remove attached document. Paperclip icon on table rows with attachments.
+9. ✅ **MWELO Water Budget Calculator** — `/tools/mwelo-calculator` with: 13 California climate regions (ETo values), WUCOLS plant factors (Very Low/Low/Moderate/High), 5 irrigation types with efficiency ratings, multiple hydrozones, MAWA and ETWU calculations per Title 23 CCR, compliance pass/fail result, print-ready report. Linked from Compliance page header.
+
+### Google Workspace setup (in progress)
+
+- **Account created:** kevin@phasewise.io on Starter plan ($8.40/mo, 14-day free trial)
+- **Domain verification:** TXT record `google-site-verification=cbpnIwKJg1zd8BL8klFlK24lEz2rUlqyOdnBiBSG5Dg` added to Cloudflare
+- **Status:** Verification failing — likely DNS propagation delay. Retry tomorrow.
+- **Next steps after verification:** Google will prompt to add MX records for email routing. May also need to handle conflict with existing Loops MX record on `envelope.mail` subdomain (different from root MX, so should be fine).
+
+### Supabase Storage buckets needed
+
+Before file uploads work in production, create these buckets in Supabase Dashboard → Storage:
+1. **`profile-photos`** — for user avatar uploads (public)
+2. **`compliance-docs`** — for compliance document attachments (public)
 
 ### Known good state
 
 - Production URL: https://phasewise.io
 - Code compiles clean (`npx tsc --noEmit` returns 0 errors)
-- Vercel build includes `prisma generate` — no stale-client failures
-- **Note:** Changes from this session are NOT yet committed or pushed. Run `git status` to see all new/modified files.
+- Latest commit: `a99f3dd` — pushed and deployed
+- Schema synced to Supabase (Invoice + InvoiceLineItem tables, User phone/photoUrl fields)
 
 ### To resume next session
 
-**All feature work is done.** The build queue (items 1-58) is complete. Next priorities are operational:
-
-1. **Commit and push** all today's work to `main` for Vercel deployment
-2. **Set CRON_SECRET env var** in Vercel for the submittal reminders endpoint
-3. **Set up Vercel Cron** (or external scheduler) to call `/api/cron/submittal-reminders` daily
-4. **Review and test** — Kevin is reviewing all features; address any feedback
-5. **Operations:** Replace `/brand` v1 assets, Stripe Tax revisit, Stripe live mode, social media (n8n), Google Workspace, USPTO trademark
+1. **Google Workspace** — retry domain verification (click Retry in Google admin). If still failing, try waiting longer or re-adding the TXT record. After verification, add MX records for email routing.
+2. **Create Supabase Storage buckets** — `profile-photos` and `compliance-docs` (see above)
+3. **Set CRON_SECRET env var** in Vercel for the submittal reminders endpoint
+4. **Set up Vercel Cron** to call `/api/cron/submittal-reminders` daily
+5. **Review and test** all new features on live site
+6. **Operations:** Replace `/brand` v1 assets, Stripe Tax revisit, Stripe live mode, social media (n8n), USPTO trademark
 
 ### Test cards for future testing
 
@@ -518,7 +526,9 @@ When staff are assigned to a phase:
 
 ## TODO (Operational, non-code)
 
-- [ ] Set up Google Workspace (kevin@phasewise.io) — defer until first paying customer
+- [ ] Google Workspace — retry domain verification, then add MX records for email
+- [ ] Create Supabase Storage buckets: `profile-photos` + `compliance-docs`
+- [ ] Set CRON_SECRET in Vercel + configure Vercel Cron for submittal reminders
 - [ ] Upload v2 PNG logos to LinkedIn, X/Twitter, GitHub profiles
 - [ ] Claim @phasewise on Instagram
 - [ ] File USPTO trademark for "Phasewise"
