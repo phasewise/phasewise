@@ -484,12 +484,13 @@ Operational setup + infrastructure fixes. Commits: `460fd7e` (Vercel cron), `cd7
    - **Middleware was redirecting `/api/auth/callback` to `/login`** because the user isn't authenticated yet when clicking the email link. Fixed by allowing `/api/auth/*` prefix through middleware unauthenticated.
    - Updated `/api/auth/callback/route.ts` to accept both `code` (PKCE) and `token_hash + type` (verifyOtp) flows.
 5. ✅ **Profile photo auto-compression** — Phone photos are typically >2MB. Added client-side canvas resize (max 800px) + JPEG re-encode at quality 0.85 before upload in `/settings/profile`. Falls back to original file if compression fails and file fits under 2MB.
+6. ✅ **Avatars in sidebar + team list** — Uploaded photos now render in the collapsible sidebar user widget and next to each member's name on `/settings/team`. Plumbed `photoUrl` through layout → MobileSidebar, and into team query + new `MemberAvatar` component. Falls back to initials when no photo.
 
 ### Known good state
 
 - Production URL: https://phasewise.io
 - Latest commit (pending commit for compression + CLAUDE.md): local
-- Latest pushed commit: `6dfa033`
+- Latest pushed commit: `3bcb730`
 - Schema unchanged since 2026-04-14
 - All Supabase Storage buckets + policies live
 - Vercel Cron registered and enabled
