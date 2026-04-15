@@ -411,8 +411,12 @@ Most meaningful first. Strikethrough = done.
 69. **Stripe Tax: revisit before going live** — placeholder CA registration only
 70. **Switch Stripe to live mode** — env var swap only
 71. **Social media automation (n8n)** — scheduled posts to LinkedIn/X/Instagram
-72. ~~**Google Workspace setup**~~ — ⏳ In progress: trial started, domain verification TXT record added to Cloudflare, waiting for DNS propagation. Retry verification tomorrow.
+72. ~~**Google Workspace setup**~~ ✅ 2026-04-15 — Domain verified, Gmail active, DKIM active, test email received at kevin@phasewise.io.
 73. **USPTO trademark filing** — protect the name
+74. ~~**Supabase Storage buckets + RLS policies**~~ ✅ 2026-04-15 — `profile-photos` and `compliance-docs` buckets created; SELECT/INSERT/UPDATE/DELETE policies scoped to `authenticated` role.
+75. ~~**Vercel Cron for submittal reminders**~~ ✅ 2026-04-15 — `vercel.json` registers `/api/cron/submittal-reminders` at 14:00 UTC daily. CRON_SECRET env var set in Vercel + local `.env`.
+76. ~~**Password reset flow end-to-end fix**~~ ✅ 2026-04-15 — Root cause: Site URL pointed to localhost; Supabase template used `.ConfirmationURL` which link-scanners consumed; middleware blocked `/api/auth/*`. Fixed all three.
+77. ~~**Profile photo auto-compression**~~ ✅ 2026-04-15 — Client-side canvas resize to 800px + JPEG q=0.85 so phone photos upload without hitting the 2MB limit.
 
 ## Competitive Positioning
 
@@ -463,52 +467,39 @@ When staff are assigned to a phase:
 3. Owner can override the auto-calculated estimate with a manual value
 4. System always shows both "estimated" and "budgeted" so the owner can compare
 
-## Where We Left Off (2026-04-14 EOD)
+## Where We Left Off (2026-04-15 EOD)
 
-**Status: All 67 build queue items complete.** Feature build queue is done. Google Workspace setup in progress (DNS verification pending). Only operational items remain.
+**Status: All 67 feature items + core infrastructure complete.** Google Workspace live, Supabase Storage buckets + RLS configured, Vercel Cron registered, password reset end-to-end verified.
 
-### What shipped today (2026-04-14)
+### What shipped today (2026-04-15)
 
-Commit `a99f3dd` — pushed to `main`, auto-deployed to Vercel.
+Operational setup + infrastructure fixes. Commits: `460fd7e` (Vercel cron), `cd7b4d2` (token_hash verify), `6dfa033` (middleware bypass for `/api/auth/*`).
 
-1. ✅ **Password visibility toggle** — Eye icon on login, signup, reset-password (Lucide Eye/EyeOff)
-2. ✅ **Forgot password fix** — Created `/api/auth/callback` route for PKCE code exchange. Flow: email link → callback → code exchange → redirect to `/reset-password` with active session. Updated forgot-password to redirect through callback. Added timeout + error state for invalid/expired links.
-3. ✅ **User profile page** — `/settings/profile` with editable name, title, phone, photo upload. Added `phone` and `photoUrl` fields to User model. Photo upload API at `/api/user/photo` (Supabase Storage `profile-photos` bucket). Sidebar avatar now clickable → links to profile.
-4. ✅ **Edit modals for all modules** — Click any client card / plant row / compliance row / submittal row → modal with all fields pre-filled. Updated submittal PATCH API to support `subject`, `description`, `dueDate` fields. All modals use consistent design (backdrop blur, rounded-2xl, brand colors).
-5. ✅ **Phase & Workplan auto-sync** — When work plan is saved, phase `budgetedHours` and `budgetedFee` are automatically updated to match staff assignments × billing rates. Eliminates manual duplication between phases and work plan.
-6. ✅ **Profitability report update** — Now uses work plan staff billing rates (per-phase) instead of project assignments (project-level) for more accurate cost estimates.
-7. ✅ **Invoice model + admin billing** — `Invoice` + `InvoiceLineItem` models with 6 statuses (DRAFT, SENT, PAID, PARTIALLY_PAID, OVERDUE, VOID). Admin billing page at `/admin/billing` with: create invoices with line items, summary cards (invoiced/paid/outstanding/overdue), click-to-update payment status. API at `/api/invoices` (GET/POST/PATCH, owner/admin only).
-8. ✅ **Compliance file attachments** — Upload API at `/api/compliance/upload` accepts PDF, Word (.doc/.docx), PNG, JPEG up to 10MB. Stored in Supabase Storage `compliance-docs` bucket. Edit modal has upload dropzone + view/remove attached document. Paperclip icon on table rows with attachments.
-9. ✅ **MWELO Water Budget Calculator** — `/tools/mwelo-calculator` with: 13 California climate regions (ETo values), WUCOLS plant factors (Very Low/Low/Moderate/High), 5 irrigation types with efficiency ratings, multiple hydrozones, MAWA and ETWU calculations per Title 23 CCR, compliance pass/fail result, print-ready report. Linked from Compliance page header.
-
-### Google Workspace setup (in progress)
-
-- **Account created:** kevin@phasewise.io on Starter plan ($8.40/mo, 14-day free trial)
-- **Domain verification:** TXT record `google-site-verification=cbpnIwKJg1zd8BL8klFlK24lEz2rUlqyOdnBiBSG5Dg` added to Cloudflare
-- **Status:** Verification failing — likely DNS propagation delay. Retry tomorrow.
-- **Next steps after verification:** Google will prompt to add MX records for email routing. May also need to handle conflict with existing Loops MX record on `envelope.mail` subdomain (different from root MX, so should be fine).
-
-### Supabase Storage buckets needed
-
-Before file uploads work in production, create these buckets in Supabase Dashboard → Storage:
-1. **`profile-photos`** — for user avatar uploads (public)
-2. **`compliance-docs`** — for compliance document attachments (public)
+1. ✅ **Google Workspace** — phasewise.io domain verified, Gmail activated, MX + SPF + DKIM records in Cloudflare. Test email to `kevin@phasewise.io` received successfully.
+2. ✅ **Supabase Storage** — Created `profile-photos` and `compliance-docs` buckets (both public). Added RLS policies (SELECT/INSERT/UPDATE/DELETE) scoped to `authenticated` role so uploads via user session work without exposing anon writes.
+3. ✅ **Vercel Cron** — Created `app/vercel.json` registering `/api/cron/submittal-reminders` at `0 14 * * *` (14:00 UTC / 7 AM Pacific daily). Generated a fresh `CRON_SECRET` and set it in Vercel (all envs) + local `.env`.
+4. ✅ **Password reset flow — fully working end-to-end.** Diagnosed three cascading issues:
+   - **Site URL was `localhost`** → email links pointed to localhost. Fixed in Supabase → Auth → URL Configuration. Also added `https://phasewise.io/**` + `http://localhost:3000/**` to Redirect URLs allowlist.
+   - **Link scanners consumed the one-time token** (`otp_expired` error). Fixed by rewriting the Supabase "Reset password" email template to use `{{ .SiteURL }}/api/auth/callback?token_hash={{ .TokenHash }}&type=recovery&next=/reset-password` — a direct link that bypasses Supabase's `/verify` intermediate.
+   - **Middleware was redirecting `/api/auth/callback` to `/login`** because the user isn't authenticated yet when clicking the email link. Fixed by allowing `/api/auth/*` prefix through middleware unauthenticated.
+   - Updated `/api/auth/callback/route.ts` to accept both `code` (PKCE) and `token_hash + type` (verifyOtp) flows.
+5. ✅ **Profile photo auto-compression** — Phone photos are typically >2MB. Added client-side canvas resize (max 800px) + JPEG re-encode at quality 0.85 before upload in `/settings/profile`. Falls back to original file if compression fails and file fits under 2MB.
 
 ### Known good state
 
 - Production URL: https://phasewise.io
-- Code compiles clean (`npx tsc --noEmit` returns 0 errors)
-- Latest commit: `a99f3dd` — pushed and deployed
-- Schema synced to Supabase (Invoice + InvoiceLineItem tables, User phone/photoUrl fields)
+- Latest commit (pending commit for compression + CLAUDE.md): local
+- Latest pushed commit: `6dfa033`
+- Schema unchanged since 2026-04-14
+- All Supabase Storage buckets + policies live
+- Vercel Cron registered and enabled
 
 ### To resume next session
 
-1. **Google Workspace** — retry domain verification (click Retry in Google admin). If still failing, try waiting longer or re-adding the TXT record. After verification, add MX records for email routing.
-2. **Create Supabase Storage buckets** — `profile-photos` and `compliance-docs` (see above)
-3. **Set CRON_SECRET env var** in Vercel for the submittal reminders endpoint
-4. **Set up Vercel Cron** to call `/api/cron/submittal-reminders` daily
-5. **Review and test** all new features on live site
-6. **Operations:** Replace `/brand` v1 assets, Stripe Tax revisit, Stripe live mode, social media (n8n), USPTO trademark
+1. **Test remaining features on live site** — user profile edits (now with auto-compression), compliance file uploads, invoices, MWELO calc, edit modals on all modules
+2. **Operations:** Replace `/brand` v1 assets with v2, Stripe Tax revisit, Stripe live mode swap, n8n social automation, USPTO trademark filing
+3. **Clean up:** Supabase has two `google-site-verification` TXT records at root — one can be removed
+4. Consider adding auto-compression to compliance image uploads too (currently 10MB cap is generous but phone photos can exceed)
 
 ### Test cards for future testing
 
@@ -526,11 +517,12 @@ Before file uploads work in production, create these buckets in Supabase Dashboa
 
 ## TODO (Operational, non-code)
 
-- [ ] Google Workspace — retry domain verification, then add MX records for email
-- [ ] Create Supabase Storage buckets: `profile-photos` + `compliance-docs`
-- [ ] Set CRON_SECRET in Vercel + configure Vercel Cron for submittal reminders
+- [x] Google Workspace — domain verified + Gmail active ✅ 2026-04-15
+- [x] Create Supabase Storage buckets: `profile-photos` + `compliance-docs` ✅ 2026-04-15
+- [x] Set CRON_SECRET in Vercel + configure Vercel Cron for submittal reminders ✅ 2026-04-15
 - [ ] Upload v2 PNG logos to LinkedIn, X/Twitter, GitHub profiles
 - [ ] Claim @phasewise on Instagram
 - [ ] File USPTO trademark for "Phasewise"
 - [ ] Set up getphasewise.com redirect to phasewise.io in Cloudflare
 - [ ] Revisit Stripe Tax setup before going live (currently a placeholder CA registration)
+- [ ] Remove duplicate `google-site-verification` TXT record from Cloudflare (2 exist, only 1 needed)

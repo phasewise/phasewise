@@ -44,21 +44,27 @@ export default function ProfilePage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type and size
     if (!file.type.startsWith("image/")) {
       setError("Please select an image file");
-      return;
-    }
-    if (file.size > 2 * 1024 * 1024) {
-      setError("Image must be under 2MB");
       return;
     }
 
     setUploading(true);
     setError("");
 
+    let uploadBlob: Blob = file;
+    try {
+      uploadBlob = await compressImage(file, 800, 0.85);
+    } catch {
+      if (file.size > 2 * 1024 * 1024) {
+        setError("Image must be under 2MB");
+        setUploading(false);
+        return;
+      }
+    }
+
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("file", uploadBlob, "avatar.jpg");
 
     try {
       const res = await fetch("/api/user/photo", { method: "POST", body: formData });
@@ -245,4 +251,33 @@ export default function ProfilePage() {
       </div>
     </div>
   );
+}
+
+function compressImage(file: File, maxDim: number, quality: number): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("read failed"));
+    reader.onload = () => {
+      img.onerror = () => reject(new Error("decode failed"));
+      img.onload = () => {
+        const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+        const w = Math.round(img.width * scale);
+        const h = Math.round(img.height * scale);
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return reject(new Error("no canvas ctx"));
+        ctx.drawImage(img, 0, 0, w, h);
+        canvas.toBlob(
+          (blob) => (blob ? resolve(blob) : reject(new Error("toBlob failed"))),
+          "image/jpeg",
+          quality
+        );
+      };
+      img.src = reader.result as string;
+    };
+    reader.readAsDataURL(file);
+  });
 }
