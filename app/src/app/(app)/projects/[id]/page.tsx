@@ -50,15 +50,22 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
     orderBy: { fullName: "asc" },
   });
 
-  const budgetedFee = project.phases.reduce(
+  // Work Plan estimate — phase budgetedFee/Hours are kept in sync with
+  // the work plan on save, so summing them gives the current estimate.
+  const workPlanFee = project.phases.reduce(
     (sum, phase) => sum + Number(phase.budgetedFee ?? 0),
     0
   );
 
-  const budgetedHours = project.phases.reduce(
+  const workPlanHours = project.phases.reduce(
     (sum, phase) => sum + Number(phase.budgetedHours ?? 0),
     0
   );
+
+  const contractFee = project.contractFee ? Number(project.contractFee) : null;
+  const variance = contractFee !== null ? contractFee - workPlanFee : null;
+  const pctOfContract =
+    contractFee && contractFee > 0 ? (workPlanFee / contractFee) * 100 : null;
 
   // Auto-estimate: calculate estimated fee per phase based on assigned
   // staff billing rates. If N staff are assigned and a phase has H budgeted
@@ -113,25 +120,63 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
               {project.clientName && <span className="text-sm text-slate-500">Client: {project.clientName}</span>}
               {project.clientEmail && <span className="text-sm text-slate-500">{project.clientEmail}</span>}
             </div>
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-4">
               <div>
-                <div className="text-xs uppercase tracking-[0.24em] text-slate-500">Budgeted fee</div>
-                <div className="mt-2 text-xl font-semibold text-slate-900">${budgetedFee.toLocaleString()}</div>
+                <div className="text-xs uppercase tracking-[0.24em] text-slate-500">Contract fee</div>
+                <div className="mt-2 text-xl font-semibold text-slate-900">
+                  {contractFee !== null ? `$${contractFee.toLocaleString()}` : <span className="text-slate-400 font-normal">Not set</span>}
+                </div>
               </div>
               <div>
-                <div className="text-xs uppercase tracking-[0.24em] text-slate-500">Budgeted hours</div>
-                <div className="mt-2 text-xl font-semibold text-slate-900">{budgetedHours.toFixed(1)}h</div>
+                <div className="text-xs uppercase tracking-[0.24em] text-slate-500">Work Plan estimate</div>
+                <div className="mt-2 text-xl font-semibold text-[#2D6A4F]">
+                  ${workPlanFee.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                </div>
+                <div className="text-[11px] text-slate-400 mt-1">
+                  {workPlanHours.toFixed(1)}h across {project.phases.length} phase{project.phases.length === 1 ? "" : "s"}
+                </div>
               </div>
-              {estimatedFee > 0 && (
+              {variance !== null && (
                 <div>
-                  <div className="text-xs uppercase tracking-[0.24em] text-slate-500">Estimated fee</div>
-                  <div className="mt-2 text-xl font-semibold text-[#2D6A4F]">${estimatedFee.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                  <div className="text-xs uppercase tracking-[0.24em] text-slate-500">Variance</div>
+                  <div
+                    className={`mt-2 text-xl font-semibold ${
+                      variance < 0 ? "text-rose-600" : variance === 0 ? "text-slate-900" : "text-[#2D6A4F]"
+                    }`}
+                  >
+                    {variance < 0 ? "−" : ""}${Math.abs(variance).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                  </div>
                   <div className="text-[11px] text-slate-400 mt-1">
-                    Based on {assignedRates.length} staff × avg ${avgBillingRate.toFixed(0)}/hr
+                    {variance < 0 ? "Over contract" : variance === 0 ? "At ceiling" : "Headroom"}
+                  </div>
+                </div>
+              )}
+              {pctOfContract !== null && (
+                <div>
+                  <div className="text-xs uppercase tracking-[0.24em] text-slate-500">% of contract</div>
+                  <div
+                    className={`mt-2 text-xl font-semibold ${
+                      pctOfContract > 100 ? "text-rose-600" : pctOfContract > 90 ? "text-amber-600" : "text-slate-900"
+                    }`}
+                  >
+                    {pctOfContract.toFixed(0)}%
+                  </div>
+                  <div className="h-1.5 mt-2 rounded-full bg-slate-100 overflow-hidden">
+                    <div
+                      className={`h-full ${
+                        pctOfContract > 100 ? "bg-rose-500" : pctOfContract > 90 ? "bg-amber-500" : "bg-[#2D6A4F]"
+                      }`}
+                      style={{ width: `${Math.min(pctOfContract, 100)}%` }}
+                    />
                   </div>
                 </div>
               )}
             </div>
+            {estimatedFee > 0 && contractFee === null && (
+              <div className="mt-4 text-xs text-slate-400">
+                Set a <Link href={`/projects/${id}/edit`} className="text-[#2D6A4F] hover:underline">contract fee</Link> to track whether your Work Plan estimate fits inside what the client is paying.
+              </div>
+            )}
           </div>
 
           <div className="rounded-3xl border border-[#E2EBE4] bg-white p-6 shadow-sm">

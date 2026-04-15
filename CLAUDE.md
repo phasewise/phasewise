@@ -485,12 +485,16 @@ Operational setup + infrastructure fixes. Commits: `460fd7e` (Vercel cron), `cd7
    - Updated `/api/auth/callback/route.ts` to accept both `code` (PKCE) and `token_hash + type` (verifyOtp) flows.
 5. ✅ **Profile photo auto-compression** — Phone photos are typically >2MB. Added client-side canvas resize (max 800px) + JPEG re-encode at quality 0.85 before upload in `/settings/profile`. Falls back to original file if compression fails and file fits under 2MB.
 6. ✅ **Avatars in sidebar + team list** — Uploaded photos now render in the collapsible sidebar user widget and next to each member's name on `/settings/team`. Plumbed `photoUrl` through layout → MobileSidebar, and into team query + new `MemberAvatar` component. Falls back to initials when no photo.
+7. ✅ **Work Plan as single source of truth for hours and fees** — The new-project form used to ask for per-phase fee and hours, which were just guesses that conflicted with the Work Plan. Removed those inputs. Users now pick phases + an optional total **contract fee**, then get redirected straight to the Work Plan where staff assignments drive hours/fees per phase (the work-plan → phase auto-sync was already in place from item 63). Contract fee editable from project edit page.
+8. ✅ **Contract vs Work Plan summary on project detail** — 4-cell summary at the top of `/projects/[id]`: Contract fee, Work Plan estimate, Variance (with over/under color), % of contract (with progress bar — green ≤90%, amber 90–100%, red >100%). Surfaces over-budget risk at a glance.
+
+**Schema change:** Added `Project.contractFee Decimal? @db.Decimal(12,2)`. Synced to Supabase.
 
 ### Known good state
 
 - Production URL: https://phasewise.io
 - Latest commit (pending commit for compression + CLAUDE.md): local
-- Latest pushed commit: `3bcb730`
+- Latest pushed commit: `4e8677d` (Work Plan source-of-truth) + follow-up commit with contract-vs-estimate summary
 - Schema unchanged since 2026-04-14
 - All Supabase Storage buckets + policies live
 - Vercel Cron registered and enabled
