@@ -38,9 +38,10 @@ export async function handleAuth(request: NextRequest) {
     "/reset-password",
     "/invite",
   ];
-  const isPublicPath = publicPaths.some(
-    (p) => request.nextUrl.pathname === p || request.nextUrl.pathname.startsWith("/invite/")
-  );
+  const isPublicPath =
+    publicPaths.some(
+      (p) => request.nextUrl.pathname === p || request.nextUrl.pathname.startsWith("/invite/")
+    ) || request.nextUrl.pathname.startsWith("/api/auth/");
 
   if (!user && !isPublicPath) {
     const url = request.nextUrl.clone();
