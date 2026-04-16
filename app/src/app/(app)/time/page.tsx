@@ -169,6 +169,35 @@ export default async function TimePage({
 
   const balances = await computeUserLeaveBalances(viewingUserId);
 
+  // Previous-week rows for the "Copy rows" button. We only need the
+  // distinct {projectId, phaseId} / {leaveType} combos, not the hours.
+  const prevWeekStart = addDays(weekStartDate, -7);
+  const prevEntries = await prisma.timeEntry.findMany({
+    where: {
+      userId: viewingUserId,
+      date: { gte: prevWeekStart, lt: weekStartDate },
+    },
+    select: {
+      projectId: true,
+      phaseId: true,
+      leaveType: true,
+    },
+  });
+  const prevSeen = new Set<string>();
+  const previousWeekRows: Array<{ projectId: string; phaseId: string; leaveType?: string }> = [];
+  for (const entry of prevEntries) {
+    const key = entry.leaveType
+      ? `LEAVE:${entry.leaveType}`
+      : `${entry.projectId}:${entry.phaseId}`;
+    if (prevSeen.has(key)) continue;
+    prevSeen.add(key);
+    if (entry.leaveType) {
+      previousWeekRows.push({ projectId: "", phaseId: "", leaveType: entry.leaveType });
+    } else if (entry.projectId && entry.phaseId) {
+      previousWeekRows.push({ projectId: entry.projectId, phaseId: entry.phaseId });
+    }
+  }
+
   const dateStrings = weekDates.map((d) => format(d, "yyyy-MM-dd"));
   const dateLabels = weekDates.map((d, i) => `${DAY_NAMES[i]} ${format(d, "M/d")}`);
 
@@ -299,6 +328,7 @@ export default async function TimePage({
         dateLabels={dateLabels}
         initialEntries={initialEntries}
         initialRows={initialRows}
+        previousWeekRows={previousWeekRows}
         readOnly={
           isViewingOther ||
           futureWeekBlocked ||

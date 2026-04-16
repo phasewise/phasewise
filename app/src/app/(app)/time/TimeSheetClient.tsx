@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus, Trash2, CalendarDays } from "lucide-react";
+import { Plus, Trash2, CalendarDays, Copy } from "lucide-react";
 import { LEAVE_TYPE_LABELS, LEAVE_TYPES } from "@/lib/leave";
 
 type Project = {
@@ -18,6 +18,7 @@ type Props = {
   dateLabels: string[];
   initialEntries: Record<string, string>;
   initialRows: Row[];
+  previousWeekRows?: Row[];
   readOnly?: boolean;
 };
 
@@ -34,6 +35,7 @@ export default function TimeSheetClient({
   dateLabels,
   initialEntries,
   initialRows,
+  previousWeekRows = [],
   readOnly = false,
 }: Props) {
   const [rows, setRows] = useState<Row[]>(
@@ -53,6 +55,16 @@ export default function TimeSheetClient({
 
   function addLeaveRow() {
     setRows((prev) => [...prev, { projectId: "", phaseId: "", leaveType: "VACATION" }]);
+  }
+
+  function copyFromPreviousWeek() {
+    const rowKey = (r: Row) =>
+      r.leaveType ? `LEAVE:${r.leaveType}` : `${r.projectId}:${r.phaseId}`;
+    setRows((prev) => {
+      const existing = new Set(prev.map(rowKey));
+      const toAdd = previousWeekRows.filter((r) => !existing.has(rowKey(r)));
+      return [...prev, ...toAdd];
+    });
   }
 
   function removeRow(index: number) {
@@ -352,6 +364,17 @@ export default function TimeSheetClient({
             <CalendarDays className="w-4 h-4" />
             Add leave / PTO
           </button>
+          {previousWeekRows.length > 0 && (
+            <button
+              type="button"
+              onClick={copyFromPreviousWeek}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-white text-[#6B8C74] border border-[#E2EBE4] hover:border-[#52B788] hover:text-[#2D6A4F] transition-all"
+              title="Add the same projects and leave rows you used last week (hours start at 0)"
+            >
+              <Copy className="w-4 h-4" />
+              Copy rows from last week
+            </button>
+          )}
         </div>
       )}
     </div>
