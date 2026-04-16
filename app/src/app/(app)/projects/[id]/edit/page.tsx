@@ -300,7 +300,9 @@ export default function EditProjectPage() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-lg font-semibold text-[#1A2E22]">Phases</h2>
-              <p className="text-sm text-[#6B8C74]">Manage project phases, budgets, and hours.</p>
+              <p className="text-sm text-[#6B8C74]">
+                Hours and fees roll up automatically from the Work Plan below.
+              </p>
             </div>
             <button
               type="button"
@@ -318,7 +320,7 @@ export default function EditProjectPage() {
                 key={phase.id || `new-${index}`}
                 className="rounded-xl border border-[#E8EDE9] bg-[#F7F9F7] p-4"
               >
-                <div className="grid gap-3 sm:grid-cols-[1fr_1fr_120px_120px_120px_40px] items-end">
+                <div className="grid gap-3 sm:grid-cols-[1fr_1fr_140px_100px_120px_40px] items-end">
                   <div>
                     <label className="text-xs font-medium text-[#6B8C74]">Phase type</label>
                     <select
@@ -361,31 +363,16 @@ export default function EditProjectPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="text-xs font-medium text-[#6B8C74]">Fee ($)</label>
-                    <div className="relative mt-1">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A3BEA9] text-sm">$</span>
-                      <input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={phase.budgetedFee}
-                        onChange={(e) => updatePhase(index, { budgetedFee: e.target.value })}
-                        className="w-full bg-white border border-[#E2EBE4] rounded-lg pl-7 pr-3 py-2 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]"
-                        placeholder="0.00"
-                      />
+                    <label className="text-xs font-medium text-[#6B8C74]">Hours</label>
+                    <div className="mt-1 w-full rounded-lg bg-white border border-dashed border-[#E2EBE4] px-3 py-2 text-sm text-[#3D5C48] text-right">
+                      {Number(phase.budgetedHours || 0).toFixed(1)}h
                     </div>
                   </div>
                   <div>
-                    <label className="text-xs font-medium text-[#6B8C74]">Hours</label>
-                    <input
-                      type="number"
-                      step="0.5"
-                      min="0"
-                      value={phase.budgetedHours}
-                      onChange={(e) => updatePhase(index, { budgetedHours: e.target.value })}
-                      className="mt-1 w-full bg-white border border-[#E2EBE4] rounded-lg px-3 py-2 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]"
-                      placeholder="0"
-                    />
+                    <label className="text-xs font-medium text-[#6B8C74]">Fee</label>
+                    <div className="mt-1 w-full rounded-lg bg-white border border-dashed border-[#E2EBE4] px-3 py-2 text-sm text-[#3D5C48] text-right">
+                      ${Number(phase.budgetedFee || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                    </div>
                   </div>
                   <div>
                     <button
@@ -406,6 +393,21 @@ export default function EditProjectPage() {
               </div>
             )}
           </div>
+
+          {phases.length > 0 && (
+            <div className="mt-4 flex items-center justify-between rounded-xl bg-[#F0FAF4] border border-[#52B788]/20 px-4 py-3">
+              <span className="text-xs uppercase tracking-[0.18em] text-[#2D6A4F] font-semibold">
+                Work Plan estimate
+              </span>
+              <div className="text-sm font-semibold text-[#1A2E22]">
+                {phases.reduce((sum, p) => sum + (Number(p.budgetedHours) || 0), 0).toFixed(1)}h
+                <span className="mx-2 text-[#A3BEA9]">·</span>
+                ${phases
+                  .reduce((sum, p) => sum + (Number(p.budgetedFee) || 0), 0)
+                  .toLocaleString(undefined, { maximumFractionDigits: 0 })}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Work Plan */}

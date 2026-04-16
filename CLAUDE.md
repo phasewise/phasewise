@@ -487,6 +487,8 @@ Operational setup + infrastructure fixes. Commits: `460fd7e` (Vercel cron), `cd7
 6. ✅ **Avatars in sidebar + team list** — Uploaded photos now render in the collapsible sidebar user widget and next to each member's name on `/settings/team`. Plumbed `photoUrl` through layout → MobileSidebar, and into team query + new `MemberAvatar` component. Falls back to initials when no photo.
 7. ✅ **Work Plan as single source of truth for hours and fees** — The new-project form used to ask for per-phase fee and hours, which were just guesses that conflicted with the Work Plan. Removed those inputs. Users now pick phases + an optional total **contract fee**, then get redirected straight to the Work Plan where staff assignments drive hours/fees per phase (the work-plan → phase auto-sync was already in place from item 63). Contract fee editable from project edit page.
 8. ✅ **Contract vs Work Plan summary on project detail** — 4-cell summary at the top of `/projects/[id]`: Contract fee, Work Plan estimate, Variance (with over/under color), % of contract (with progress bar — green ≤90%, amber 90–100%, red >100%). Surfaces over-budget risk at a glance.
+9. ✅ **Phase edit rows show Work Plan rollup (read-only)** — Removed Fee and Hours inputs from the Phases section on the project edit page. They're now dashed-border display cells pulled from Work Plan sync. Added a "Work Plan estimate" totals bar at the bottom of the phase list. One place to enter — the Work Plan.
+10. ✅ **Removed deprecated v1 brand assets** — `brand/` directory deleted (zero code references). `brand_v2/` is now the single source of truth.
 
 **Schema change:** Added `Project.contractFee Decimal? @db.Decimal(12,2)`. Synced to Supabase.
 
