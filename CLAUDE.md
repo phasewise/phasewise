@@ -197,10 +197,12 @@ All variables are set in **Vercel project Settings → Environment Variables** A
 | `LOOPS_API_KEY` | ✅ local, ⏳ Vercel | Loops > Settings > API |
 | `LOOPS_TEMPLATE_WELCOME` | ⏳ pending | Loops > Transactional > Welcome template ID |
 | `LOOPS_TEMPLATE_TRIAL_STARTED` | ⏳ pending | Loops > Transactional > Trial started template ID |
-| `LOOPS_TEMPLATE_WELCOME` | ✅ Vercel + local | `cmnsy2ivn01fx0iyrotfy4w2i` |
-| `LOOPS_TEMPLATE_TRIAL_STARTED` | ✅ Vercel + local | `cmnt111lb00a20i0d70r302q1` |
-| `LOOPS_TEMPLATE_SUBSCRIPTION_CANCELED` | ✅ Vercel + local | `cmnt17tyg00m20iyvwcuxod0r` |
-| `LOOPS_TEMPLATE_PAYMENT_FAILED` | ✅ Vercel + local | `cmnt1c1fm0cg60i0dsl64dtfv` |
+| `LOOPS_TEMPLATE_WELCOME` | ✅ Vercel + local | `cmnsy2ivn01fx0iyrotfy4w2i` (branded 2026-04-16) |
+| `LOOPS_TEMPLATE_TRIAL_STARTED` | ✅ local, ⏳ Vercel | `cmo1yvph60i0g0izrztwksafl` (branded 2026-04-16) |
+| `LOOPS_TEMPLATE_SUBSCRIPTION_CANCELED` | ✅ local, ⏳ Vercel | `cmo1yw7mk0gru0h1uw8yzx5yb` (branded 2026-04-16) |
+| `LOOPS_TEMPLATE_PAYMENT_FAILED` | ✅ local, ⏳ Vercel | `cmo1ywidl0hbu0jxzj127ssvc` (branded 2026-04-16) |
+| `LOOPS_TEMPLATE_SUBMITTAL_REMINDER` | ✅ local, ⏳ Vercel | `cmo1ywq5505dy0izn74icj1zy` (new, branded 2026-04-16) |
+| `LOOPS_TEMPLATE_BUDGET_ALERT` | ✅ local, ⏳ Vercel | `cmo1ywy7r074g0iuqkp0yntnw` (new, branded 2026-04-16) |
 
 ### Switching Stripe to Live Mode (when ready)
 
