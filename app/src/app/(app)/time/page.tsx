@@ -136,6 +136,12 @@ export default async function TimePage({
           </p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
+          {!canViewOthers && (
+            <div className="inline-flex items-center gap-2 rounded-lg bg-[#F0FAF4] border border-[#52B788]/30 px-3 py-2 text-sm text-[#2D6A4F]">
+              <span className="text-xs uppercase tracking-[0.18em] text-[#6B8C74] font-semibold">Logging as</span>
+              <span className="font-medium">{currentUser.fullName}</span>
+            </div>
+          )}
           {canViewOthers && teamMembers.length > 1 && (
             <TimesheetUserSelector
               teamMembers={teamMembers}
