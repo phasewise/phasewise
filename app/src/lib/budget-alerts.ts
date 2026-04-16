@@ -99,17 +99,29 @@ export async function checkAndSendBudgetAlert(projectId: string): Promise<void> 
 
     const alertInfo = ALERT_LABELS[alertLevel];
 
-    // We'll use the welcome template as a generic email for now since we
-    // don't have a dedicated budget alert template in Loops. The template
-    // system handles missing templates gracefully (logs and continues).
-    // TODO: Create a dedicated "Budget Alert" transactional template in Loops
+    // Prefer the dedicated Budget Alert template; fall back to
+    // PAYMENT_FAILED so alerts keep sending even before the template
+    // is installed in Loops.
+    const templateId =
+      LOOPS_TEMPLATES.BUDGET_ALERT || LOOPS_TEMPLATES.PAYMENT_FAILED;
+
     await sendTransactional({
       email: project.createdBy.email,
-      transactionalId: LOOPS_TEMPLATES.PAYMENT_FAILED, // Reusing as a generic alert for now
-      dataVariables: {
-        firstName,
-        firmName: `${project.name} — ${alertInfo.label}. ${burnRate}% of budgeted hours used (${hoursUsed.toFixed(1)}h of ${budgetedHours.toFixed(1)}h). Budget: $${budgetedFee.toLocaleString()}.`,
-      },
+      transactionalId: templateId,
+      dataVariables: LOOPS_TEMPLATES.BUDGET_ALERT
+        ? {
+            firstName,
+            projectName: project.name,
+            alertLabel: alertInfo.label,
+            burnRate: String(burnRate),
+            hoursUsed: hoursUsed.toFixed(1),
+            budgetedHours: budgetedHours.toFixed(1),
+            budgetedFee: budgetedFee.toLocaleString(),
+          }
+        : {
+            firstName,
+            firmName: `${project.name} — ${alertInfo.label}. ${burnRate}% of budgeted hours used (${hoursUsed.toFixed(1)}h of ${budgetedHours.toFixed(1)}h). Budget: $${budgetedFee.toLocaleString()}.`,
+          },
     });
 
     console.log(`[budget-alert] Sent ${alertLevel} alert for project ${project.name} (${burnRate}%)`);

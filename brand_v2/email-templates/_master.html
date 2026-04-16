@@ -1,0 +1,97 @@
+<!--
+  MASTER EMAIL TEMPLATE — Phasewise v2 brand
+  ==========================================
+  This is the reference template. All other templates (welcome,
+  trial-started, etc.) are variants of this one — same header,
+  footer, and layout, different body copy.
+
+  Use inline styles only (many email clients strip <style> tags).
+  Variables are Loops-style: {{variableName}}.
+
+  Colors:
+    --green-700: #2D6A4F   (primary brand, header, CTA)
+    --green-500: #40916C   (CTA hover — not used in email, but kept in palette)
+    --green-50:  #F0FAF4   (soft background accents)
+    --ink-900:   #1A2E22   (headings, strong body)
+    --ink-700:   #3D5C48   (body)
+    --ink-500:   #6B8C74   (secondary, labels)
+    --ink-300:   #A3BEA9   (footer muted)
+    --border:    #E2EBE4
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Phasewise</title>
+</head>
+<body style="margin: 0; padding: 0; background: #F7F9F7; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; color: #1A2E22;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background: #F7F9F7;">
+    <tr>
+      <td align="center" style="padding: 40px 16px;">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="max-width: 600px; width: 100%; background: #FFFFFF; border: 1px solid #E2EBE4; border-radius: 16px; overflow: hidden;">
+
+          <!-- HEADER — solid brand green bar with wordmark -->
+          <tr>
+            <td style="background: #2D6A4F; padding: 24px 32px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                <tr>
+                  <td>
+                    <span style="font-size: 20px; font-weight: 600; letter-spacing: -0.3px; color: #FFFFFF;">phase</span><span style="font-size: 20px; font-weight: 300; letter-spacing: -0.3px; color: #B7E4C7; font-style: italic;">wise</span>
+                  </td>
+                  <td align="right" style="font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: #B7E4C7;">
+                    Focus on the design
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- BODY -->
+          <tr>
+            <td style="padding: 40px 40px 32px 40px;">
+              <h1 style="margin: 0 0 16px 0; font-size: 22px; font-weight: 600; color: #1A2E22; line-height: 1.3;">
+                {{headline}}
+              </h1>
+              <p style="margin: 0 0 20px 0; font-size: 15px; line-height: 1.6; color: #3D5C48;">
+                Hi {{firstName}},
+              </p>
+              <p style="margin: 0 0 24px 0; font-size: 15px; line-height: 1.6; color: #3D5C48;">
+                {{bodyParagraph}}
+              </p>
+
+              <!-- CTA button -->
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 8px 0 24px 0;">
+                <tr>
+                  <td style="border-radius: 10px; background: #2D6A4F;">
+                    <a href="{{ctaUrl}}" style="display: inline-block; padding: 12px 24px; font-size: 14px; font-weight: 600; color: #FFFFFF; text-decoration: none; border-radius: 10px;">
+                      {{ctaLabel}}
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin: 24px 0 0 0; font-size: 13px; line-height: 1.6; color: #6B8C74;">
+                {{closingNote}}
+              </p>
+            </td>
+          </tr>
+
+          <!-- FOOTER -->
+          <tr>
+            <td style="padding: 24px 40px; background: #F7F9F7; border-top: 1px solid #E2EBE4;">
+              <p style="margin: 0 0 4px 0; font-size: 12px; color: #6B8C74;">
+                Phasewise · Project management built for landscape architects
+              </p>
+              <p style="margin: 0; font-size: 12px; color: #A3BEA9;">
+                <a href="https://phasewise.io" style="color: #6B8C74; text-decoration: none;">phasewise.io</a>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

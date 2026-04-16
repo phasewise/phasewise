@@ -70,16 +70,28 @@ export async function GET(request: Request) {
         (now.getTime() - (submittal.dueDate?.getTime() ?? now.getTime())) / (1000 * 60 * 60 * 24)
       );
 
-      // Use the payment_failed template as a generic alert template
-      // (it has firstName + firmName vars, which we repurpose here)
-      // TODO: Create a dedicated "Submittal Overdue" template in Loops
+      // Prefer the dedicated Submittal Reminder template; fall back to
+      // PAYMENT_FAILED if the env var hasn't been set yet (keeps
+      // reminders flowing even before the template is installed).
+      const templateId =
+        LOOPS_TEMPLATES.SUBMITTAL_REMINDER || LOOPS_TEMPLATES.PAYMENT_FAILED;
+
       await sendTransactional({
         email: recipient.email,
-        transactionalId: LOOPS_TEMPLATES.PAYMENT_FAILED,
-        dataVariables: {
-          firstName,
-          firmName: `${submittal.number} "${submittal.subject}" on ${submittal.project.name} is ${daysOverdue} day${daysOverdue === 1 ? "" : "s"} overdue.${submittal.ballInCourt ? ` Ball in court: ${submittal.ballInCourt}.` : ""} Please review and update the status at https://phasewise.io/submittals`,
-        },
+        transactionalId: templateId,
+        dataVariables: LOOPS_TEMPLATES.SUBMITTAL_REMINDER
+          ? {
+              firstName,
+              submittalNumber: submittal.number,
+              subject: submittal.subject,
+              projectName: submittal.project.name,
+              daysOverdue: String(daysOverdue),
+              ballInCourt: submittal.ballInCourt ?? "Unassigned",
+            }
+          : {
+              firstName,
+              firmName: `${submittal.number} "${submittal.subject}" on ${submittal.project.name} is ${daysOverdue} day${daysOverdue === 1 ? "" : "s"} overdue.${submittal.ballInCourt ? ` Ball in court: ${submittal.ballInCourt}.` : ""} Please review and update the status at https://phasewise.io/submittals`,
+            },
       });
 
       sentCount++;
