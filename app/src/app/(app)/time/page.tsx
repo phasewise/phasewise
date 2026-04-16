@@ -6,6 +6,7 @@ import { computeUserLeaveBalances, LEAVE_TYPE_LABELS } from "@/lib/leave";
 import TimeSheetClient from "./TimeSheetClient";
 import TimesheetSubmitClient from "./TimesheetSubmitClient";
 import TimesheetUserSelector from "./TimesheetUserSelector";
+import WeekNavigator from "./WeekNavigator";
 
 function getWeekStart(date: Date) {
   return startOfWeek(date, { weekStartsOn: 1 });
@@ -18,7 +19,7 @@ const ADMIN_ROLES = ["OWNER", "ADMIN", "SUPERVISOR"];
 export default async function TimePage({
   searchParams,
 }: {
-  searchParams: Promise<{ userId?: string }>;
+  searchParams: Promise<{ userId?: string; week?: string }>;
 }) {
   const params = await searchParams;
   const currentUser = await getCurrentUser();
@@ -64,10 +65,48 @@ export default async function TimePage({
     });
   }
 
-  const weekStartDate = getWeekStart(new Date());
+  const todayWeekStart = getWeekStart(new Date());
+
+  // The week param is the ISO date of a Monday (yyyy-MM-dd). If missing
+  // or invalid, fall back to the current week.
+  function parseWeekParam(raw: string | undefined): Date {
+    if (!raw) return todayWeekStart;
+    const parsed = new Date(`${raw}T00:00:00`);
+    if (Number.isNaN(parsed.getTime())) return todayWeekStart;
+    return getWeekStart(parsed);
+  }
+  const weekStartDate = parseWeekParam(params.week);
   const weekDates = Array.from({ length: 7 }, (_, index) =>
     addDays(weekStartDate, index)
   );
+
+  const isCurrentWeek = weekStartDate.getTime() === todayWeekStart.getTime();
+  const isFutureWeek = weekStartDate.getTime() > todayWeekStart.getTime();
+  const isPastWeek = weekStartDate.getTime() < todayWeekStart.getTime();
+
+  // Rule: an employee can only log time in future weeks if the current
+  // week's timesheet has been submitted (or approved). Admins viewing
+  // someone else's sheet bypass this rule (they're reviewing, not editing).
+  let futureWeekBlocked = false;
+  if (isFutureWeek && !isViewingOther) {
+    const currentWeekSheet = await prisma.weeklyTimesheet.findUnique({
+      where: {
+        userId_weekStart: {
+          userId: viewingUserId,
+          weekStart: todayWeekStart,
+        },
+      },
+    });
+    if (
+      !currentWeekSheet ||
+      currentWeekSheet.status === "DRAFT"
+    ) {
+      futureWeekBlocked = true;
+    }
+  }
+
+  const prevWeekParam = format(addDays(weekStartDate, -7), "yyyy-MM-dd");
+  const nextWeekParam = format(addDays(weekStartDate, 7), "yyyy-MM-dd");
 
   const timesheet = await prisma.weeklyTimesheet.findUnique({
     where: {
@@ -181,6 +220,41 @@ export default async function TimePage({
         </div>
       )}
 
+      <div className="mb-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-2xl border border-[#E2EBE4] bg-white px-4 py-3">
+        <WeekNavigator
+          weekStart={format(weekStartDate, "yyyy-MM-dd")}
+          prevWeek={prevWeekParam}
+          nextWeek={nextWeekParam}
+          isCurrentWeek={isCurrentWeek}
+          selectedUserId={isViewingOther ? viewingUserId : null}
+        />
+        <div className="flex items-center gap-2 text-xs">
+          {isFutureWeek && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-[#F0FAF4] border border-[#52B788]/30 px-3 py-1 text-[#2D6A4F] font-medium">
+              Future week
+            </span>
+          )}
+          {isPastWeek && timesheet?.status === "APPROVED" && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 border border-slate-200 px-3 py-1 text-slate-600 font-medium">
+              Approved · read-only
+            </span>
+          )}
+          {isPastWeek && timesheet?.status === "SUBMITTED" && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-3 py-1 text-amber-700 font-medium">
+              Submitted · awaiting approval
+            </span>
+          )}
+        </div>
+      </div>
+
+      {futureWeekBlocked && (
+        <div className="mb-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <span className="font-semibold">Submit the current week first.</span>{" "}
+          To keep time entry in order, you need to submit this week&rsquo;s timesheet
+          before logging hours in future weeks (e.g. a vacation you&rsquo;re planning).
+        </div>
+      )}
+
       {balances.some((b) => b.annualHours > 0 || b.usedHours > 0) && (
         <div className="mb-5 grid grid-cols-2 sm:grid-cols-5 gap-3">
           {balances.map((b) => {
@@ -225,7 +299,11 @@ export default async function TimePage({
         dateLabels={dateLabels}
         initialEntries={initialEntries}
         initialRows={initialRows}
-        readOnly={isViewingOther}
+        readOnly={
+          isViewingOther ||
+          futureWeekBlocked ||
+          timesheet?.status === "APPROVED"
+        }
       />
     </div>
   );

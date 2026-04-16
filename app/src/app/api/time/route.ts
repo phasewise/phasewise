@@ -1,11 +1,16 @@
 import { NextResponse } from "next/server";
 import { Prisma, LeaveType } from "@prisma/client";
+import { startOfWeek } from "date-fns";
 import { prisma } from "@/lib/prisma";
 import { createClient } from "@/lib/supabase/server";
 import { checkAndSendBudgetAlert } from "@/lib/budget-alerts";
 import { LEAVE_TYPES } from "@/lib/leave";
 
 export const dynamic = "force-dynamic";
+
+function getWeekStart(date: Date) {
+  return startOfWeek(date, { weekStartsOn: 1 });
+}
 
 export async function POST(request: Request) {
   const body = await request.json();
@@ -70,6 +75,42 @@ export async function POST(request: Request) {
 
     if (phase.project.id !== projectId) {
       return NextResponse.json({ error: "Phase does not belong to selected project." }, { status: 400 });
+    }
+  }
+
+  // Guardrails on which weeks an employee can edit:
+  //  - Approved week: no edits (status is the source of truth for "locked")
+  //  - Future week: only if the current week's timesheet has been submitted
+  const entryWeekStart = getWeekStart(parsedDate);
+  const todayWeekStart = getWeekStart(new Date());
+  const isFutureWeek = entryWeekStart.getTime() > todayWeekStart.getTime();
+
+  const entryWeekSheet = await prisma.weeklyTimesheet.findUnique({
+    where: {
+      userId_weekStart: { userId: currentUser.id, weekStart: entryWeekStart },
+    },
+  });
+  if (entryWeekSheet?.status === "APPROVED") {
+    return NextResponse.json(
+      { error: "This week's timesheet is approved and can't be edited." },
+      { status: 403 }
+    );
+  }
+
+  if (isFutureWeek) {
+    const currentWeekSheet = await prisma.weeklyTimesheet.findUnique({
+      where: {
+        userId_weekStart: { userId: currentUser.id, weekStart: todayWeekStart },
+      },
+    });
+    if (!currentWeekSheet || currentWeekSheet.status === "DRAFT") {
+      return NextResponse.json(
+        {
+          error:
+            "Submit the current week's timesheet before logging time in future weeks.",
+        },
+        { status: 403 }
+      );
     }
   }
 
