@@ -417,6 +417,13 @@ Most meaningful first. Strikethrough = done.
 75. ~~**Vercel Cron for submittal reminders**~~ ✅ 2026-04-15 — `vercel.json` registers `/api/cron/submittal-reminders` at 14:00 UTC daily. CRON_SECRET env var set in Vercel + local `.env`.
 76. ~~**Password reset flow end-to-end fix**~~ ✅ 2026-04-15 — Root cause: Site URL pointed to localhost; Supabase template used `.ConfirmationURL` which link-scanners consumed; middleware blocked `/api/auth/*`. Fixed all three.
 77. ~~**Profile photo auto-compression**~~ ✅ 2026-04-15 — Client-side canvas resize to 800px + JPEG q=0.85 so phone photos upload without hitting the 2MB limit.
+78. ~~**Project task edit modal**~~ ✅ 2026-04-16 — Click task name to open edit modal (name, description, due date, assignee, status). Delete button. DELETE handler on API.
+79. ~~**Work Plan → phase rollup fix**~~ ✅ 2026-04-16 — Phases PUT was clobbering synced budgets on Save-all-changes. Stripped budget writes from the phases endpoint; Work Plan endpoint is now the sole writer. Edit page refetches phase budgets after Work Plan save.
+80. ~~**Timesheet UX: missing-phase hint + logging-as chip**~~ ✅ 2026-04-16 — Amber hint when a project has no phases; read-only name chip for STAFF/PM who can't switch users.
+81. ~~**Leave & PTO tracking**~~ ✅ 2026-04-16 — LeaveType enum (VACATION/SICK/HOLIDAY/UNPAID/OTHER), nullable projectId/phaseId on TimeEntry, Organization.leavePolicy + User.leavePolicyOverride JSON. Admin page (`/admin/leave`) with firm-wide policy + per-employee override modal + live balances. Balance widget on timesheet. "Add leave / PTO" button. Auto-computed used hours.
+82. ~~**Timesheet week navigation**~~ ✅ 2026-04-16 — Prev/Next + date picker + "This week" button. Past weeks editable unless approved (read-only) or submitted (chip shown). Future weeks editable only if current week has been submitted. Server-side enforcement matches UI.
+83. ~~**Copy rows from last week**~~ ✅ 2026-04-16 — Timesheet button to add last week's distinct rows with 0 hours.
+84. ~~**Invoice PDF generation**~~ ✅ 2026-04-16 — Branded server-side PDF via @react-pdf/renderer. Route `GET /api/invoices/:id/pdf`. PDF link on every row in `/admin/billing`.
 
 ## Competitive Positioning
 
@@ -467,7 +474,21 @@ When staff are assigned to a phase:
 3. Owner can override the auto-calculated estimate with a manual value
 4. System always shows both "estimated" and "budgeted" so the owner can compare
 
-## Where We Left Off (2026-04-15 EOD)
+## Product Wishlist (proposed, not committed)
+
+Ordered by my estimated value-per-effort. Revisit during the forensic audit.
+
+- **Dashboard v3** — add "This week's hours", "Pending approvals", "Upcoming deadlines", "Invoices outstanding" tiles.
+- **Timesheet CSV export** — per-user or per-project, for accountants and invoicing backup.
+- **Project search / filter** — flat list breaks at ~20 projects.
+- **Client portal / shared read-only link** — send clients a URL that shows project health, current phase, outstanding submittals, invoice status. Big differentiator — no competitor does this well for LA firms.
+- **Plant library redesign** — current flat list is low-value. Turn it into a reusable firm library that auto-populates MWELO hydrozones and links to submittals. Irrigation section a candidate companion.
+- **Leave request/approval workflow** — employee requests → manager approves → auto-adds to timesheet. Currently leave is entered directly; this adds a real approval step like vacation requests in most HRIS systems.
+- **Pro-rata leave accrual** — accrues per pay period instead of annual front-loading. For firms that prefer it.
+- **Automated year-end rollover** — apply the `rolloverCap` automatically when the calendar year changes.
+- **Forensic audit** — top-to-bottom value review once the queue slows down. Rate each feature on value delivered vs maintenance cost. Cut or sharpen anything that doesn't earn its keep.
+
+## Where We Left Off (2026-04-16 EOD)
 
 **Status: All 67 feature items + core infrastructure complete.** Google Workspace live, Supabase Storage buckets + RLS configured, Vercel Cron registered, password reset end-to-end verified.
 
@@ -532,4 +553,7 @@ Operational setup + infrastructure fixes. Commits: `460fd7e` (Vercel cron), `cd7
 - [ ] File USPTO trademark for "Phasewise"
 - [ ] Set up getphasewise.com redirect to phasewise.io in Cloudflare
 - [ ] Revisit Stripe Tax setup before going live (currently a placeholder CA registration)
-- [ ] Remove duplicate `google-site-verification` TXT record from Cloudflare (2 exist, only 1 needed)
+- [ ] Remove duplicate `google-site-verification` TXT record from Cloudflare
+- [ ] **Brand all Loops transactional emails** (welcome, trial-started, canceled, payment-failed) with consistent v2 logos, colors, and typography
+- [ ] Brand the submittal-reminder email (currently reuses payment_failed template as a generic alert)
+- [ ] Stripe live mode swap (when first paying customer is lined up) (2 exist, only 1 needed)
