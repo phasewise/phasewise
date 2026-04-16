@@ -340,6 +340,7 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
                 <th className="px-4 sm:px-6 py-3 font-medium text-right">Paid</th>
                 <th className="px-4 sm:px-6 py-3 font-medium text-right">Balance</th>
                 <th className="px-4 sm:px-6 py-3 font-medium">Status</th>
+                <th className="px-4 sm:px-6 py-3 font-medium w-20"></th>
               </tr>
             </thead>
             <tbody>
@@ -372,12 +373,23 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
                         {inv.status.replace("_", " ")}
                       </span>
                     </td>
+                    <td className="px-4 sm:px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                      <a
+                        href={`/api/invoices/${inv.id}/pdf`}
+                        target="_blank"
+                        rel="noopener"
+                        className="inline-flex items-center gap-1 text-xs font-semibold text-[#2D6A4F] hover:text-[#40916C] transition-colors"
+                        title="Open PDF in new tab"
+                      >
+                        PDF
+                      </a>
+                    </td>
                   </tr>
                 );
               })}
               {invoices.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-6 py-10 text-center">
+                  <td colSpan={9} className="px-6 py-10 text-center">
                     <DollarSign className="w-10 h-10 text-[#A3BEA9] mx-auto mb-3" />
                     <h3 className="font-semibold text-[#1A2E22] mb-1">No invoices yet</h3>
                     <p className="text-sm text-[#6B8C74]">Create your first invoice to start tracking project billing.</p>
