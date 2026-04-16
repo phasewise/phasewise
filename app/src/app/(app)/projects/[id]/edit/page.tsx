@@ -88,6 +88,27 @@ export default function EditProjectPage() {
       });
   }, [projectId]);
 
+  // Called by WorkPlanEditor after a successful save so the read-only
+  // fee/hours cells (and the Work Plan estimate totals bar) reflect
+  // the newly-synced phase budgets without a full page refresh.
+  async function refreshPhaseBudgets() {
+    const res = await fetch(`/api/projects/${projectId}`);
+    if (!res.ok) return;
+    const data = await res.json();
+    const fresh = data.project?.phases ?? [];
+    setPhases((prev) =>
+      prev.map((p) => {
+        const match = fresh.find((fp: { id: string }) => fp.id === p.id);
+        if (!match) return p;
+        return {
+          ...p,
+          budgetedFee: match.budgetedFee ? String(match.budgetedFee) : "",
+          budgetedHours: match.budgetedHours ? String(match.budgetedHours) : "",
+        };
+      })
+    );
+  }
+
   function updatePhase(index: number, update: Partial<PhaseRow>) {
     setPhases((prev) =>
       prev.map((p, i) => (i === index ? { ...p, ...update } : p))
@@ -424,6 +445,7 @@ export default function EditProjectPage() {
                 budgetedFee: Number(p.budgetedFee) || 0,
               }))}
             teamMembers={teamMembers}
+            onSaved={refreshPhaseBudgets}
           />
         )}
 

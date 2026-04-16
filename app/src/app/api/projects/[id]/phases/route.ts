@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { Prisma, PhaseType, PhaseStatus } from "@prisma/client";
+import { PhaseType, PhaseStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/supabase/auth";
 
@@ -10,8 +10,6 @@ type PhaseInput = {
   phaseType: string;
   customName?: string;
   status: string;
-  budgetedFee?: string | number;
-  budgetedHours?: string | number;
   sortOrder: number;
 };
 
@@ -70,35 +68,25 @@ export async function PUT(
         });
       }
 
-      // Update existing + create new
+      // Update existing + create new. NOTE: budgetedFee / budgetedHours
+      // are intentionally NOT written here — the Work Plan endpoint is
+      // the single source of truth for those. Writing stale form state
+      // here would clobber the Work Plan's synced values.
       for (let i = 0; i < phases.length; i++) {
         const phase = phases[i];
-        const fee =
-          phase.budgetedFee !== undefined && phase.budgetedFee !== ""
-            ? new Prisma.Decimal(phase.budgetedFee)
-            : null;
-        const hours =
-          phase.budgetedHours !== undefined && phase.budgetedHours !== ""
-            ? new Prisma.Decimal(phase.budgetedHours)
-            : null;
-
         const data = {
           phaseType: phase.phaseType as PhaseType,
           customName: phase.customName || null,
           status: (phase.status || "NOT_STARTED") as PhaseStatus,
           sortOrder: phase.sortOrder ?? i,
-          budgetedFee: fee,
-          budgetedHours: hours,
         };
 
         if (phase.id && existingIds.has(phase.id)) {
-          // Update existing
           await tx.projectPhase.update({
             where: { id: phase.id },
             data,
           });
         } else {
-          // Create new
           await tx.projectPhase.create({
             data: { ...data, projectId },
           });

@@ -31,9 +31,10 @@ type Props = {
     budgetedFee: number;
   }>;
   teamMembers: StaffMember[];
+  onSaved?: () => void;
 };
 
-export default function WorkPlanEditor({ projectId, phases, teamMembers }: Props) {
+export default function WorkPlanEditor({ projectId, phases, teamMembers, onSaved }: Props) {
   const [plan, setPlan] = useState<PhaseWorkPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -170,6 +171,7 @@ export default function WorkPlanEditor({ projectId, phases, teamMembers }: Props
 
     setSuccess(true);
     setTimeout(() => setSuccess(false), 2000);
+    onSaved?.();
   }
 
   if (loading) {
