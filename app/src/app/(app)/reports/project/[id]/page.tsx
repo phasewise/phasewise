@@ -78,6 +78,7 @@ export default async function ProjectDetailReportPage({
   // Build per-person time map: phaseId -> { userId -> hours }
   const phaseUserHours = new Map<string, Map<string, number>>();
   for (const entry of timeByPhaseUser) {
+    if (!entry.phaseId) continue;
     if (!phaseUserHours.has(entry.phaseId)) {
       phaseUserHours.set(entry.phaseId, new Map());
     }

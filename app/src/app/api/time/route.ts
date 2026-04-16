@@ -1,18 +1,32 @@
 import { NextResponse } from "next/server";
-import { Prisma } from "@prisma/client";
+import { Prisma, LeaveType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { createClient } from "@/lib/supabase/server";
 import { checkAndSendBudgetAlert } from "@/lib/budget-alerts";
+import { LEAVE_TYPES } from "@/lib/leave";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   const body = await request.json();
-  const { projectId, phaseId, date, hours, description } = body;
+  const { projectId, phaseId, leaveType, date, hours, description } = body;
 
-  if (!projectId || !phaseId || !date || hours === undefined) {
+  const isLeave = !!leaveType;
+
+  if (!date || hours === undefined) {
     return NextResponse.json(
-      { error: "projectId, phaseId, date and hours are required." },
+      { error: "date and hours are required." },
+      { status: 400 }
+    );
+  }
+
+  if (isLeave) {
+    if (!LEAVE_TYPES.includes(leaveType as LeaveType)) {
+      return NextResponse.json({ error: "Invalid leaveType." }, { status: 400 });
+    }
+  } else if (!projectId || !phaseId) {
+    return NextResponse.json(
+      { error: "projectId and phaseId are required (or leaveType for leave entries)." },
       { status: 400 }
     );
   }
@@ -44,26 +58,36 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unable to resolve current user." }, { status: 401 });
   }
 
-  const phase = await prisma.projectPhase.findUnique({
-    where: { id: phaseId },
-    include: { project: true },
-  });
+  if (!isLeave) {
+    const phase = await prisma.projectPhase.findUnique({
+      where: { id: phaseId },
+      include: { project: true },
+    });
 
-  if (!phase || phase.project.organizationId !== currentUser.organizationId) {
-    return NextResponse.json({ error: "Project phase not found." }, { status: 404 });
-  }
+    if (!phase || phase.project.organizationId !== currentUser.organizationId) {
+      return NextResponse.json({ error: "Project phase not found." }, { status: 404 });
+    }
 
-  if (phase.project.id !== projectId) {
-    return NextResponse.json({ error: "Phase does not belong to selected project." }, { status: 400 });
+    if (phase.project.id !== projectId) {
+      return NextResponse.json({ error: "Phase does not belong to selected project." }, { status: 400 });
+    }
   }
 
   const existingEntry = await prisma.timeEntry.findFirst({
-    where: {
-      userId: currentUser.id,
-      projectId,
-      phaseId,
-      date: parsedDate,
-    },
+    where: isLeave
+      ? {
+          userId: currentUser.id,
+          leaveType: leaveType as LeaveType,
+          date: parsedDate,
+          projectId: null,
+        }
+      : {
+          userId: currentUser.id,
+          projectId,
+          phaseId,
+          leaveType: null,
+          date: parsedDate,
+        },
   });
 
   if (parsedHours <= 0) {
@@ -77,11 +101,13 @@ export async function POST(request: Request) {
   const entryData = {
     organizationId: currentUser.organizationId,
     userId: currentUser.id,
-    projectId,
-    phaseId,
+    projectId: isLeave ? null : projectId,
+    phaseId: isLeave ? null : phaseId,
+    leaveType: isLeave ? (leaveType as LeaveType) : null,
     date: parsedDate,
     hours: new Prisma.Decimal(parsedHours),
     description: description || undefined,
+    isBillable: !isLeave,
   };
 
   const savedEntry = existingEntry
@@ -91,11 +117,11 @@ export async function POST(request: Request) {
       })
     : await prisma.timeEntry.create({ data: entryData });
 
-  // Fire-and-forget: check if this time entry pushed the project past
-  // a budget alert threshold (75%, 90%, 100%). Never blocks the response.
-  void checkAndSendBudgetAlert(projectId).catch((err) => {
-    console.error("[time] Budget alert check failed:", err);
-  });
+  if (!isLeave && projectId) {
+    void checkAndSendBudgetAlert(projectId).catch((err) => {
+      console.error("[time] Budget alert check failed:", err);
+    });
+  }
 
   return NextResponse.json({ success: true, entry: savedEntry });
 }

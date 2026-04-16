@@ -2,6 +2,7 @@ import { addDays, format, startOfWeek } from "date-fns";
 import { getCurrentUser } from "@/lib/supabase/auth";
 import { prisma } from "@/lib/prisma";
 import { PHASE_LABELS } from "@/lib/constants";
+import { computeUserLeaveBalances, LEAVE_TYPE_LABELS } from "@/lib/leave";
 import TimeSheetClient from "./TimeSheetClient";
 import TimesheetSubmitClient from "./TimesheetSubmitClient";
 import TimesheetUserSelector from "./TimesheetUserSelector";
@@ -105,19 +106,29 @@ export default async function TimePage({
 
   const initialEntries: Record<string, string> = {};
   entries.forEach((entry) => {
-    const key = `${entry.projectId}:${entry.phaseId}:${format(entry.date, "yyyy-MM-dd")}`;
+    const dateKey = format(entry.date, "yyyy-MM-dd");
+    const key = entry.leaveType
+      ? `LEAVE:${entry.leaveType}:${dateKey}`
+      : `${entry.projectId}:${entry.phaseId}:${dateKey}`;
     initialEntries[key] = entry.hours.toString();
   });
 
   const seenRows = new Set<string>();
-  const initialRows: Array<{ projectId: string; phaseId: string }> = [];
+  const initialRows: Array<{ projectId: string; phaseId: string; leaveType?: string }> = [];
   entries.forEach((entry) => {
-    const rowKey = `${entry.projectId}:${entry.phaseId}`;
-    if (!seenRows.has(rowKey)) {
-      seenRows.add(rowKey);
+    const rowKey = entry.leaveType
+      ? `LEAVE:${entry.leaveType}`
+      : `${entry.projectId}:${entry.phaseId}`;
+    if (seenRows.has(rowKey)) return;
+    seenRows.add(rowKey);
+    if (entry.leaveType) {
+      initialRows.push({ projectId: "", phaseId: "", leaveType: entry.leaveType });
+    } else if (entry.projectId && entry.phaseId) {
       initialRows.push({ projectId: entry.projectId, phaseId: entry.phaseId });
     }
   });
+
+  const balances = await computeUserLeaveBalances(viewingUserId);
 
   const dateStrings = weekDates.map((d) => format(d, "yyyy-MM-dd"));
   const dateLabels = weekDates.map((d, i) => `${DAY_NAMES[i]} ${format(d, "M/d")}`);
@@ -167,6 +178,44 @@ export default async function TimePage({
           {timesheet?.status === "APPROVED" && (
             <> This timesheet has been <span className="font-semibold">approved</span>.</>
           )}
+        </div>
+      )}
+
+      {balances.some((b) => b.annualHours > 0 || b.usedHours > 0) && (
+        <div className="mb-5 grid grid-cols-2 sm:grid-cols-5 gap-3">
+          {balances.map((b) => {
+            const pct = b.annualHours > 0 ? (b.usedHours / b.annualHours) * 100 : 0;
+            const accent =
+              pct > 100
+                ? "text-rose-600"
+                : pct > 80
+                  ? "text-amber-600"
+                  : "text-[#2D6A4F]";
+            return (
+              <div
+                key={b.type}
+                className="rounded-2xl border border-[#E2EBE4] bg-white px-4 py-3 shadow-sm"
+              >
+                <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6B8C74]">
+                  {LEAVE_TYPE_LABELS[b.type]}
+                </div>
+                <div className={`mt-1 text-lg font-semibold ${accent}`}>
+                  {b.remainingHours.toFixed(0)}h
+                  <span className="text-[#A3BEA9] text-sm font-normal"> / {b.annualHours}h</span>
+                </div>
+                {b.annualHours > 0 && (
+                  <div className="mt-2 h-1 rounded-full bg-slate-100 overflow-hidden">
+                    <div
+                      className={`h-full ${
+                        pct > 100 ? "bg-rose-500" : pct > 80 ? "bg-amber-500" : "bg-[#52B788]"
+                      }`}
+                      style={{ width: `${Math.min(pct, 100)}%` }}
+                    />
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 

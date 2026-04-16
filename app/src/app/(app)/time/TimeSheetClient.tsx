@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, CalendarDays } from "lucide-react";
+import { LEAVE_TYPE_LABELS, LEAVE_TYPES } from "@/lib/leave";
 
 type Project = {
   id: string;
@@ -9,17 +10,23 @@ type Project = {
   phases: Array<{ id: string; name: string }>;
 };
 
+type Row = { projectId: string; phaseId: string; leaveType?: string };
+
 type Props = {
   projects: Project[];
   dates: string[];
   dateLabels: string[];
   initialEntries: Record<string, string>;
-  initialRows: Array<{ projectId: string; phaseId: string }>;
+  initialRows: Row[];
   readOnly?: boolean;
 };
 
-const formatKey = (projectId: string, phaseId: string, date: string) =>
-  `${projectId}:${phaseId}:${date}`;
+const isLeaveRow = (row: Row) => !!row.leaveType;
+
+const formatKey = (row: Row, date: string) =>
+  isLeaveRow(row)
+    ? `LEAVE:${row.leaveType}:${date}`
+    : `${row.projectId}:${row.phaseId}:${date}`;
 
 export default function TimeSheetClient({
   projects,
@@ -29,35 +36,40 @@ export default function TimeSheetClient({
   initialRows,
   readOnly = false,
 }: Props) {
-  const [rows, setRows] = useState<Array<{ projectId: string; phaseId: string }>>(
+  const [rows, setRows] = useState<Row[]>(
     initialRows.length > 0 ? initialRows : []
   );
   const [entries, setEntries] = useState<Record<string, string>>(initialEntries);
   const [saving, setSaving] = useState<Record<string, boolean>>({});
   const [error, setError] = useState<string | null>(null);
 
-  // Get phases for a given project
   function getPhasesForProject(projectId: string) {
     return projects.find((p) => p.id === projectId)?.phases ?? [];
   }
 
-  // Add a new empty row
   function addRow() {
     setRows((prev) => [...prev, { projectId: "", phaseId: "" }]);
   }
 
-  // Remove a row
+  function addLeaveRow() {
+    setRows((prev) => [...prev, { projectId: "", phaseId: "", leaveType: "VACATION" }]);
+  }
+
   function removeRow(index: number) {
     setRows((prev) => prev.filter((_, i) => i !== index));
   }
 
-  // Update a row's project or phase selection
+  function updateLeaveType(index: number, value: string) {
+    setRows((prev) =>
+      prev.map((row, i) => (i === index ? { ...row, leaveType: value } : row))
+    );
+  }
+
   function updateRow(index: number, field: "projectId" | "phaseId", value: string) {
     setRows((prev) =>
       prev.map((row, i) => {
         if (i !== index) return row;
         if (field === "projectId") {
-          // When project changes, reset phase
           return { projectId: value, phaseId: "" };
         }
         return { ...row, [field]: value };
@@ -65,13 +77,16 @@ export default function TimeSheetClient({
     );
   }
 
+  const rowIsComplete = (row: Row) =>
+    isLeaveRow(row) ? !!row.leaveType : !!row.projectId && !!row.phaseId;
+
   // Calculate totals
   const rowTotals = useMemo(
     () =>
       rows.map((row) =>
-        row.projectId && row.phaseId
+        rowIsComplete(row)
           ? dates.reduce(
-              (sum, date) => sum + Number(entries[formatKey(row.projectId, row.phaseId, date)] || 0),
+              (sum, date) => sum + Number(entries[formatKey(row, date)] || 0),
               0
             )
           : 0
@@ -84,8 +99,8 @@ export default function TimeSheetClient({
       dates.map((date) =>
         rows.reduce(
           (sum, row) =>
-            row.projectId && row.phaseId
-              ? sum + Number(entries[formatKey(row.projectId, row.phaseId, date)] || 0)
+            rowIsComplete(row)
+              ? sum + Number(entries[formatKey(row, date)] || 0)
               : sum,
           0
         )
@@ -96,10 +111,10 @@ export default function TimeSheetClient({
   const grandTotal = dayTotals.reduce((sum, v) => sum + v, 0);
 
   // Save a single cell to the API
-  async function handleBlur(row: { projectId: string; phaseId: string }, date: string) {
-    if (!row.projectId || !row.phaseId) return;
+  async function handleBlur(row: Row, date: string) {
+    if (!rowIsComplete(row)) return;
 
-    const key = formatKey(row.projectId, row.phaseId, date);
+    const key = formatKey(row, date);
     const value = (entries[key] ?? "").trim();
     const parsedHours = value === "" ? 0 : Number(value);
 
@@ -112,15 +127,18 @@ export default function TimeSheetClient({
     setSaving((prev) => ({ ...prev, [key]: true }));
 
     try {
+      const body = isLeaveRow(row)
+        ? { leaveType: row.leaveType, date, hours: parsedHours }
+        : {
+            projectId: row.projectId,
+            phaseId: row.phaseId,
+            date,
+            hours: parsedHours,
+          };
       const res = await fetch("/api/time", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          projectId: row.projectId,
-          phaseId: row.phaseId,
-          date,
-          hours: parsedHours,
-        }),
+        body: JSON.stringify(body),
       });
 
       if (!res.ok) {
@@ -162,29 +180,50 @@ export default function TimeSheetClient({
             <tbody>
               {rows.map((row, index) => {
                 const phases = getPhasesForProject(row.projectId);
+                const leaveRow = isLeaveRow(row);
 
                 return (
                   <tr key={index} className="border-b border-[#E8EDE9] last:border-0">
-                    {/* Project dropdown */}
+                    {/* Project / leave-type cell */}
                     <td className="px-3 sm:px-4 py-2">
-                      <select
-                        value={row.projectId}
-                        onChange={(e) => updateRow(index, "projectId", e.target.value)}
-                        disabled={readOnly}
-                        className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-2 py-2 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788] disabled:opacity-60"
-                      >
-                        <option value="">Select project</option>
-                        {projects.map((p) => (
-                          <option key={p.id} value={p.id}>
-                            {p.name}
-                          </option>
-                        ))}
-                      </select>
+                      {leaveRow ? (
+                        <div className="inline-flex items-center gap-2 rounded-lg bg-[#F0FAF4] border border-[#52B788]/30 px-2 py-2 text-sm text-[#2D6A4F] font-medium">
+                          <CalendarDays className="w-4 h-4" />
+                          Leave
+                        </div>
+                      ) : (
+                        <select
+                          value={row.projectId}
+                          onChange={(e) => updateRow(index, "projectId", e.target.value)}
+                          disabled={readOnly}
+                          className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-2 py-2 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788] disabled:opacity-60"
+                        >
+                          <option value="">Select project</option>
+                          {projects.map((p) => (
+                            <option key={p.id} value={p.id}>
+                              {p.name}
+                            </option>
+                          ))}
+                        </select>
+                      )}
                     </td>
 
-                    {/* Phase dropdown */}
+                    {/* Phase / leave-subtype cell */}
                     <td className="px-3 sm:px-4 py-2">
-                      {row.projectId && phases.length === 0 ? (
+                      {leaveRow ? (
+                        <select
+                          value={row.leaveType ?? ""}
+                          onChange={(e) => updateLeaveType(index, e.target.value)}
+                          disabled={readOnly}
+                          className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-2 py-2 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788] disabled:opacity-60"
+                        >
+                          {LEAVE_TYPES.map((t) => (
+                            <option key={t} value={t}>
+                              {LEAVE_TYPE_LABELS[t]}
+                            </option>
+                          ))}
+                        </select>
+                      ) : row.projectId && phases.length === 0 ? (
                         <div
                           className="w-full rounded-lg border border-amber-200 bg-amber-50 px-2 py-2 text-xs text-amber-700"
                           title="Edit this project to add phases before logging time"
@@ -210,9 +249,9 @@ export default function TimeSheetClient({
 
                     {/* Day cells */}
                     {dates.map((date) => {
-                      const key = formatKey(row.projectId, row.phaseId, date);
+                      const key = formatKey(row, date);
                       const isSaving = saving[key];
-                      const isDisabled = !row.projectId || !row.phaseId || readOnly;
+                      const isDisabled = !rowIsComplete(row) || readOnly;
 
                       return (
                         <td key={date} className="px-1 py-2">
@@ -294,16 +333,26 @@ export default function TimeSheetClient({
         </div>
       </div>
 
-      {/* Add row button */}
+      {/* Add row buttons */}
       {!readOnly && (
-        <button
-          type="button"
-          onClick={addRow}
-          className="mt-4 inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-[#F0FAF4] text-[#2D6A4F] border border-[#52B788]/30 hover:bg-[#2D6A4F] hover:text-white transition-all"
-        >
-          <Plus className="w-4 h-4" />
-          Add time entry row
-        </button>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={addRow}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-[#F0FAF4] text-[#2D6A4F] border border-[#52B788]/30 hover:bg-[#2D6A4F] hover:text-white transition-all"
+          >
+            <Plus className="w-4 h-4" />
+            Add time entry row
+          </button>
+          <button
+            type="button"
+            onClick={addLeaveRow}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-white text-[#6B8C74] border border-[#E2EBE4] hover:border-[#52B788] hover:text-[#2D6A4F] transition-all"
+          >
+            <CalendarDays className="w-4 h-4" />
+            Add leave / PTO
+          </button>
+        </div>
       )}
     </div>
   );
