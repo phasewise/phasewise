@@ -46,6 +46,80 @@ export default function ProjectTasksClient({ projectId, currentUserRole, users, 
   const [savingAssignment, setSavingAssignment] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editDueDate, setEditDueDate] = useState("");
+  const [editAssignee, setEditAssignee] = useState("");
+  const [editStatus, setEditStatus] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
+
+  function openEdit(task: Task) {
+    setEditingTask(task);
+    setEditName(task.name);
+    setEditDescription(task.description ?? "");
+    setEditDueDate(
+      task.dueDate ? new Date(task.dueDate).toISOString().split("T")[0] : ""
+    );
+    setEditAssignee(task.assignedToId ?? "");
+    setEditStatus(task.status);
+    setError(null);
+  }
+
+  function closeEdit() {
+    setEditingTask(null);
+  }
+
+  async function saveEdit() {
+    if (!editingTask) return;
+    if (!editName.trim()) {
+      setError("Task name is required.");
+      return;
+    }
+    setEditSaving(true);
+    setError(null);
+    const res = await fetch(`/api/projects/${projectId}/tasks`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        taskId: editingTask.id,
+        name: editName.trim(),
+        description: editDescription.trim() || null,
+        dueDate: editDueDate || null,
+        assignedToId: editAssignee || null,
+        status: editStatus,
+      }),
+    });
+    const result = await res.json();
+    setEditSaving(false);
+    if (!res.ok) {
+      setError(result.error || "Unable to update task.");
+      return;
+    }
+    setTaskList((current) =>
+      current.map((t) => (t.id === editingTask.id ? result.task : t))
+    );
+    closeEdit();
+  }
+
+  async function deleteTask() {
+    if (!editingTask) return;
+    if (!confirm(`Delete task "${editingTask.name}"? This can't be undone.`)) return;
+    setEditSaving(true);
+    const res = await fetch(
+      `/api/projects/${projectId}/tasks?taskId=${editingTask.id}`,
+      { method: "DELETE" }
+    );
+    setEditSaving(false);
+    if (!res.ok) {
+      const result = await res.json().catch(() => ({}));
+      setError(result.error || "Unable to delete task.");
+      return;
+    }
+    setTaskList((current) => current.filter((t) => t.id !== editingTask.id));
+    closeEdit();
+  }
+
   const canManage = rolesAllowedToManage.includes(currentUserRole);
 
   const assignmentOptions = useMemo(
@@ -178,7 +252,14 @@ export default function ProjectTasksClient({ projectId, currentUserRole, users, 
                 {taskList.map((task) => (
                   <tr key={task.id} className="border-b border-slate-100 hover:bg-slate-50/80 transition-colors">
                     <td className="px-4 py-4">
-                      <div className="font-semibold text-slate-900">{task.name}</div>
+                      <button
+                        type="button"
+                        onClick={() => canManage && openEdit(task)}
+                        disabled={!canManage}
+                        className="text-left font-semibold text-slate-900 hover:text-[#2D6A4F] disabled:hover:text-slate-900 disabled:cursor-default transition-colors"
+                      >
+                        {task.name}
+                      </button>
                       {task.description ? <div className="text-xs text-slate-500 mt-1">{task.description}</div> : null}
                     </td>
                     <td className="px-4 py-4 text-slate-600">
@@ -329,6 +410,105 @@ export default function ProjectTasksClient({ projectId, currentUserRole, users, 
           </div>
         </div>
       </div>
+
+      {editingTask && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+          onClick={closeEdit}
+        >
+          <div
+            className="w-full max-w-lg rounded-2xl bg-white shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-6 py-5 border-b border-[#E2EBE4]">
+              <h3 className="text-lg font-semibold text-[#1A2E22]">Edit task</h3>
+            </div>
+            <div className="px-6 py-5 space-y-4">
+              <div>
+                <label className="text-sm font-medium text-[#3D5C48]">Name</label>
+                <input
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="mt-2 w-full rounded-lg border border-[#E2EBE4] bg-[#F7F9F7] px-4 py-3 text-sm text-[#1A2E22] outline-none focus:border-[#52B788] focus:bg-white"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-[#3D5C48]">Description</label>
+                <textarea
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  rows={3}
+                  className="mt-2 w-full rounded-lg border border-[#E2EBE4] bg-[#F7F9F7] px-4 py-3 text-sm text-[#1A2E22] outline-none focus:border-[#52B788] focus:bg-white resize-y"
+                />
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="text-sm font-medium text-[#3D5C48]">Due date</label>
+                  <input
+                    type="date"
+                    value={editDueDate}
+                    onChange={(e) => setEditDueDate(e.target.value)}
+                    className="mt-2 w-full rounded-lg border border-[#E2EBE4] bg-[#F7F9F7] px-4 py-3 text-sm text-[#1A2E22] outline-none focus:border-[#52B788] focus:bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-[#3D5C48]">Status</label>
+                  <select
+                    value={editStatus}
+                    onChange={(e) => setEditStatus(e.target.value)}
+                    className="mt-2 w-full rounded-lg border border-[#E2EBE4] bg-[#F7F9F7] px-4 py-3 text-sm text-[#1A2E22] outline-none focus:border-[#52B788] focus:bg-white"
+                  >
+                    {taskStatuses.map((s) => (
+                      <option key={s} value={s}>{s.replace(/_/g, " ")}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-[#3D5C48]">Assignee</label>
+                <select
+                  value={editAssignee}
+                  onChange={(e) => setEditAssignee(e.target.value)}
+                  className="mt-2 w-full rounded-lg border border-[#E2EBE4] bg-[#F7F9F7] px-4 py-3 text-sm text-[#1A2E22] outline-none focus:border-[#52B788] focus:bg-white"
+                >
+                  <option value="">Unassigned</option>
+                  {users.map((user) => (
+                    <option key={user.id} value={user.id}>{user.fullName}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t border-[#E2EBE4] flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={deleteTask}
+                disabled={editSaving}
+                className="text-sm font-medium text-rose-500 hover:text-rose-700 transition-colors disabled:opacity-60"
+              >
+                Delete task
+              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={closeEdit}
+                  disabled={editSaving}
+                  className="px-4 py-2 rounded-lg text-sm font-medium text-[#6B8C74] hover:text-[#1A2E22] transition-colors disabled:opacity-60"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={saveEdit}
+                  disabled={editSaving}
+                  className="px-4 py-2 rounded-lg text-sm font-semibold bg-[#2D6A4F] text-white hover:bg-[#40916C] transition-colors disabled:opacity-60"
+                >
+                  {editSaving ? "Saving..." : "Save changes"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

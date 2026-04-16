@@ -129,7 +129,49 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ pr
   const updated = await prisma.projectTask.update({
     where: { id: taskId },
     data,
+    include: { assignedTo: true },
   });
 
   return NextResponse.json({ success: true, task: updated });
+}
+
+export async function DELETE(request: Request, { params }: { params: Promise<{ projectId: string }> }) {
+  await params;
+  const { searchParams } = new URL(request.url);
+  const taskId = searchParams.get("taskId");
+
+  if (!taskId) {
+    return NextResponse.json({ error: "taskId is required." }, { status: 400 });
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
+  }
+
+  const currentUser = await prisma.user.findUnique({ where: { authId: user.id } });
+
+  if (!currentUser) {
+    return NextResponse.json({ error: "Current user not found." }, { status: 401 });
+  }
+
+  const task = await prisma.projectTask.findUnique({
+    where: { id: taskId },
+    include: { project: true },
+  });
+
+  if (!task || task.project.organizationId !== currentUser.organizationId) {
+    return NextResponse.json({ error: "Task not found." }, { status: 404 });
+  }
+
+  if (!allowedRoles.includes(currentUser.role)) {
+    return NextResponse.json({ error: "Insufficient permissions." }, { status: 403 });
+  }
+
+  await prisma.projectTask.delete({ where: { id: taskId } });
+  return NextResponse.json({ success: true });
 }
