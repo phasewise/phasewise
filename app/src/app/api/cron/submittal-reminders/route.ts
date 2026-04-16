@@ -81,7 +81,7 @@ export async function GET(request: Request) {
         transactionalId: templateId,
         dataVariables: LOOPS_TEMPLATES.SUBMITTAL_REMINDER
           ? {
-              firstName,
+              recipientName: firstName,
               submittalNumber: submittal.number,
               subject: submittal.subject,
               projectName: submittal.project.name,
@@ -89,7 +89,7 @@ export async function GET(request: Request) {
               ballInCourt: submittal.ballInCourt ?? "Unassigned",
             }
           : {
-              firstName,
+              recipientName: firstName,
               firmName: `${submittal.number} "${submittal.subject}" on ${submittal.project.name} is ${daysOverdue} day${daysOverdue === 1 ? "" : "s"} overdue.${submittal.ballInCourt ? ` Ball in court: ${submittal.ballInCourt}.` : ""} Please review and update the status at https://phasewise.io/submittals`,
             },
       });

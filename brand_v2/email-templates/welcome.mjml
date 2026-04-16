@@ -1,0 +1,77 @@
+<mjml>
+  <mj-head>
+    <mj-title>Welcome to Phasewise</mj-title>
+    <mj-preview>Your account is ready — here's how to get started.</mj-preview>
+    <mj-attributes>
+      <mj-all font-family="Helvetica, Arial, sans-serif" />
+      <mj-text color="#3D5C48" font-size="15px" line-height="1.6" />
+    </mj-attributes>
+  </mj-head>
+
+  <mj-body background-color="#F7F9F7">
+
+    <!-- Header bar -->
+    <mj-section background-color="#2D6A4F" padding="24px 32px" border-radius="16px 16px 0 0">
+      <mj-column vertical-align="middle" width="60%">
+        <mj-text color="#FFFFFF" font-size="20px" font-weight="600" padding="0">
+          phase<span style="color:#B7E4C7;font-weight:300;font-style:italic;">wise</span>
+        </mj-text>
+      </mj-column>
+      <mj-column vertical-align="middle" width="40%">
+        <mj-text color="#B7E4C7" font-size="11px" align="right" text-transform="uppercase" letter-spacing="1.5px" padding="0">
+          Focus on the design
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- Body -->
+    <mj-section background-color="#FFFFFF" padding="40px 40px 8px 40px">
+      <mj-column>
+        <mj-text color="#1A2E22" font-size="22px" font-weight="600" line-height="1.3" padding-bottom="16px">
+          Welcome to Phasewise, {{recipientName}}.
+        </mj-text>
+        <mj-text padding-bottom="20px">
+          Your account for <strong style="color:#1A2E22;">{{firmName}}</strong> is ready. Phasewise replaces the spreadsheets, time trackers, and billing tools most firms juggle — so you and your team can focus on the design work.
+        </mj-text>
+        <mj-text padding-bottom="12px">
+          A few good places to start:
+        </mj-text>
+        <mj-text padding-bottom="24px">
+          • Add your team and set their billing rates<br/>
+          • Create your first project and pick its phases<br/>
+          • Build the Work Plan — staff hours drive the budget automatically
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- CTA -->
+    <mj-section background-color="#FFFFFF" padding="0 40px 24px 40px">
+      <mj-column>
+        <mj-button background-color="#2D6A4F" color="#FFFFFF" href="https://phasewise.io/dashboard" border-radius="10px" font-size="14px" font-weight="600" padding="0" inner-padding="12px 24px" align="left">
+          Open your dashboard
+        </mj-button>
+      </mj-column>
+    </mj-section>
+
+    <mj-section background-color="#FFFFFF" padding="0 40px 32px 40px">
+      <mj-column>
+        <mj-text color="#6B8C74" font-size="13px" line-height="1.6">
+          Questions or feedback? Reply to this email — it comes straight to us.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- Footer -->
+    <mj-section background-color="#F7F9F7" padding="24px 40px" border-top="1px solid #E2EBE4" border-radius="0 0 16px 16px">
+      <mj-column>
+        <mj-text color="#6B8C74" font-size="12px" padding-bottom="4px">
+          Phasewise · Project management built for landscape architects
+        </mj-text>
+        <mj-text color="#A3BEA9" font-size="12px" padding="0">
+          <a href="https://phasewise.io" style="color:#6B8C74;text-decoration:none;">phasewise.io</a>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+  </mj-body>
+</mjml>

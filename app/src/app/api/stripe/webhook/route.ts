@@ -309,7 +309,7 @@ async function sendTrialStartedEmail(subscription: Stripe.Subscription) {
     email: ctx.owner.email,
     transactionalId: LOOPS_TEMPLATES.TRIAL_STARTED,
     dataVariables: {
-      firstName: ctx.firstName,
+      recipientName: ctx.firstName,
       firmName: ctx.org.name,
       planName,
       trialEndDate: trialEnd,
@@ -325,7 +325,7 @@ async function sendCanceledEmail(subscription: Stripe.Subscription) {
     email: ctx.owner.email,
     transactionalId: LOOPS_TEMPLATES.SUBSCRIPTION_CANCELED,
     dataVariables: {
-      firstName: ctx.firstName,
+      recipientName: ctx.firstName,
       firmName: ctx.org.name,
     },
   });
@@ -339,7 +339,7 @@ async function sendPaymentFailedEmail(subscription: Stripe.Subscription) {
     email: ctx.owner.email,
     transactionalId: LOOPS_TEMPLATES.PAYMENT_FAILED,
     dataVariables: {
-      firstName: ctx.firstName,
+      recipientName: ctx.firstName,
       firmName: ctx.org.name,
     },
   });

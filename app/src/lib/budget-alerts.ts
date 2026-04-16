@@ -110,7 +110,7 @@ export async function checkAndSendBudgetAlert(projectId: string): Promise<void> 
       transactionalId: templateId,
       dataVariables: LOOPS_TEMPLATES.BUDGET_ALERT
         ? {
-            firstName,
+            recipientName: firstName,
             projectName: project.name,
             alertLabel: alertInfo.label,
             burnRate: String(burnRate),
@@ -119,7 +119,7 @@ export async function checkAndSendBudgetAlert(projectId: string): Promise<void> 
             budgetedFee: budgetedFee.toLocaleString(),
           }
         : {
-            firstName,
+            recipientName: firstName,
             firmName: `${project.name} — ${alertInfo.label}. ${burnRate}% of budgeted hours used (${hoursUsed.toFixed(1)}h of ${budgetedHours.toFixed(1)}h). Budget: $${budgetedFee.toLocaleString()}.`,
           },
     });

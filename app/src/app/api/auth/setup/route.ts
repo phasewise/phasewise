@@ -67,7 +67,10 @@ export async function POST(request: Request) {
         email,
         transactionalId: LOOPS_TEMPLATES.WELCOME,
         dataVariables: {
-          firstName: firstName || "there",
+          // recipientName / firmName avoid Loops' built-in contact
+          // property names (firstName, lastName, email) so they can
+          // be used safely as data variables in MJML templates.
+          recipientName: firstName || "there",
           firmName,
         },
       }),
