@@ -4,6 +4,45 @@ The operating system for landscape architecture firms. Phasewise handles project
 
 See `POC_SCOPE.md` for the full product spec and roadmap. See `BUSINESS_PLAN.md` for market research, financials, and go-to-market strategy.
 
+## Origin & Related Projects
+
+Phasewise was split off from the **Verifield Inc.** repo (`Documents/verifield-1/`) on 2026-04-08 after a strategic pivot. Context on why, and how the two projects relate:
+
+### Where this came from — Verifield Inc.
+
+Verifield is an anonymous brand (@VfieldInc) selling **passive digital automation products** on Gumroad + Etsy:
+- 10 products live at $29–$129 (n8n workflows, Power Automate blueprints, Google Apps Scripts, niche vertical packs)
+- Gumroad affiliate program active at 30% commission
+- Automated social posting via n8n (workflow 05) + monthly AI tweet refill (workflow 11)
+- Landing page: https://verifield.netlify.app
+
+Verifield's original 4-tier revenue strategy targeted ~$72K/month:
+
+| Tier | Product | Price | Monthly Target |
+|------|---------|-------|----------------|
+| Entry | Template packs | $29–$49 | 200 sales |
+| Mid | Bundles / kits | $59–$149 | 100 sales |
+| High | Subscription membership | $29/mo | 500 members |
+| Premium | Custom automation service | $500–$1,500 | 40 clients |
+
+### The pivot (2026-04-08)
+
+**Decision:** Recurring SaaS revenue beats one-time templates for the $83K/month goal. Phasewise (vertical SaaS for Landscape Architecture firms, tapping Kevin's Caltrans domain expertise) became the **primary revenue vehicle**. Verifield demoted to **side income stream**.
+
+### Phased roadmap — how the two fit together
+
+- **Phase 1 — Verifield validation (complete):** Prove the brand, storefront mechanics, and automation stack can run passively. 10 products live, affiliate program active.
+- **Phase 2 — Phasewise build (current, ~80% complete):** Ship the SaaS. 92 feature items done, E2E tested on production. Remaining: error state testing + 3 beta firms + Stripe live mode swap.
+- **Phase 3 — Phasewise revenue:** First paying customer → $5K MRR → $83K/month ARR target. Verifield continues generating passive side income in parallel.
+- **Phase 4 — Phasewise multi-industry:** Scale to AE / CM / AG verticals (name is intentionally industry-agnostic; see "Multi-Industry Scaling" below).
+
+### What to carry over from Verifield
+
+- **Kevin's profile:** Caltrans Senior Landscape Architect, n8n + React/TypeScript + SharePoint/SPFx + Power Automate expertise, prefers working solutions deployed quickly over extended troubleshooting.
+- **Anonymous brand approach:** Worked for Verifield; Phasewise uses the same pattern (no personal visibility, brand-first).
+- **Automation muscle:** Kevin already runs n8n Cloud (dailymm.app.n8n.cloud) — reuse it for Phasewise social scheduling and ops automation.
+- **Support email pattern:** Verifield uses support.verifield@gmail.com; Phasewise will use kevin@phasewise.io once Google Workspace is live.
+
 ## Vision
 
 **Core promise:** "Focus on the design. We'll handle everything else."
@@ -533,13 +572,29 @@ Commits: `49d92ce` (photo fix + titles + PWA), `7b15673` (invite flow), `9b9a708
 - Vercel Cron registered and enabled
 - Invite flow tested and working on production
 
-### To resume next session
+### Strategic pivot (2026-04-17 EOD)
 
-1. **Stripe live mode swap** — env var change only (see "Switching Stripe to Live Mode" section above)
-2. **Get 3 beta firms using it daily** — outreach to LA colleagues
-3. **Operations:** Stripe Tax revisit, social profiles (LinkedIn/X/Instagram), getphasewise.com redirect, USPTO trademark
-4. **Optional:** Create Loops INVITE template for automated invite emails (currently link-sharing only)
-5. **Optional:** Error state testing (failed payments, network errors, validation edge cases)
+After a strategy discussion this session, Kevin confirmed that his top priorities are: **maximum anonymity, maximum automation, maximum passive income**. This conflicts with early-stage SaaS (which requires founder-led sales). **Decision: Phasewise becomes a 2027+ play, not a 2026 revenue driver.** Verifield (already anonymous + automated + passive) becomes the primary 2026 focus. Kevin has moved to the Verifield project file to build out a scaling roadmap there.
+
+**Phasewise disposition for remainder of 2026:**
+- Keep production live + polished (it's 92 features done, E2E tested)
+- Do **not** swap Stripe to live mode until a specific paying customer is lined up (avoid premature tax/compliance obligations)
+- No active sales effort — let organic signups trickle in
+- Revisit actively when Verifield has delivered its 2026 revenue goal OR when inbound interest materializes
+- Keep hosting running (Vercel Pro trial ends ~2026-04-22 — may need to downgrade to Hobby)
+
+### To resume next session (when Phasewise work resumes)
+
+**Outstanding Phasewise items (low priority until Verifield goal is hit):**
+
+1. **Social profiles** — Upload v2 PNG logos to LinkedIn, X/Twitter, GitHub. Claim @phasewise on Instagram.
+2. **USPTO trademark filing** — Protect the "Phasewise" name (file before any significant marketing push)
+3. **Cloudflare: getphasewise.com redirect** — Set up 301 redirect to phasewise.io
+4. **Cloudflare cleanup** — Remove duplicate `google-site-verification` TXT record
+5. **Stripe live mode swap** — When first paying customer is ready (env var change only, ~15 min)
+6. **Stripe Tax revisit** — Before going live (currently placeholder CA registration only)
+7. **Optional: Loops INVITE template** — Automated invite emails (currently works via link sharing)
+8. **Optional: Error state testing** — Failed payments, network errors, validation edge cases
 
 ### Test cards for future testing
 
