@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, UserMinus, UserPlus, Pencil, Link2, Check } from "lucide-react";
+import { Plus, UserMinus, UserPlus, Pencil, Link2, Check, Send } from "lucide-react";
 
 type TeamUser = {
   id: string;
@@ -93,6 +93,28 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
       setCopiedId(userId);
       setTimeout(() => setCopiedId(null), 2000);
     });
+  }
+
+  async function sendInvite(userId: string, email: string, role: string) {
+    setError(null);
+    setActionId(userId);
+    const res = await fetch("/api/team/invite", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, role }),
+    });
+    const data = await res.json();
+    setActionId(null);
+    if (!res.ok) {
+      setError(data.error || "Failed to send invite.");
+      return;
+    }
+    // Update the user's invite token so the copy button appears
+    setUsers((prev) =>
+      prev.map((u) => (u.id === userId ? { ...u, inviteToken: data.token } : u))
+    );
+    // Auto-copy the link
+    copyInviteLink(userId, data.token);
   }
 
   function handleTitleSelect(titleValue: string) {
@@ -415,7 +437,7 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
                   </td>
                   <td className="px-4 sm:px-6 py-4">
                     <div className="flex items-center gap-3">
-                    {user.inviteToken && (
+                    {user.inviteToken ? (
                       <button
                         type="button"
                         onClick={() => copyInviteLink(user.id, user.inviteToken!)}
@@ -427,6 +449,16 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
                         ) : (
                           <><Link2 className="w-3.5 h-3.5" /> Invite link</>
                         )}
+                      </button>
+                    ) : user.role !== "OWNER" && (
+                      <button
+                        type="button"
+                        onClick={() => sendInvite(user.id, user.email, user.role)}
+                        disabled={actionId === user.id}
+                        className="inline-flex items-center gap-1 text-xs text-[#2D6A4F] hover:text-[#40916C] transition-colors disabled:opacity-50"
+                        title="Send invite to join"
+                      >
+                        <Send className="w-3.5 h-3.5" /> Send invite
                       </button>
                     )}
                     {user.role !== "OWNER" && (
