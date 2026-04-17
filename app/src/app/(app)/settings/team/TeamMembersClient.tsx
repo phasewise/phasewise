@@ -65,6 +65,8 @@ const LA_TITLES = [
   { value: "Junior Designer", role: "STAFF" },
   { value: "Design Intern", role: "STAFF" },
   { value: "CAD / BIM Technician", role: "STAFF" },
+  { value: "Drafter / Technician", role: "STAFF" },
+  { value: "Irrigation Designer", role: "STAFF" },
   { value: "Construction Administrator", role: "PM" },
   { value: "Specifications Writer", role: "STAFF" },
   { value: "Office Manager", role: "ADMIN" },
@@ -86,6 +88,7 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
   const [editingTitle, setEditingTitle] = useState<string | null>(null);
   const [editTitleValue, setEditTitleValue] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [inviteBanner, setInviteBanner] = useState<{ name: string; url: string } | null>(null);
 
   function copyInviteLink(userId: string, token: string) {
     const url = `${window.location.origin}/invite/${token}`;
@@ -95,7 +98,7 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
     });
   }
 
-  async function sendInvite(userId: string, email: string, role: string) {
+  async function sendInvite(userId: string, email: string, role: string, fullName: string) {
     setError(null);
     setActionId(userId);
     const res = await fetch("/api/team/invite", {
@@ -109,12 +112,19 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
       setError(data.error || "Failed to send invite.");
       return;
     }
+    const token = data.token;
     // Update the user's invite token so the copy button appears
     setUsers((prev) =>
-      prev.map((u) => (u.id === userId ? { ...u, inviteToken: data.token } : u))
+      prev.map((u) => (u.id === userId ? { ...u, inviteToken: token } : u))
     );
-    // Auto-copy the link
-    copyInviteLink(userId, data.token);
+    // Show the banner with instructions
+    const url = `${window.location.origin}/invite/${token}`;
+    setInviteBanner({ name: fullName, url });
+    // Also copy to clipboard
+    navigator.clipboard.writeText(url).then(() => {
+      setCopiedId(userId);
+      setTimeout(() => setCopiedId(null), 2000);
+    });
   }
 
   function handleTitleSelect(titleValue: string) {
@@ -238,6 +248,42 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
       {error && (
         <div className="mb-4 bg-rose-50 border border-rose-200 rounded-xl p-3 text-sm text-rose-700">
           {error}
+        </div>
+      )}
+
+      {inviteBanner && (
+        <div className="mb-4 bg-[#F0FAF4] border border-[#52B788]/30 rounded-xl p-4">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium text-[#1A2E22]">
+                Invite link created for {inviteBanner.name}
+              </p>
+              <p className="text-xs text-[#6B8C74] mt-1">
+                The link has been copied to your clipboard. Send it to them via email or message so they can set up their account and join your firm.
+              </p>
+              <div className="mt-2 flex items-center gap-2">
+                <code className="text-xs bg-white border border-[#E2EBE4] rounded px-2 py-1 text-[#3D5C48] break-all select-all">
+                  {inviteBanner.url}
+                </code>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(inviteBanner.url);
+                  }}
+                  className="text-xs text-[#2D6A4F] hover:text-[#40916C] font-medium whitespace-nowrap"
+                >
+                  Copy
+                </button>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setInviteBanner(null)}
+              className="text-[#A3BEA9] hover:text-[#6B8C74] text-lg leading-none"
+            >
+              &times;
+            </button>
+          </div>
         </div>
       )}
 
@@ -453,7 +499,7 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
                     ) : user.role !== "OWNER" && (
                       <button
                         type="button"
-                        onClick={() => sendInvite(user.id, user.email, user.role)}
+                        onClick={() => sendInvite(user.id, user.email, user.role, user.fullName)}
                         disabled={actionId === user.id}
                         className="inline-flex items-center gap-1 text-xs text-[#2D6A4F] hover:text-[#40916C] transition-colors disabled:opacity-50"
                         title="Send invite to join"

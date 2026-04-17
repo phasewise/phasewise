@@ -46,6 +46,8 @@ export const LA_TITLE_OPTIONS: Array<{
   { value: "Junior Designer", label: "Junior Designer", role: "STAFF", salary: 55000, billingRate: 90 },
   { value: "Design Intern", label: "Design Intern", role: "STAFF", salary: 45000, billingRate: 75 },
   { value: "CAD / BIM Technician", label: "CAD / BIM Technician", role: "STAFF", salary: 58000, billingRate: 100 },
+  { value: "Drafter / Technician", label: "Drafter / Technician", role: "STAFF", salary: 55000, billingRate: 95 },
+  { value: "Irrigation Designer", label: "Irrigation Designer", role: "STAFF", salary: 72000, billingRate: 130 },
   { value: "Construction Administrator", label: "Construction Administrator", role: "PM", salary: 82000, billingRate: 145 },
   { value: "Specifications Writer", label: "Specifications Writer", role: "STAFF", salary: 72000, billingRate: 130 },
   { value: "Office Manager", label: "Office Manager", role: "ADMIN", salary: 60000, billingRate: 95 },
