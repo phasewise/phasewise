@@ -148,20 +148,26 @@ export default async function TimePage({
     const dateKey = format(entry.date, "yyyy-MM-dd");
     const key = entry.leaveType
       ? `LEAVE:${entry.leaveType}:${dateKey}`
+      : entry.overheadCategory
+      ? `OVERHEAD:${entry.overheadCategory}:${dateKey}`
       : `${entry.projectId}:${entry.phaseId}:${dateKey}`;
     initialEntries[key] = entry.hours.toString();
   });
 
   const seenRows = new Set<string>();
-  const initialRows: Array<{ projectId: string; phaseId: string; leaveType?: string }> = [];
+  const initialRows: Array<{ projectId: string; phaseId: string; leaveType?: string; overheadCategory?: string }> = [];
   entries.forEach((entry) => {
     const rowKey = entry.leaveType
       ? `LEAVE:${entry.leaveType}`
+      : entry.overheadCategory
+      ? `OVERHEAD:${entry.overheadCategory}`
       : `${entry.projectId}:${entry.phaseId}`;
     if (seenRows.has(rowKey)) return;
     seenRows.add(rowKey);
     if (entry.leaveType) {
       initialRows.push({ projectId: "", phaseId: "", leaveType: entry.leaveType });
+    } else if (entry.overheadCategory) {
+      initialRows.push({ projectId: "", phaseId: "", overheadCategory: entry.overheadCategory });
     } else if (entry.projectId && entry.phaseId) {
       initialRows.push({ projectId: entry.projectId, phaseId: entry.phaseId });
     }
@@ -181,18 +187,23 @@ export default async function TimePage({
       projectId: true,
       phaseId: true,
       leaveType: true,
+      overheadCategory: true,
     },
   });
   const prevSeen = new Set<string>();
-  const previousWeekRows: Array<{ projectId: string; phaseId: string; leaveType?: string }> = [];
+  const previousWeekRows: Array<{ projectId: string; phaseId: string; leaveType?: string; overheadCategory?: string }> = [];
   for (const entry of prevEntries) {
     const key = entry.leaveType
       ? `LEAVE:${entry.leaveType}`
+      : entry.overheadCategory
+      ? `OVERHEAD:${entry.overheadCategory}`
       : `${entry.projectId}:${entry.phaseId}`;
     if (prevSeen.has(key)) continue;
     prevSeen.add(key);
     if (entry.leaveType) {
       previousWeekRows.push({ projectId: "", phaseId: "", leaveType: entry.leaveType });
+    } else if (entry.overheadCategory) {
+      previousWeekRows.push({ projectId: "", phaseId: "", overheadCategory: entry.overheadCategory });
     } else if (entry.projectId && entry.phaseId) {
       previousWeekRows.push({ projectId: entry.projectId, phaseId: entry.phaseId });
     }

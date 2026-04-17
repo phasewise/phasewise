@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
-import { Prisma, LeaveType } from "@prisma/client";
+import { Prisma, LeaveType, OverheadCategory } from "@prisma/client";
 import { startOfWeek } from "date-fns";
 import { prisma } from "@/lib/prisma";
 import { createClient } from "@/lib/supabase/server";
 import { checkAndSendBudgetAlert } from "@/lib/budget-alerts";
 import { LEAVE_TYPES } from "@/lib/leave";
+
+const OVERHEAD_CATEGORIES = Object.values(OverheadCategory);
 
 export const dynamic = "force-dynamic";
 
@@ -14,9 +16,10 @@ function getWeekStart(date: Date) {
 
 export async function POST(request: Request) {
   const body = await request.json();
-  const { projectId, phaseId, leaveType, date, hours, description } = body;
+  const { projectId, phaseId, leaveType, overheadCategory, date, hours, description } = body;
 
   const isLeave = !!leaveType;
+  const isOverhead = !!overheadCategory;
 
   if (!date || hours === undefined) {
     return NextResponse.json(
@@ -29,9 +32,13 @@ export async function POST(request: Request) {
     if (!LEAVE_TYPES.includes(leaveType as LeaveType)) {
       return NextResponse.json({ error: "Invalid leaveType." }, { status: 400 });
     }
+  } else if (isOverhead) {
+    if (!OVERHEAD_CATEGORIES.includes(overheadCategory as OverheadCategory)) {
+      return NextResponse.json({ error: "Invalid overheadCategory." }, { status: 400 });
+    }
   } else if (!projectId || !phaseId) {
     return NextResponse.json(
-      { error: "projectId and phaseId are required (or leaveType for leave entries)." },
+      { error: "projectId and phaseId are required (or leaveType/overheadCategory)." },
       { status: 400 }
     );
   }
@@ -63,7 +70,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unable to resolve current user." }, { status: 401 });
   }
 
-  if (!isLeave) {
+  if (!isLeave && !isOverhead) {
     const phase = await prisma.projectPhase.findUnique({
       where: { id: phaseId },
       include: { project: true },
@@ -122,11 +129,19 @@ export async function POST(request: Request) {
           date: parsedDate,
           projectId: null,
         }
+      : isOverhead
+      ? {
+          userId: currentUser.id,
+          overheadCategory: overheadCategory as OverheadCategory,
+          date: parsedDate,
+          projectId: null,
+        }
       : {
           userId: currentUser.id,
           projectId,
           phaseId,
           leaveType: null,
+          overheadCategory: null,
           date: parsedDate,
         },
   });
@@ -139,16 +154,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, deleted: !!existingEntry });
   }
 
+  const isNonProject = isLeave || isOverhead;
   const entryData = {
     organizationId: currentUser.organizationId,
     userId: currentUser.id,
-    projectId: isLeave ? null : projectId,
-    phaseId: isLeave ? null : phaseId,
+    projectId: isNonProject ? null : projectId,
+    phaseId: isNonProject ? null : phaseId,
     leaveType: isLeave ? (leaveType as LeaveType) : null,
+    overheadCategory: isOverhead ? (overheadCategory as OverheadCategory) : null,
     date: parsedDate,
     hours: new Prisma.Decimal(parsedHours),
     description: description || undefined,
-    isBillable: !isLeave,
+    isBillable: !isNonProject,
   };
 
   const savedEntry = existingEntry
@@ -158,7 +175,7 @@ export async function POST(request: Request) {
       })
     : await prisma.timeEntry.create({ data: entryData });
 
-  if (!isLeave && projectId) {
+  if (!isNonProject && projectId) {
     void checkAndSendBudgetAlert(projectId).catch((err) => {
       console.error("[time] Budget alert check failed:", err);
     });

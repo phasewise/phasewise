@@ -367,6 +367,7 @@ model TimeEntry {
   projectId       String?  @map("project_id") @db.Uuid
   phaseId         String?  @map("phase_id") @db.Uuid
   leaveType       LeaveType? @map("leave_type")
+  overheadCategory OverheadCategory? @map("overhead_category")
   date            DateTime @db.Date
   hours           Decimal  @db.Decimal(5, 2)
   description     String?
@@ -382,7 +383,17 @@ model TimeEntry {
   @@index([projectId, phaseId])
   @@index([userId, date])
   @@index([userId, leaveType, date])
+  @@index([userId, overheadCategory, date])
   @@map("time_entries")
+}
+
+enum OverheadCategory {
+  GENERAL_ADMIN
+  MARKETING
+  PROFESSIONAL_DEVELOPMENT
+  MEETINGS
+  BUSINESS_DEVELOPMENT
+  IT_EQUIPMENT
 }
 
 enum LeaveType {

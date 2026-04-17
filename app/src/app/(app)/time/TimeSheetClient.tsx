@@ -1,8 +1,26 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus, Trash2, CalendarDays, Copy } from "lucide-react";
+import { Plus, Trash2, CalendarDays, Copy, Briefcase } from "lucide-react";
 import { LEAVE_TYPE_LABELS, LEAVE_TYPES } from "@/lib/leave";
+
+const OVERHEAD_CATEGORIES = [
+  "GENERAL_ADMIN",
+  "MARKETING",
+  "PROFESSIONAL_DEVELOPMENT",
+  "MEETINGS",
+  "BUSINESS_DEVELOPMENT",
+  "IT_EQUIPMENT",
+] as const;
+
+const OVERHEAD_LABELS: Record<string, string> = {
+  GENERAL_ADMIN: "General Admin",
+  MARKETING: "Marketing",
+  PROFESSIONAL_DEVELOPMENT: "Training / PD",
+  MEETINGS: "Meetings",
+  BUSINESS_DEVELOPMENT: "Business Dev",
+  IT_EQUIPMENT: "IT / Equipment",
+};
 
 type Project = {
   id: string;
@@ -10,7 +28,7 @@ type Project = {
   phases: Array<{ id: string; name: string }>;
 };
 
-type Row = { projectId: string; phaseId: string; leaveType?: string };
+type Row = { projectId: string; phaseId: string; leaveType?: string; overheadCategory?: string };
 
 type Props = {
   projects: Project[];
@@ -23,10 +41,13 @@ type Props = {
 };
 
 const isLeaveRow = (row: Row) => !!row.leaveType;
+const isOverheadRow = (row: Row) => !!row.overheadCategory;
 
 const formatKey = (row: Row, date: string) =>
   isLeaveRow(row)
     ? `LEAVE:${row.leaveType}:${date}`
+    : isOverheadRow(row)
+    ? `OVERHEAD:${row.overheadCategory}:${date}`
     : `${row.projectId}:${row.phaseId}:${date}`;
 
 export default function TimeSheetClient({
@@ -57,9 +78,19 @@ export default function TimeSheetClient({
     setRows((prev) => [...prev, { projectId: "", phaseId: "", leaveType: "VACATION" }]);
   }
 
+  function addOverheadRow() {
+    setRows((prev) => [...prev, { projectId: "", phaseId: "", overheadCategory: "GENERAL_ADMIN" }]);
+  }
+
+  function updateOverheadCategory(index: number, value: string) {
+    setRows((prev) =>
+      prev.map((row, i) => (i === index ? { ...row, overheadCategory: value } : row))
+    );
+  }
+
   function copyFromPreviousWeek() {
     const rowKey = (r: Row) =>
-      r.leaveType ? `LEAVE:${r.leaveType}` : `${r.projectId}:${r.phaseId}`;
+      r.leaveType ? `LEAVE:${r.leaveType}` : r.overheadCategory ? `OVERHEAD:${r.overheadCategory}` : `${r.projectId}:${r.phaseId}`;
     setRows((prev) => {
       const existing = new Set(prev.map(rowKey));
       const toAdd = previousWeekRows.filter((r) => !existing.has(rowKey(r)));
@@ -90,7 +121,7 @@ export default function TimeSheetClient({
   }
 
   const rowIsComplete = (row: Row) =>
-    isLeaveRow(row) ? !!row.leaveType : !!row.projectId && !!row.phaseId;
+    isLeaveRow(row) ? !!row.leaveType : isOverheadRow(row) ? !!row.overheadCategory : !!row.projectId && !!row.phaseId;
 
   // Calculate totals
   const rowTotals = useMemo(
@@ -141,6 +172,8 @@ export default function TimeSheetClient({
     try {
       const body = isLeaveRow(row)
         ? { leaveType: row.leaveType, date, hours: parsedHours }
+        : isOverheadRow(row)
+        ? { overheadCategory: row.overheadCategory, date, hours: parsedHours }
         : {
             projectId: row.projectId,
             phaseId: row.phaseId,
@@ -196,12 +229,17 @@ export default function TimeSheetClient({
 
                 return (
                   <tr key={index} className="border-b border-[#E8EDE9] last:border-0">
-                    {/* Project / leave-type cell */}
+                    {/* Project / leave-type / overhead cell */}
                     <td className="px-3 sm:px-4 py-2">
                       {leaveRow ? (
                         <div className="inline-flex items-center gap-2 rounded-lg bg-[#F0FAF4] border border-[#52B788]/30 px-2 py-2 text-sm text-[#2D6A4F] font-medium">
                           <CalendarDays className="w-4 h-4" />
                           Leave
+                        </div>
+                      ) : isOverheadRow(row) ? (
+                        <div className="inline-flex items-center gap-2 rounded-lg bg-[#FAF6EF] border border-[#C9A87C]/30 px-2 py-2 text-sm text-[#8B6914] font-medium">
+                          <Briefcase className="w-4 h-4" />
+                          Overhead
                         </div>
                       ) : (
                         <select
@@ -220,7 +258,7 @@ export default function TimeSheetClient({
                       )}
                     </td>
 
-                    {/* Phase / leave-subtype cell */}
+                    {/* Phase / leave-subtype / overhead-category cell */}
                     <td className="px-3 sm:px-4 py-2">
                       {leaveRow ? (
                         <select
@@ -232,6 +270,19 @@ export default function TimeSheetClient({
                           {LEAVE_TYPES.map((t) => (
                             <option key={t} value={t}>
                               {LEAVE_TYPE_LABELS[t]}
+                            </option>
+                          ))}
+                        </select>
+                      ) : isOverheadRow(row) ? (
+                        <select
+                          value={row.overheadCategory ?? ""}
+                          onChange={(e) => updateOverheadCategory(index, e.target.value)}
+                          disabled={readOnly}
+                          className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-2 py-2 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788] disabled:opacity-60"
+                        >
+                          {OVERHEAD_CATEGORIES.map((c) => (
+                            <option key={c} value={c}>
+                              {OVERHEAD_LABELS[c]}
                             </option>
                           ))}
                         </select>
@@ -363,6 +414,14 @@ export default function TimeSheetClient({
           >
             <CalendarDays className="w-4 h-4" />
             Add leave / PTO
+          </button>
+          <button
+            type="button"
+            onClick={addOverheadRow}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-white text-[#6B8C74] border border-[#E2EBE4] hover:border-[#C9A87C] hover:text-[#8B6914] transition-all"
+          >
+            <Briefcase className="w-4 h-4" />
+            Add overhead / admin
           </button>
           {previousWeekRows.length > 0 && (
             <button
