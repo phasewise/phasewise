@@ -101,18 +101,18 @@ Each vertical shares the core platform but adds industry-specific phase types, t
 - [x] Favicon + PWA icons (browser tab + iOS home screen)
 - [x] Stripe billing wired up: checkout, customer portal, webhook handler
 - [x] Loops email integration (welcome, trial-started, canceled, payment-failed)
-- [ ] **Loops transactional templates created in dashboard + IDs added to env**
-- [ ] **End-to-end test: signup → checkout (Stripe test card) → emails → DB sync**
-- [ ] All core features work seamlessly (project CRUD, time tracking, budgets, reports)
-- [ ] Project editing (currently only create + view)
-- [ ] Profitability reporting dashboard
-- [ ] Client management module (contacts, communications)
-- [ ] Contact list capture from landing page (waitlist + signup)
-- [ ] Onboarding flow (signup → org setup → first project → first time entry)
-- [ ] Empty states designed for every page (no users? no projects? handle it gracefully)
+- [x] Loops transactional templates created in dashboard + IDs added to env ✅ 2026-04-16
+- [x] End-to-end test: signup → checkout (Stripe test card) → emails → DB sync ✅ 2026-04-17
+- [x] All core features work seamlessly (project CRUD, time tracking, budgets, reports)
+- [x] Project editing ✅ 2026-04-12
+- [x] Profitability reporting dashboard ✅ 2026-04-13
+- [x] Client management module ✅ 2026-04-13
+- [x] Contact list capture from landing page (waitlist + signup) ✅ 2026-04-11
+- [x] Onboarding flow (3-step checklist, auto-dismisses) ✅ 2026-04-13
+- [x] Empty states designed for every page ✅ 2026-04-13
 - [ ] Error states tested (failed payments, network errors, validation)
-- [ ] Privacy Policy + Terms of Service pages
-- [ ] Loading states for slow operations
+- [x] Privacy Policy + Terms of Service pages ✅ 2026-04-13
+- [x] Loading states for slow operations ✅ 2026-04-13
 - [ ] At least 3 beta firms using it daily (real validation)
 
 ## Infrastructure & Services
@@ -194,15 +194,15 @@ All variables are set in **Vercel project Settings → Environment Variables** A
 | `NEXT_PUBLIC_STRIPE_PRICE_STARTER` | ✅ | Stripe product Starter > Events log |
 | `NEXT_PUBLIC_STRIPE_PRICE_PROFESSIONAL` | ✅ | Stripe product Professional > Events log |
 | `NEXT_PUBLIC_STRIPE_PRICE_STUDIO` | ✅ | Stripe product Studio > Events log |
-| `LOOPS_API_KEY` | ✅ local, ⏳ Vercel | Loops > Settings > API |
-| `LOOPS_TEMPLATE_WELCOME` | ⏳ pending | Loops > Transactional > Welcome template ID |
-| `LOOPS_TEMPLATE_TRIAL_STARTED` | ⏳ pending | Loops > Transactional > Trial started template ID |
-| `LOOPS_TEMPLATE_WELCOME` | ✅ Vercel + local | `cmnsy2ivn01fx0iyrotfy4w2i` (branded 2026-04-16) |
-| `LOOPS_TEMPLATE_TRIAL_STARTED` | ✅ local, ⏳ Vercel | `cmo1yvph60i0g0izrztwksafl` (branded 2026-04-16) |
-| `LOOPS_TEMPLATE_SUBSCRIPTION_CANCELED` | ✅ local, ⏳ Vercel | `cmo1yw7mk0gru0h1uw8yzx5yb` (branded 2026-04-16) |
-| `LOOPS_TEMPLATE_PAYMENT_FAILED` | ✅ local, ⏳ Vercel | `cmo1ywidl0hbu0jxzj127ssvc` (branded 2026-04-16) |
-| `LOOPS_TEMPLATE_SUBMITTAL_REMINDER` | ✅ local, ⏳ Vercel | `cmo1ywq5505dy0izn74icj1zy` (new, branded 2026-04-16) |
-| `LOOPS_TEMPLATE_BUDGET_ALERT` | ✅ local, ⏳ Vercel | `cmo1ywy7r074g0iuqkp0yntnw` (new, branded 2026-04-16) |
+| `LOOPS_API_KEY` | ✅ | Loops > Settings > API |
+| `LOOPS_TEMPLATE_WELCOME` | ✅ | `cmnsy2ivn01fx0iyrotfy4w2i` (branded 2026-04-16) |
+| `LOOPS_TEMPLATE_TRIAL_STARTED` | ✅ | `cmo1yvph60i0g0izrztwksafl` (branded 2026-04-16) |
+| `LOOPS_TEMPLATE_SUBSCRIPTION_CANCELED` | ✅ | `cmo1yw7mk0gru0h1uw8yzx5yb` (branded 2026-04-16) |
+| `LOOPS_TEMPLATE_PAYMENT_FAILED` | ✅ | `cmo1ywidl0hbu0jxzj127ssvc` (branded 2026-04-16) |
+| `LOOPS_TEMPLATE_SUBMITTAL_REMINDER` | ✅ | `cmo1ywq5505dy0izn74icj1zy` (branded 2026-04-16) |
+| `LOOPS_TEMPLATE_BUDGET_ALERT` | ✅ | `cmo1ywy7r074g0iuqkp0yntnw` (branded 2026-04-16) |
+| `LOOPS_TEMPLATE_INVITE` | ⏳ pending | Loops > Transactional > Invite template (optional — link sharing works without it) |
+| `SUPABASE_SERVICE_ROLE_KEY` | ✅ | Supabase > Settings > API Keys > Legacy > service_role |
 
 ### Switching Stripe to Live Mode (when ready)
 
@@ -409,7 +409,7 @@ Most meaningful first. Strikethrough = done.
 
 **Operations:**
 
-68. **Replace `/brand` v1 assets with v2 versions** — single source of truth
+68. ~~**Replace `/brand` v1 assets with v2 versions**~~ ✅ 2026-04-15 — `brand/` deleted, `brand_v2/` is sole source of truth.
 69. **Stripe Tax: revisit before going live** — placeholder CA registration only
 70. **Switch Stripe to live mode** — env var swap only
 71. **Social media automation (n8n)** — scheduled posts to LinkedIn/X/Instagram
@@ -426,6 +426,14 @@ Most meaningful first. Strikethrough = done.
 82. ~~**Timesheet week navigation**~~ ✅ 2026-04-16 — Prev/Next + date picker + "This week" button. Past weeks editable unless approved (read-only) or submitted (chip shown). Future weeks editable only if current week has been submitted. Server-side enforcement matches UI.
 83. ~~**Copy rows from last week**~~ ✅ 2026-04-16 — Timesheet button to add last week's distinct rows with 0 hours.
 84. ~~**Invoice PDF generation**~~ ✅ 2026-04-16 — Branded server-side PDF via @react-pdf/renderer. Route `GET /api/invoices/:id/pdf`. PDF link on every row in `/admin/billing`.
+85. ~~**Profile photo cache fix**~~ ✅ 2026-04-17 — Cache-busting timestamp on photo URLs so new uploads display immediately. Error handling on DB save.
+86. ~~**LA job titles in team management**~~ ✅ 2026-04-17 — 20 LA-specific titles wired into team add/edit form with auto-set permission level + billing defaults. Inline title editing. "Permission Level" clarity rename. Custom title option.
+87. ~~**PWA icon fix for Android**~~ ✅ 2026-04-17 — Manifest switched from SVG to PNG icon routes. Added maskable icon with safe-zone padding.
+88. ~~**E2E test: full signup → checkout → cancel flow**~~ ✅ 2026-04-17 — All 6 steps passed on production: signup, welcome email, Stripe checkout, trial-started email, DB sync verified, customer portal + cancellation email.
+89. ~~**Team invitation flow**~~ ✅ 2026-04-17 — Owner adds member → Invitation record created (7-day expiry) → invite link shareable via "Copy invite link" or "Send invite" button → staff clicks link → sets password → Supabase auth created via admin API → pending User linked → redirected to dashboard. Middleware allows `/invite/*` and `/api/invitations/*` public.
+90. ~~**Overhead / admin time tracking**~~ ✅ 2026-04-17 — OverheadCategory enum (General Admin, Marketing, Training/PD, Meetings, Business Dev, IT/Equipment). "Add overhead / admin" button on timesheet. Non-billable. Category dropdown. Copy-from-previous-week support.
+91. ~~**New job titles: Drafter/Technician + Irrigation Designer**~~ ✅ 2026-04-17 — Added to billing-defaults.ts and TeamMembersClient title dropdown.
+92. ~~**Invite UX banner**~~ ✅ 2026-04-17 — Clear instruction banner after clicking "Send invite" with copyable link URL and dismiss button.
 
 ## Competitive Positioning
 
@@ -490,46 +498,48 @@ Ordered by my estimated value-per-effort. Revisit during the forensic audit.
 - **Automated year-end rollover** — apply the `rolloverCap` automatically when the calendar year changes.
 - **Forensic audit** — top-to-bottom value review once the queue slows down. Rate each feature on value delivered vs maintenance cost. Cut or sharpen anything that doesn't earn its keep.
 
-## Where We Left Off (2026-04-16 EOD)
+## Where We Left Off (2026-04-17 EOD)
 
-**Status: All 67 feature items + core infrastructure complete.** Google Workspace live, Supabase Storage buckets + RLS configured, Vercel Cron registered, password reset end-to-end verified.
+**Status: All 92 feature items complete. E2E test passed on production. Team invitation flow live. Overhead time tracking live.** Two pre-launch blockers remain: error state testing + 3 beta firms.
 
-### What shipped today (2026-04-15)
+### What shipped today (2026-04-17)
 
-Operational setup + infrastructure fixes. Commits: `460fd7e` (Vercel cron), `cd7b4d2` (token_hash verify), `6dfa033` (middleware bypass for `/api/auth/*`).
+Commits: `49d92ce` (photo fix + titles + PWA), `7b15673` (invite flow), `9b9a708` (copy invite link), `085115f` (send invite button), `ad677ef` (invite UX + new titles), `67b3a22` (overhead time).
 
-1. ✅ **Google Workspace** — phasewise.io domain verified, Gmail activated, MX + SPF + DKIM records in Cloudflare. Test email to `kevin@phasewise.io` received successfully.
-2. ✅ **Supabase Storage** — Created `profile-photos` and `compliance-docs` buckets (both public). Added RLS policies (SELECT/INSERT/UPDATE/DELETE) scoped to `authenticated` role so uploads via user session work without exposing anon writes.
-3. ✅ **Vercel Cron** — Created `app/vercel.json` registering `/api/cron/submittal-reminders` at `0 14 * * *` (14:00 UTC / 7 AM Pacific daily). Generated a fresh `CRON_SECRET` and set it in Vercel (all envs) + local `.env`.
-4. ✅ **Password reset flow — fully working end-to-end.** Diagnosed three cascading issues:
-   - **Site URL was `localhost`** → email links pointed to localhost. Fixed in Supabase → Auth → URL Configuration. Also added `https://phasewise.io/**` + `http://localhost:3000/**` to Redirect URLs allowlist.
-   - **Link scanners consumed the one-time token** (`otp_expired` error). Fixed by rewriting the Supabase "Reset password" email template to use `{{ .SiteURL }}/api/auth/callback?token_hash={{ .TokenHash }}&type=recovery&next=/reset-password` — a direct link that bypasses Supabase's `/verify` intermediate.
-   - **Middleware was redirecting `/api/auth/callback` to `/login`** because the user isn't authenticated yet when clicking the email link. Fixed by allowing `/api/auth/*` prefix through middleware unauthenticated.
-   - Updated `/api/auth/callback/route.ts` to accept both `code` (PKCE) and `token_hash + type` (verifyOtp) flows.
-5. ✅ **Profile photo auto-compression** — Phone photos are typically >2MB. Added client-side canvas resize (max 800px) + JPEG re-encode at quality 0.85 before upload in `/settings/profile`. Falls back to original file if compression fails and file fits under 2MB.
-6. ✅ **Avatars in sidebar + team list** — Uploaded photos now render in the collapsible sidebar user widget and next to each member's name on `/settings/team`. Plumbed `photoUrl` through layout → MobileSidebar, and into team query + new `MemberAvatar` component. Falls back to initials when no photo.
-7. ✅ **Work Plan as single source of truth for hours and fees** — The new-project form used to ask for per-phase fee and hours, which were just guesses that conflicted with the Work Plan. Removed those inputs. Users now pick phases + an optional total **contract fee**, then get redirected straight to the Work Plan where staff assignments drive hours/fees per phase (the work-plan → phase auto-sync was already in place from item 63). Contract fee editable from project edit page.
-8. ✅ **Contract vs Work Plan summary on project detail** — 4-cell summary at the top of `/projects/[id]`: Contract fee, Work Plan estimate, Variance (with over/under color), % of contract (with progress bar — green ≤90%, amber 90–100%, red >100%). Surfaces over-budget risk at a glance.
-9. ✅ **Phase edit rows show Work Plan rollup (read-only)** — Removed Fee and Hours inputs from the Phases section on the project edit page. They're now dashed-border display cells pulled from Work Plan sync. Added a "Work Plan estimate" totals bar at the bottom of the phase list. One place to enter — the Work Plan.
-10. ✅ **Removed deprecated v1 brand assets** — `brand/` directory deleted (zero code references). `brand_v2/` is now the single source of truth.
+1. ✅ **Loops env vars confirmed in Vercel** — All 7 template IDs + API key verified present.
+2. ✅ **Profile photo upload fix** — Cache-busting timestamp so new photos display immediately. Error handling on DB save PATCH request.
+3. ✅ **LA job titles in team management** — 20 titles wired into add-member form with auto-set permission level + billing defaults. Inline title editing on team list. "Role" → "Permission Level" clarity. Custom title option. v2 brand on role assignment section.
+4. ✅ **PWA icon fix for Android** — Manifest switched from SVG to PNG icon routes. Added maskable icon with safe-zone padding for adaptive icons.
+5. ✅ **E2E test passed** — Full production test: signup → welcome email (1 min) → Stripe checkout ($0 trial) → trial-started email → DB sync verified (PROFESSIONAL/TRIALING/Stripe IDs linked) → Customer Portal → cancellation → cancellation email. All 6 steps green.
+6. ✅ **Team invitation flow** — Complete invite system:
+   - Owner adds member → Invitation record + `pending_` User created in transaction
+   - "Send invite" button for pre-existing members (creates invitation retroactively)
+   - "Invite link" / "Copied!" button to copy invite URL to clipboard
+   - Instruction banner after sending with copyable URL + clear next-steps text
+   - `/invite/[token]` acceptance page (email pre-filled, password + confirm, "Join team")
+   - POST creates Supabase auth user via admin API, links `pending_` User, signs in, redirects to dashboard
+   - 7-day token expiry, duplicate protection, expired/accepted handling
+7. ✅ **Overhead / admin time tracking** — OverheadCategory enum (General Admin, Marketing, Training/PD, Meetings, Business Dev, IT/Equipment). "Add overhead / admin" button on timesheet with warm-toned styling. Non-billable. Copy-from-previous-week support.
+8. ✅ **New job titles** — Drafter / Technician ($55k/$95hr) and Irrigation Designer ($72k/$130hr).
 
-**Schema change:** Added `Project.contractFee Decimal? @db.Decimal(12,2)`. Synced to Supabase.
+**Schema change:** Added `TimeEntry.overheadCategory OverheadCategory?` + `OverheadCategory` enum. Synced to Supabase.
 
 ### Known good state
 
 - Production URL: https://phasewise.io
-- Latest commit (pending commit for compression + CLAUDE.md): local
-- Latest pushed commit: `4e8677d` (Work Plan source-of-truth) + follow-up commit with contract-vs-estimate summary
-- Schema unchanged since 2026-04-14
+- Latest pushed commit: `67b3a22` (overhead time tracking)
+- All env vars set in Vercel (including `SUPABASE_SERVICE_ROLE_KEY`)
 - All Supabase Storage buckets + policies live
 - Vercel Cron registered and enabled
+- Invite flow tested and working on production
 
 ### To resume next session
 
-1. **Test remaining features on live site** — user profile edits (now with auto-compression), compliance file uploads, invoices, MWELO calc, edit modals on all modules
-2. **Operations:** Replace `/brand` v1 assets with v2, Stripe Tax revisit, Stripe live mode swap, n8n social automation, USPTO trademark filing
-3. **Clean up:** Supabase has two `google-site-verification` TXT records at root — one can be removed
-4. Consider adding auto-compression to compliance image uploads too (currently 10MB cap is generous but phone photos can exceed)
+1. **Stripe live mode swap** — env var change only (see "Switching Stripe to Live Mode" section above)
+2. **Get 3 beta firms using it daily** — outreach to LA colleagues
+3. **Operations:** Stripe Tax revisit, social profiles (LinkedIn/X/Instagram), getphasewise.com redirect, USPTO trademark
+4. **Optional:** Create Loops INVITE template for automated invite emails (currently link-sharing only)
+5. **Optional:** Error state testing (failed payments, network errors, validation edge cases)
 
 ### Test cards for future testing
 
@@ -541,21 +551,23 @@ Operational setup + infrastructure fixes. Commits: `460fd7e` (Vercel cron), `cd7
 
 ### Test user accounts in DB
 
-- `kgallo22+pwtest1@gmail.com` through `kgallo22+pwtest5@gmail.com` (Gmail aliases routing to your inbox)
-- All exist in Supabase Auth + app database
-- Can be deleted via Supabase Authentication > Users when no longer needed
+- `kgallo22+pwtest5@gmail.com` — **primary test account** ("Five Test" / FiveTest Studio, BTTF-themed projects)
+- Other `pwtest1-4,6` accounts deleted from Supabase Auth 2026-04-17
+- Emmett Brown (`kgallo22+ebrown@gmail.com`) — test invite acceptance, PM role in FiveTest Studio
 
 ## TODO (Operational, non-code)
 
 - [x] Google Workspace — domain verified + Gmail active ✅ 2026-04-15
 - [x] Create Supabase Storage buckets: `profile-photos` + `compliance-docs` ✅ 2026-04-15
 - [x] Set CRON_SECRET in Vercel + configure Vercel Cron for submittal reminders ✅ 2026-04-15
+- [x] All Loops env vars set in Vercel ✅ 2026-04-17
+- [x] SUPABASE_SERVICE_ROLE_KEY set in Vercel + local ✅ 2026-04-17
+- [x] E2E test: signup → checkout → emails → DB sync → cancel ✅ 2026-04-17
 - [ ] Upload v2 PNG logos to LinkedIn, X/Twitter, GitHub profiles
 - [ ] Claim @phasewise on Instagram
 - [ ] File USPTO trademark for "Phasewise"
 - [ ] Set up getphasewise.com redirect to phasewise.io in Cloudflare
 - [ ] Revisit Stripe Tax setup before going live (currently a placeholder CA registration)
 - [ ] Remove duplicate `google-site-verification` TXT record from Cloudflare
-- [ ] **Brand all Loops transactional emails** (welcome, trial-started, canceled, payment-failed) with consistent v2 logos, colors, and typography
-- [ ] Brand the submittal-reminder email (currently reuses payment_failed template as a generic alert)
-- [ ] Stripe live mode swap (when first paying customer is lined up) (2 exist, only 1 needed)
+- [ ] Create Loops INVITE template (optional — link sharing works without it)
+- [ ] Stripe live mode swap (when first paying customer is lined up)
