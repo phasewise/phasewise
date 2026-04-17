@@ -41,7 +41,9 @@ export async function handleAuth(request: NextRequest) {
   const isPublicPath =
     publicPaths.some(
       (p) => request.nextUrl.pathname === p || request.nextUrl.pathname.startsWith("/invite/")
-    ) || request.nextUrl.pathname.startsWith("/api/auth/");
+    ) ||
+    request.nextUrl.pathname.startsWith("/api/auth/") ||
+    request.nextUrl.pathname.startsWith("/api/invitations/");
 
   if (!user && !isPublicPath) {
     const url = request.nextUrl.clone();

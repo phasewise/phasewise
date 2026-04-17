@@ -26,6 +26,7 @@ export const LOOPS_TEMPLATES = {
   PAYMENT_FAILED: process.env.LOOPS_TEMPLATE_PAYMENT_FAILED ?? "",
   SUBMITTAL_REMINDER: process.env.LOOPS_TEMPLATE_SUBMITTAL_REMINDER ?? "",
   BUDGET_ALERT: process.env.LOOPS_TEMPLATE_BUDGET_ALERT ?? "",
+  INVITE: process.env.LOOPS_TEMPLATE_INVITE ?? "",
 } as const;
 
 type SendOptions = {

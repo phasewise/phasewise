@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/supabase/auth";
 import { DEFAULT_BILLING_RATES, getDefaultsForTitle, salaryToHourlyRate } from "@/lib/billing-defaults";
+import { sendTransactional, LOOPS_TEMPLATES } from "@/lib/loops";
 import type { UserRole } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -75,32 +76,66 @@ export async function POST(request: Request) {
     const salaryNum = salary !== undefined && salary !== "" ? Number(salary) : defaults.salary;
     const rateNum = billingRate !== undefined && billingRate !== "" ? Number(billingRate) : defaults.billingRate;
 
-    const user = await prisma.user.create({
-      data: {
-        authId: `pending_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-        organizationId: currentUser.organizationId,
-        fullName: fullName.trim(),
-        email: email.toLowerCase().trim(),
-        role: userRole,
-        title: title?.trim() || null,
-        billingRate: new Prisma.Decimal(rateNum),
-        salary: new Prisma.Decimal(salaryNum),
-        costRate: new Prisma.Decimal(salaryToHourlyRate(salaryNum)),
-      },
-      select: {
-        id: true,
-        fullName: true,
-        email: true,
-        role: true,
-        title: true,
-        billingRate: true,
-        salary: true,
-        costRate: true,
-        isActive: true,
-      },
+    const cleanEmail = email.toLowerCase().trim();
+
+    const result = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          authId: `pending_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+          organizationId: currentUser.organizationId,
+          fullName: fullName.trim(),
+          email: cleanEmail,
+          role: userRole,
+          title: title?.trim() || null,
+          billingRate: new Prisma.Decimal(rateNum),
+          salary: new Prisma.Decimal(salaryNum),
+          costRate: new Prisma.Decimal(salaryToHourlyRate(salaryNum)),
+        },
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          role: true,
+          title: true,
+          billingRate: true,
+          salary: true,
+          costRate: true,
+          isActive: true,
+        },
+      });
+
+      const invitation = await tx.invitation.create({
+        data: {
+          organizationId: currentUser.organizationId,
+          email: cleanEmail,
+          role: userRole,
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+        },
+      });
+
+      return { user, invitation };
     });
 
-    return NextResponse.json({ success: true, user });
+    // Fire-and-forget invite email
+    const orgName = currentUser.organization?.name ?? "your firm";
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || new URL(request.url).origin;
+    const inviteUrl = `${appUrl}/invite/${result.invitation.token}`;
+    const [firstName] = fullName.trim().split(/\s+/);
+
+    void sendTransactional({
+      email: cleanEmail,
+      transactionalId: LOOPS_TEMPLATES.INVITE,
+      dataVariables: {
+        recipientName: firstName || "there",
+        orgName,
+        role: userRole,
+        inviteUrl,
+      },
+    }).catch((err) => {
+      console.error("[loops] Invite email failed:", err);
+    });
+
+    return NextResponse.json({ success: true, user: result.user });
   } catch (error) {
     console.error("Add team member error:", error);
     return NextResponse.json(
