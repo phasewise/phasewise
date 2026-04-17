@@ -26,6 +26,19 @@ export default async function TeamSettingsPage() {
   const canSeeBillingRate =
     canManageBilling || currentUser.role === "SUPERVISOR" || currentUser.role === "PM";
 
+  // Query pending invitations so we can show "Copy invite link" for members who haven't joined yet
+  const pendingInvites = canManageBilling
+    ? await prisma.invitation.findMany({
+        where: {
+          organizationId: currentUser.organizationId,
+          acceptedAt: null,
+          expiresAt: { gt: new Date() },
+        },
+        select: { email: true, token: true },
+      })
+    : [];
+  const inviteByEmail = new Map(pendingInvites.map((inv) => [inv.email, inv.token]));
+
   // Query all users with billing info appropriate to the current user's access level
   const users = await prisma.user.findMany({
     where: { organizationId: currentUser.organizationId },
@@ -56,6 +69,7 @@ export default async function TeamSettingsPage() {
     billingRate: canSeeBillingRate && "billingRate" in u ? Number(u.billingRate ?? 0) : null,
     salary: canManageBilling && "salary" in u ? Number(u.salary ?? 0) : null,
     costRate: canManageBilling && "costRate" in u ? Number(u.costRate ?? 0) : null,
+    inviteToken: inviteByEmail.get(u.email) || null,
   }));
 
   return (

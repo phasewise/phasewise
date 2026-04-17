@@ -135,7 +135,7 @@ export async function POST(request: Request) {
       console.error("[loops] Invite email failed:", err);
     });
 
-    return NextResponse.json({ success: true, user: result.user });
+    return NextResponse.json({ success: true, user: result.user, inviteToken: result.invitation.token });
   } catch (error) {
     console.error("Add team member error:", error);
     return NextResponse.json(

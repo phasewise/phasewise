@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, UserMinus, UserPlus, Pencil } from "lucide-react";
+import { Plus, UserMinus, UserPlus, Pencil, Link2, Check } from "lucide-react";
 
 type TeamUser = {
   id: string;
@@ -11,6 +11,7 @@ type TeamUser = {
   title?: string | null;
   isActive?: boolean;
   photoUrl?: string | null;
+  inviteToken?: string | null;
 };
 
 function MemberAvatar({ name, photoUrl }: { name: string; photoUrl?: string | null }) {
@@ -84,6 +85,15 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
   const [error, setError] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState<string | null>(null);
   const [editTitleValue, setEditTitleValue] = useState("");
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  function copyInviteLink(userId: string, token: string) {
+    const url = `${window.location.origin}/invite/${token}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopiedId(userId);
+      setTimeout(() => setCopiedId(null), 2000);
+    });
+  }
 
   function handleTitleSelect(titleValue: string) {
     if (titleValue === "__custom__") {
@@ -127,6 +137,7 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
         role: data.user.role,
         title: data.user.title,
         isActive: true,
+        inviteToken: data.inviteToken || null,
       },
     ]);
     setNewName("");
@@ -403,6 +414,21 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
                     </span>
                   </td>
                   <td className="px-4 sm:px-6 py-4">
+                    <div className="flex items-center gap-3">
+                    {user.inviteToken && (
+                      <button
+                        type="button"
+                        onClick={() => copyInviteLink(user.id, user.inviteToken!)}
+                        className="inline-flex items-center gap-1 text-xs text-[#2D6A4F] hover:text-[#40916C] transition-colors"
+                        title="Copy invite link"
+                      >
+                        {copiedId === user.id ? (
+                          <><Check className="w-3.5 h-3.5" /> Copied!</>
+                        ) : (
+                          <><Link2 className="w-3.5 h-3.5" /> Invite link</>
+                        )}
+                      </button>
+                    )}
                     {user.role !== "OWNER" && (
                       <button
                         type="button"
@@ -415,6 +441,7 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
                         Deactivate
                       </button>
                     )}
+                    </div>
                   </td>
                 </tr>
               ))}
