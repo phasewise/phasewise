@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/supabase/auth";
-import { DEFAULT_BILLING_RATES, salaryToHourlyRate } from "@/lib/billing-defaults";
+import { DEFAULT_BILLING_RATES, getDefaultsForTitle, salaryToHourlyRate } from "@/lib/billing-defaults";
 import type { UserRole } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -35,10 +35,11 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { fullName, email, role, billingRate, salary } = body as {
+    const { fullName, email, role, title, billingRate, salary } = body as {
       fullName?: string;
       email?: string;
       role?: string;
+      title?: string;
       billingRate?: string | number;
       salary?: string | number;
     };
@@ -66,7 +67,10 @@ export async function POST(request: Request) {
     }
 
     const userRole = (role as UserRole) || "STAFF";
-    const defaults = DEFAULT_BILLING_RATES[userRole] ?? DEFAULT_BILLING_RATES.STAFF;
+
+    // Use title-based defaults if a title was provided, otherwise fall back to role defaults
+    const titleDefaults = title ? getDefaultsForTitle(title, userRole) : null;
+    const defaults = titleDefaults || (DEFAULT_BILLING_RATES[userRole] ?? DEFAULT_BILLING_RATES.STAFF);
 
     const salaryNum = salary !== undefined && salary !== "" ? Number(salary) : defaults.salary;
     const rateNum = billingRate !== undefined && billingRate !== "" ? Number(billingRate) : defaults.billingRate;
@@ -78,6 +82,7 @@ export async function POST(request: Request) {
         fullName: fullName.trim(),
         email: email.toLowerCase().trim(),
         role: userRole,
+        title: title?.trim() || null,
         billingRate: new Prisma.Decimal(rateNum),
         salary: new Prisma.Decimal(salaryNum),
         costRate: new Prisma.Decimal(salaryToHourlyRate(salaryNum)),
@@ -87,6 +92,7 @@ export async function POST(request: Request) {
         fullName: true,
         email: true,
         role: true,
+        title: true,
         billingRate: true,
         salary: true,
         costRate: true,
@@ -127,10 +133,11 @@ export async function PATCH(request: Request) {
     }
 
     const body = await request.json();
-    const { userId, fullName, email, isActive } = body as {
+    const { userId, fullName, email, title, isActive } = body as {
       userId?: string;
       fullName?: string;
       email?: string;
+      title?: string;
       isActive?: boolean;
     };
 
@@ -168,6 +175,7 @@ export async function PATCH(request: Request) {
     const updateData: Record<string, unknown> = {};
     if (fullName !== undefined) updateData.fullName = fullName.trim();
     if (email !== undefined) updateData.email = email.toLowerCase().trim();
+    if (title !== undefined) updateData.title = title.trim() || null;
     if (isActive !== undefined) updateData.isActive = isActive;
 
     const updated = await prisma.user.update({

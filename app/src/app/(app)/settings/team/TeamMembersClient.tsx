@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, UserMinus, UserPlus } from "lucide-react";
+import { Plus, UserMinus, UserPlus, Pencil } from "lucide-react";
 
 type TeamUser = {
   id: string;
   fullName: string;
   email: string;
   role: string;
+  title?: string | null;
   isActive?: boolean;
   photoUrl?: string | null;
 };
@@ -41,15 +42,62 @@ const ROLES = [
   { value: "STAFF", label: "Staff" },
 ];
 
+const ROLE_LABELS: Record<string, string> = {
+  OWNER: "Owner",
+  ADMIN: "Admin",
+  SUPERVISOR: "Supervisor",
+  PM: "Project Manager",
+  STAFF: "Staff",
+};
+
+const LA_TITLES = [
+  { value: "Principal / Owner", role: "OWNER" },
+  { value: "Associate Principal", role: "OWNER" },
+  { value: "Senior Associate", role: "SUPERVISOR" },
+  { value: "Associate", role: "SUPERVISOR" },
+  { value: "Senior Project Manager", role: "PM" },
+  { value: "Project Manager", role: "PM" },
+  { value: "Senior Landscape Architect", role: "PM" },
+  { value: "Landscape Architect", role: "STAFF" },
+  { value: "Landscape Designer", role: "STAFF" },
+  { value: "Designer", role: "STAFF" },
+  { value: "Junior Designer", role: "STAFF" },
+  { value: "Design Intern", role: "STAFF" },
+  { value: "CAD / BIM Technician", role: "STAFF" },
+  { value: "Construction Administrator", role: "PM" },
+  { value: "Specifications Writer", role: "STAFF" },
+  { value: "Office Manager", role: "ADMIN" },
+  { value: "Marketing Coordinator", role: "ADMIN" },
+  { value: "Accounting / Bookkeeper", role: "ADMIN" },
+];
+
 export default function TeamMembersClient({ users: initialUsers, canManage }: Props) {
   const [users, setUsers] = useState(initialUsers);
   const [showForm, setShowForm] = useState(false);
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [newRole, setNewRole] = useState("STAFF");
+  const [newTitle, setNewTitle] = useState("");
+  const [customTitle, setCustomTitle] = useState(false);
   const [saving, setSaving] = useState(false);
   const [actionId, setActionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState<string | null>(null);
+  const [editTitleValue, setEditTitleValue] = useState("");
+
+  function handleTitleSelect(titleValue: string) {
+    if (titleValue === "__custom__") {
+      setCustomTitle(true);
+      setNewTitle("");
+      return;
+    }
+    setCustomTitle(false);
+    setNewTitle(titleValue);
+    const match = LA_TITLES.find((t) => t.value === titleValue);
+    if (match) {
+      setNewRole(match.role);
+    }
+  }
 
   async function addMember(e: React.FormEvent) {
     e.preventDefault();
@@ -59,7 +107,7 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
     const res = await fetch("/api/team/members", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fullName: newName, email: newEmail, role: newRole }),
+      body: JSON.stringify({ fullName: newName, email: newEmail, role: newRole, title: newTitle || undefined }),
     });
 
     const data = await res.json();
@@ -77,13 +125,36 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
         fullName: data.user.fullName,
         email: data.user.email,
         role: data.user.role,
+        title: data.user.title,
         isActive: true,
       },
     ]);
     setNewName("");
     setNewEmail("");
     setNewRole("STAFF");
+    setNewTitle("");
+    setCustomTitle(false);
     setShowForm(false);
+  }
+
+  async function saveTitle(userId: string) {
+    setError(null);
+    setActionId(userId);
+    const res = await fetch("/api/team/members", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId, title: editTitleValue }),
+    });
+    const data = await res.json();
+    setActionId(null);
+    if (!res.ok) {
+      setError(data.error || "Failed to update title.");
+      return;
+    }
+    setUsers((prev) =>
+      prev.map((u) => (u.id === userId ? { ...u, title: editTitleValue } : u))
+    );
+    setEditingTitle(null);
   }
 
   async function toggleActive(userId: string, currentlyActive: boolean) {
@@ -147,7 +218,7 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
             <UserPlus className="w-5 h-5" />
             <h3 className="text-sm font-semibold">Add a new team member</h3>
           </div>
-          <div className="grid sm:grid-cols-3 gap-4 mb-4">
+          <div className="grid sm:grid-cols-2 gap-4 mb-4">
             <div>
               <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Full name</label>
               <input
@@ -170,8 +241,45 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
                 placeholder="jordan@firm.com"
               />
             </div>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-4 mb-4">
             <div>
-              <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Role</label>
+              <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Job Title</label>
+              {customTitle ? (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newTitle}
+                    onChange={(e) => setNewTitle(e.target.value)}
+                    placeholder="Enter custom title"
+                    className="flex-1 bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-[#1A2E22] text-sm focus:outline-none focus:border-[#52B788] transition-colors"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => { setCustomTitle(false); setNewTitle(""); }}
+                    className="text-xs text-[#6B8C74] hover:text-[#2D6A4F] px-2"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <select
+                  value={newTitle}
+                  onChange={(e) => handleTitleSelect(e.target.value)}
+                  className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-[#1A2E22] text-sm focus:outline-none focus:border-[#52B788] transition-colors"
+                >
+                  <option value="">Select a title...</option>
+                  {LA_TITLES.map((t) => (
+                    <option key={t.value} value={t.value}>
+                      {t.value}
+                    </option>
+                  ))}
+                  <option value="__custom__">+ Custom title...</option>
+                </select>
+              )}
+            </div>
+            <div>
+              <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Permission Level</label>
               <select
                 value={newRole}
                 onChange={(e) => setNewRole(e.target.value)}
@@ -183,6 +291,7 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
                   </option>
                 ))}
               </select>
+              <p className="text-xs text-[#A3BEA9] mt-1">Controls what this person can access in the app.</p>
             </div>
           </div>
           <div className="flex gap-3">
@@ -202,7 +311,7 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
             </button>
           </div>
           <p className="mt-3 text-xs text-[#A3BEA9]">
-            The team member&apos;s billing rate and salary will be auto-populated based on their role. You can edit them in the Billing Rates section below.
+            Billing rate and salary are auto-populated based on the job title. You can edit them in the Billing Rates section below.
           </p>
         </form>
       )}
@@ -214,8 +323,8 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
             <thead className="border-b border-[#E2EBE4] bg-[#F7F9F7] text-[#6B8C74]">
               <tr>
                 <th className="px-4 sm:px-6 py-3 font-medium">Name</th>
-                <th className="px-4 sm:px-6 py-3 font-medium">Email</th>
-                <th className="px-4 sm:px-6 py-3 font-medium">Role</th>
+                <th className="px-4 sm:px-6 py-3 font-medium">Title</th>
+                <th className="px-4 sm:px-6 py-3 font-medium">Permission</th>
                 <th className="px-4 sm:px-6 py-3 font-medium w-24"></th>
               </tr>
             </thead>
@@ -225,13 +334,72 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
                   <td className="px-4 sm:px-6 py-4 font-medium text-[#1A2E22]">
                     <div className="flex items-center gap-3">
                       <MemberAvatar name={user.fullName} photoUrl={user.photoUrl} />
-                      <span>{user.fullName}</span>
+                      <div>
+                        <span>{user.fullName}</span>
+                        <div className="text-xs text-[#6B8C74] font-normal">{user.email}</div>
+                      </div>
                     </div>
                   </td>
-                  <td className="px-4 sm:px-6 py-4 text-[#6B8C74]">{user.email}</td>
+                  <td className="px-4 sm:px-6 py-4 text-[#3D5C48]">
+                    {editingTitle === user.id ? (
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={LA_TITLES.some((t) => t.value === editTitleValue) ? editTitleValue : "__custom__"}
+                          onChange={(e) => {
+                            if (e.target.value === "__custom__") return;
+                            setEditTitleValue(e.target.value);
+                          }}
+                          className="bg-white border border-[#E2EBE4] rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-[#52B788]"
+                        >
+                          {LA_TITLES.map((t) => (
+                            <option key={t.value} value={t.value}>{t.value}</option>
+                          ))}
+                          <option value="__custom__">Custom...</option>
+                        </select>
+                        {!LA_TITLES.some((t) => t.value === editTitleValue) && (
+                          <input
+                            type="text"
+                            value={editTitleValue}
+                            onChange={(e) => setEditTitleValue(e.target.value)}
+                            className="bg-white border border-[#E2EBE4] rounded-lg px-2 py-1.5 text-xs w-32 focus:outline-none focus:border-[#52B788]"
+                            placeholder="Custom title"
+                          />
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => saveTitle(user.id)}
+                          disabled={actionId === user.id}
+                          className="text-xs text-[#2D6A4F] hover:text-[#40916C] font-medium disabled:opacity-50"
+                        >
+                          Save
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingTitle(null)}
+                          className="text-xs text-[#A3BEA9] hover:text-[#6B8C74]"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 group/title">
+                        <span className="text-sm">{user.title || <span className="text-[#A3BEA9] italic">No title</span>}</span>
+                        {canManage && (
+                          <button
+                            type="button"
+                            onClick={() => { setEditingTitle(user.id); setEditTitleValue(user.title || ""); }}
+                            className="opacity-0 group-hover/title:opacity-100 text-[#A3BEA9] hover:text-[#2D6A4F] transition-opacity"
+                            title="Edit title"
+                          >
+                            <Pencil className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </td>
                   <td className="px-4 sm:px-6 py-4">
                     <span className="text-xs font-medium px-2 py-1 rounded-full bg-[#F0FAF4] text-[#2D6A4F]">
-                      {user.role}
+                      {ROLE_LABELS[user.role] || user.role}
                     </span>
                   </td>
                   <td className="px-4 sm:px-6 py-4">

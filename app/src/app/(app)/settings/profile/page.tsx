@@ -36,7 +36,7 @@ export default function ProfilePage() {
         setFullName(data.fullName);
         setTitle(data.title ?? "");
         setPhone(data.phone ?? "");
-        setPhotoUrl(data.photoUrl ?? "");
+        setPhotoUrl(data.photoUrl ? `${data.photoUrl}?t=${Date.now()}` : "");
       });
   }, []);
 
@@ -73,13 +73,18 @@ export default function ProfilePage() {
         throw new Error(body.error || "Upload failed");
       }
       const { url } = await res.json();
-      setPhotoUrl(url);
-      // Auto-save the photo URL
-      await fetch("/api/user/profile", {
+      // Bust browser cache by appending timestamp
+      const cacheBustedUrl = `${url}?t=${Date.now()}`;
+      setPhotoUrl(cacheBustedUrl);
+      // Save the photo URL to database (store without cache-buster)
+      const saveRes = await fetch("/api/user/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ photoUrl: url }),
       });
+      if (!saveRes.ok) {
+        throw new Error("Photo uploaded but failed to save to profile");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
     } finally {
