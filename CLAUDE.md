@@ -537,7 +537,30 @@ Ordered by my estimated value-per-effort. Revisit during the forensic audit.
 - **Automated year-end rollover** — apply the `rolloverCap` automatically when the calendar year changes.
 - **Forensic audit** — top-to-bottom value review once the queue slows down. Rate each feature on value delivered vs maintenance cost. Cut or sharpen anything that doesn't earn its keep.
 
-## Where We Left Off (2026-04-17 EOD)
+## Where We Left Off (2026-04-21 EOD)
+
+**Status: Stripe live-mode swap partially complete.** Verifield outreach in simmer mode, so Kevin returned to Phasewise to start converting to sales. Ranked priorities this session: Stripe live mode → SEO content pipeline → directory listings → Product Hunt. Started with Stripe live mode swap.
+
+### What shipped today (2026-04-21)
+
+No code changes. Stripe dashboard work only.
+
+1. ✅ **Stripe account activation** — Completed full KYC flow: business verification, bank account, tax category (Software as a Service → General - Electronically Supplied Services), statement descriptors set to `PHASEWISE.IO` / `PHASEWISE`, phone visibility turned off on receipts, customer support address kept as Fresno business address for now.
+2. ✅ **Live mode active** — Toggled from sandbox to live account. Dashboard shows `pk_live_*` keys.
+3. ✅ **Products copied to live mode** — Used Stripe's "Choose what to copy" to bring the 3 products (Starter/Professional/Studio) and Billing settings over from sandbox in one click. Tax settings NOT copied (deliberately — placeholder CA registration from sandbox would overwrite the new category).
+4. ⏳ **Env var swap + webhook + redeploy** — PAUSED here. Production is still on test keys, so nothing is live-charging yet. Safe to resume or abandon from this point.
+
+### Stripe live mode — remaining steps (resume here next session)
+
+Reference: `Switching Stripe to Live Mode` section above has the full process. We're through step 2.
+
+1. **Copy 3 live `price_*` IDs** — Products → each product → copy price ID from Events/pricing panel. Save as `NEXT_PUBLIC_STRIPE_PRICE_STARTER / PROFESSIONAL / STUDIO`.
+2. **Copy live API keys** — Dashboard → API keys. Publishable (`pk_live_*`) is visible; Secret (`sk_live_*`) needs to be revealed. Save as `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` + `STRIPE_SECRET_KEY`.
+3. **Create live webhook endpoint** — Developers → Webhooks → Add endpoint pointing to `https://phasewise.io/api/stripe/webhook`. Select same 6 events as sandbox (`checkout.session.completed`, `customer.subscription.{created,updated,deleted,trial_will_end}`, `invoice.payment_failed`). Copy the `whsec_*` signing secret as `STRIPE_WEBHOOK_SECRET`.
+4. **Update 6 Vercel env vars (Production environment only)** — Keep Preview/Development on test keys for safe branch previews.
+5. **Redeploy + verify** — Sign up a fresh test account, use a real card (can refund after), confirm trial starts, then cancel. Since no Stripe-Tax registrations are active, no tax will be charged yet.
+
+### Strategic pivot (2026-04-17 EOD)
 
 **Status: All 92 feature items complete. E2E test passed on production. Team invitation flow live. Overhead time tracking live.** Two pre-launch blockers remain: error state testing + 3 beta firms.
 
@@ -587,14 +610,16 @@ After a strategy discussion this session, Kevin confirmed that his top prioritie
 
 **Outstanding Phasewise items (low priority until Verifield goal is hit):**
 
-1. **Social profiles** — Upload v2 PNG logos to LinkedIn, X/Twitter, GitHub. Claim @phasewise on Instagram.
-2. **USPTO trademark filing** — Protect the "Phasewise" name (file before any significant marketing push)
-3. **Cloudflare: getphasewise.com redirect** — Set up 301 redirect to phasewise.io
-4. **Cloudflare cleanup** — Remove duplicate `google-site-verification` TXT record
-5. **Stripe live mode swap** — When first paying customer is ready (env var change only, ~15 min)
-6. **Stripe Tax revisit** — Before going live (currently placeholder CA registration only)
-7. **Optional: Loops INVITE template** — Automated invite emails (currently works via link sharing)
-8. **Optional: Error state testing** — Failed payments, network errors, validation edge cases
+1. **Stripe live mode swap — finish it** (see "Stripe live mode — remaining steps" above, 4 sub-tasks: price IDs + keys + webhook + Vercel env vars + redeploy)
+2. **SEO content pipeline** — Next highest ROI after Stripe. Auto-generated long-tail articles on `/blog` via n8n + AI, targeting searches like "MWELO water budget calculator", "landscape architecture firm management software", "LA billing rates by state".
+3. **Directory listings** — Submit Phasewise to AlternativeTo, Capterra, G2, GetApp, Software Advice. One-time ~2 hours of work that drives passive referral traffic.
+4. **Product Hunt launch** — One-time event once Stripe live is complete. Brand-forward, not personal.
+5. **Social profiles** — Upload v2 PNG logos to LinkedIn, X/Twitter, GitHub. Claim @phasewise on Instagram.
+6. **USPTO trademark filing** — Protect the "Phasewise" name (file before any significant marketing push)
+7. **Cloudflare: getphasewise.com redirect** — Set up 301 redirect to phasewise.io
+8. **Cloudflare cleanup** — Remove duplicate `google-site-verification` TXT record
+9. **Optional: Loops INVITE template** — Automated invite emails (currently works via link sharing)
+10. **Optional: Error state testing** — Failed payments, network errors, validation edge cases
 
 ### Test cards for future testing
 
@@ -618,11 +643,15 @@ After a strategy discussion this session, Kevin confirmed that his top prioritie
 - [x] All Loops env vars set in Vercel ✅ 2026-04-17
 - [x] SUPABASE_SERVICE_ROLE_KEY set in Vercel + local ✅ 2026-04-17
 - [x] E2E test: signup → checkout → emails → DB sync → cancel ✅ 2026-04-17
+- [x] Stripe account activation (KYC + bank + tax category + descriptors) ✅ 2026-04-21
+- [x] Stripe switched to live mode + products copied from sandbox ✅ 2026-04-21
+- [ ] **Stripe live mode — finish swap** (API keys, webhook, Vercel env vars, redeploy)
+- [ ] SEO content pipeline via n8n + AI
+- [ ] Directory listings (AlternativeTo, Capterra, G2, GetApp, Software Advice)
+- [ ] Product Hunt launch
 - [ ] Upload v2 PNG logos to LinkedIn, X/Twitter, GitHub profiles
 - [ ] Claim @phasewise on Instagram
 - [ ] File USPTO trademark for "Phasewise"
 - [ ] Set up getphasewise.com redirect to phasewise.io in Cloudflare
-- [ ] Revisit Stripe Tax setup before going live (currently a placeholder CA registration)
 - [ ] Remove duplicate `google-site-verification` TXT record from Cloudflare
 - [ ] Create Loops INVITE template (optional — link sharing works without it)
-- [ ] Stripe live mode swap (when first paying customer is lined up)
