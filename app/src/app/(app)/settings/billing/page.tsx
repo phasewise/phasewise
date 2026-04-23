@@ -45,9 +45,9 @@ const tiers = [
     priceId: PRICE_STUDIO,
     desc: "Multi-disciplinary studios",
     features: [
-      "Unlimited everything",
-      "Custom integrations",
-      "QuickBooks sync",
+      "Unlimited users",
+      "Unlimited projects",
+      "All modules included",
       "Client portal",
       "Dedicated support",
     ],

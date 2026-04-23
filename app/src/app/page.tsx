@@ -12,7 +12,6 @@ import {
 import RevealOnScroll from "./_components/RevealOnScroll";
 import NavScrollEffect from "./_components/NavScrollEffect";
 import PricingButton from "./_components/PricingButton";
-import WaitlistForm from "./_components/WaitlistForm";
 
 const PRICE_STARTER = process.env.NEXT_PUBLIC_STRIPE_PRICE_STARTER ?? "";
 const PRICE_PROFESSIONAL = process.env.NEXT_PUBLIC_STRIPE_PRICE_PROFESSIONAL ?? "";
@@ -34,6 +33,33 @@ const solutions = [
   "Submittal log with automatic reminders and full history",
   "Profitability reports per project, per phase, per person",
   "Your phases are already built in — SD, DD, CDs, CA, and more",
+];
+
+const faqs = [
+  {
+    q: "Can I cancel anytime?",
+    a: "Yes. Cancel from your account settings with one click. You'll keep access through the end of your current billing period, and your project data stays available if you decide to return.",
+  },
+  {
+    q: "How long does setup take?",
+    a: "Signup takes about 2 minutes. Getting your first project running with phases, team, and billing rates takes 15–30 minutes. We pre-populate the 7 standard LA phases (SD, DD, CD, CA, etc.) and suggest industry-standard billing rates so you're not starting from scratch.",
+  },
+  {
+    q: "Does it work on mobile?",
+    a: "Yes. The timesheet, project dashboard, and submittal log are all mobile-friendly. Your team can log hours and check project status from the field.",
+  },
+  {
+    q: "How is my data protected?",
+    a: "Your data is stored in encrypted Postgres databases with daily backups. We use industry-standard authentication (Supabase Auth) and TLS for all connections. Your firm's data is isolated from other tenants — nothing leaks across organizations.",
+  },
+  {
+    q: "What happens to my data if I cancel?",
+    a: "Your data stays intact and accessible through your current billing period. If you reactivate later, everything picks up where you left off — projects, phases, time entries, invoices, plant schedules. We don't delete cancelled customer data without an explicit request.",
+  },
+  {
+    q: "Who is Phasewise for?",
+    a: "Landscape architecture firms from solo practices to multi-disciplinary studios (up to unlimited users on the Studio plan). The phases, compliance frameworks (MWELO, LEED, SITES, ADA), and workflows are built specifically for how LA firms operate — not generic project management adapted to LA.",
+  },
 ];
 
 const features = [
@@ -104,9 +130,9 @@ const tiers = [
     priceId: PRICE_STUDIO,
     desc: "Multi-disciplinary studios",
     features: [
-      "Unlimited everything",
-      "Custom integrations",
-      "QuickBooks sync",
+      "Unlimited users",
+      "Unlimited projects",
+      "All modules included",
       "Client portal",
       "Dedicated support",
     ],
@@ -114,24 +140,21 @@ const tiers = [
   },
 ];
 
-const testimonials = [
+// Aspirational value statements — honest descriptions of what the product
+// does, not attributed testimonials. Will be replaced with real customer
+// quotes once beta firms are onboarded.
+const valueStatements = [
   {
-    quote:
-      "Phasewise replaced four separate tools we were using. Our project managers actually use it every single day now.",
-    author: "Principal, Landscape Architect",
-    firm: "Mid-size LA firm, California",
+    headline: "Purpose-built for LA firms",
+    body: "Not another generic PM tool. Phasewise ships with the phases, compliance frameworks, and workflows landscape architects actually use — SD through CA, MWELO, plant schedules, submittal logs.",
   },
   {
-    quote:
-      "We caught a budget overrun in week two instead of week twelve. That alone paid for an entire year of the subscription.",
-    author: "Studio Director",
-    firm: "Design-build practice, Pacific Northwest",
+    headline: "See overruns before they happen",
+    body: "Real-time budget tracking alerts you at 75%, 90%, and 100% of phase budget — not at the end of the month when it's too late to do anything about it.",
   },
   {
-    quote:
-      "Finally — project management software that understands what a phase actually means to a landscape architect.",
-    author: "Senior Project Manager",
-    firm: "Urban design firm, New York",
+    headline: "One subscription, one tool",
+    body: "Replaces three tools most firms juggle: project management, time tracking, and budget spreadsheets. Your team learns one interface instead of three.",
   },
 ];
 
@@ -148,9 +171,71 @@ function PhaseLogo({ dark = false }: { dark?: boolean }) {
   );
 }
 
+// JSON-LD structured data so Google can show rich snippets
+// (software application schema + pricing + FAQ)
+const structuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "SoftwareApplication",
+      "name": "Phasewise",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Web",
+      "description":
+        "Phasewise is the operating system for landscape architecture firms. Project management, budgets, time tracking, submittals, and profitability tools built for how landscape architects actually work.",
+      "url": "https://phasewise.io",
+      "offers": [
+        {
+          "@type": "Offer",
+          "name": "Starter",
+          "price": "99",
+          "priceCurrency": "USD",
+          "description": "Solo practices & small firms. Up to 5 users, 20 active projects.",
+        },
+        {
+          "@type": "Offer",
+          "name": "Professional",
+          "price": "199",
+          "priceCurrency": "USD",
+          "description": "Growing firms. Up to 15 users, unlimited projects, client portal.",
+        },
+        {
+          "@type": "Offer",
+          "name": "Studio",
+          "price": "349",
+          "priceCurrency": "USD",
+          "description": "Multi-disciplinary studios. Unlimited users and projects, dedicated support.",
+        },
+      ],
+    },
+    {
+      "@type": "Organization",
+      "name": "Phasewise",
+      "url": "https://phasewise.io",
+      "logo": "https://phasewise.io/icon-512",
+      "sameAs": [
+        "https://github.com/phasewise",
+        "https://linkedin.com/company/phasewise-io",
+      ],
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": faqs.map((f) => ({
+        "@type": "Question",
+        "name": f.q,
+        "acceptedAnswer": { "@type": "Answer", "text": f.a },
+      })),
+    },
+  ],
+};
+
 export default function HomePage() {
   return (
     <div className="bg-white text-[#1A2E22] font-sans">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
       <NavScrollEffect />
 
       {/* ── Nav ─────────────────────────────────────── */}
@@ -177,8 +262,8 @@ export default function HomePage() {
               </a>
             </li>
             <li>
-              <a href="#about" className="text-sm text-[#3D5C48] hover:text-[#1A2E22] transition-colors">
-                About
+              <a href="#faq" className="text-sm text-[#3D5C48] hover:text-[#1A2E22] transition-colors">
+                FAQ
               </a>
             </li>
           </ul>
@@ -327,23 +412,23 @@ export default function HomePage() {
 
       {/* ── Proof Bar ─────────────────────────────── */}
       <div className="bg-[#F7F9F7] border-y border-[#E2EBE4] py-10 sm:py-11 px-6 sm:px-10">
-        <div className="max-w-[1120px] mx-auto flex flex-col items-center gap-8 sm:gap-9">
+        <div className="max-w-[1120px] mx-auto flex flex-col items-center gap-6 sm:gap-8">
           <p className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[#40916C] text-center">
-            Built for landscape architecture firms
+            Designed for the way your firm works
           </p>
-          <div className="flex gap-6 sm:gap-12 items-center flex-wrap justify-center">
-            {["Clearwater Studio", "Mesa + Associates", "Groundwork LA", "Terrain Group", "Grove Design"].map((firm) => (
-              <span key={firm} className="text-sm font-medium text-[#A3BEA9] tracking-wide font-serif">
-                {firm}
+          <div className="flex gap-6 sm:gap-10 items-center flex-wrap justify-center">
+            {["Solo practices", "Boutique studios", "Growing firms", "Multi-disciplinary teams"].map((segment) => (
+              <span key={segment} className="text-sm font-medium text-[#6B8C74] tracking-wide font-serif">
+                {segment}
               </span>
             ))}
           </div>
           <div className="flex gap-8 sm:gap-16 flex-wrap justify-center">
             {[
-              { num: "200+", label: "Projects managed" },
-              { num: "15%", label: "Avg. budget savings" },
-              { num: "5 hrs", label: "Saved per PM weekly" },
+              { num: "7", label: "Standard LA phases" },
               { num: "14 day", label: "Free trial" },
+              { num: "$99", label: "Starting price / mo" },
+              { num: "$0", label: "Due at signup" },
             ].map((stat) => (
               <RevealOnScroll key={stat.label}>
                 <div className="text-center">
@@ -500,11 +585,11 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── Testimonials ─────────────────────────── */}
+      {/* ── Value statements ─────────────────────── */}
       <section className="py-16 sm:py-24 px-6 sm:px-10 bg-[#F7F9F7]">
         <div className="max-w-[1120px] mx-auto">
           <div className="text-center mb-14">
-            <p className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[#40916C] mb-4">What firms say</p>
+            <p className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[#40916C] mb-4">Why Phasewise</p>
             <h2 className="font-serif text-[clamp(30px,3.5vw,46px)] font-normal leading-[1.15] text-[#1A2E22]">
               Built for how
               <br />
@@ -512,34 +597,47 @@ export default function HomePage() {
             </h2>
           </div>
           <div className="grid md:grid-cols-3 gap-5">
-            {testimonials.map((t) => (
+            {valueStatements.map((v) => (
               <div
-                key={t.author}
+                key={v.headline}
                 className="bg-white border border-[#E2EBE4] rounded-[14px] p-9 hover:border-[#B7E4C7] hover:-translate-y-0.5 hover:shadow-[0_8px_32px_rgba(26,46,34,0.07)] transition-all"
               >
-                <div className="text-[#C9A87C] text-sm mb-4">★★★★★</div>
-                <div className="text-[15px] leading-[1.7] text-[#3D5C48] mb-6 italic">&ldquo;{t.quote}&rdquo;</div>
-                <div className="font-semibold text-sm text-[#1A2E22]">{t.author}</div>
-                <div className="text-xs text-[#A3BEA9] mt-1">{t.firm}</div>
+                <div className="font-serif text-xl text-[#1A2E22] mb-3">{v.headline}</div>
+                <div className="text-[15px] leading-[1.7] text-[#3D5C48]">{v.body}</div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── Waitlist ─────────────────────────── */}
-      <section id="waitlist" className="py-16 sm:py-24 px-6 sm:px-10 bg-white">
-        <div className="max-w-[640px] mx-auto">
-          <div className="text-center mb-8 sm:mb-10">
-            <p className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[#40916C] mb-3 sm:mb-4">Beta access</p>
-            <h2 className="font-serif text-[clamp(28px,6vw,40px)] font-normal leading-[1.15] text-[#1A2E22] mb-3 sm:mb-4">
-              Join the <em className="italic text-[#2D6A4F]">waitlist.</em>
+      {/* ── FAQ ────────────────────────────────── */}
+      <section id="faq" className="py-16 sm:py-24 px-6 sm:px-10 bg-white">
+        <div className="max-w-[780px] mx-auto">
+          <div className="text-center mb-12 sm:mb-14">
+            <p className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[#40916C] mb-4">Frequently asked</p>
+            <h2 className="font-serif text-[clamp(30px,3.5vw,46px)] font-normal leading-[1.15] text-[#1A2E22]">
+              Common questions,
+              <br />
+              <em className="italic text-[#2D6A4F]">answered honestly.</em>
             </h2>
-            <p className="text-sm sm:text-base text-[#6B8C74] leading-[1.65] max-w-[480px] mx-auto">
-              We&apos;re onboarding landscape architecture firms in small batches. Drop your firm and we&apos;ll let you know the moment a spot opens.
-            </p>
           </div>
-          <WaitlistForm />
+          <div className="divide-y divide-[#E2EBE4] border-y border-[#E2EBE4]">
+            {faqs.map((faq) => (
+              <details key={faq.q} className="group py-5 sm:py-6">
+                <summary className="flex items-center justify-between cursor-pointer list-none">
+                  <span className="text-base sm:text-lg font-medium text-[#1A2E22] pr-8">
+                    {faq.q}
+                  </span>
+                  <span className="text-[#40916C] text-xl leading-none transition-transform group-open:rotate-45 flex-shrink-0">
+                    +
+                  </span>
+                </summary>
+                <p className="mt-3 text-[15px] leading-[1.7] text-[#6B8C74]">
+                  {faq.a}
+                </p>
+              </details>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -579,7 +677,7 @@ export default function HomePage() {
             </a>
           </div>
           <p className="text-xs text-white/25 mt-5 tracking-wide">
-            No credit card required · Cancel anytime · Setup in 5 minutes
+            No credit card required · Cancel anytime · Sign up in 2 minutes
           </p>
         </div>
       </section>
@@ -602,41 +700,47 @@ export default function HomePage() {
             <div>
               <div className="text-[10px] font-semibold tracking-[0.18em] uppercase text-white/30 mb-5">Product</div>
               <ul className="list-none space-y-3">
-                {["Features", "Pricing", "Roadmap", "Changelog", "API"].map((item) => (
-                  <li key={item}>
-                    <a href="#" className="text-[13px] text-white/35 hover:text-white/75 transition-colors">
-                      {item}
-                    </a>
+                {[
+                  { name: "Features", href: "/#features" },
+                  { name: "Pricing", href: "/#pricing" },
+                  { name: "Sign up", href: "/signup" },
+                  { name: "Log in", href: "/login" },
+                ].map((item) => (
+                  <li key={item.name}>
+                    <Link href={item.href} className="text-[13px] text-white/35 hover:text-white/75 transition-colors">
+                      {item.name}
+                    </Link>
                   </li>
                 ))}
               </ul>
             </div>
             <div>
-              <div className="text-[10px] font-semibold tracking-[0.18em] uppercase text-white/30 mb-5">Company</div>
-              <ul className="list-none space-y-3">
-                {["About", "Blog", "Careers", "Contact"].map((item) => (
-                  <li key={item}>
-                    <a href="#" className="text-[13px] text-white/35 hover:text-white/75 transition-colors">
-                      {item}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <div className="text-[10px] font-semibold tracking-[0.18em] uppercase text-white/30 mb-5">Support</div>
+              <div className="text-[10px] font-semibold tracking-[0.18em] uppercase text-white/30 mb-5">Resources</div>
               <ul className="list-none space-y-3">
                 {[
-                  { name: "Documentation", href: "#" },
-                  { name: "Help Center", href: "#" },
-                  { name: "System Status", href: "#" },
-                  { name: "Privacy Policy", href: "/privacy" },
-                  { name: "Terms of Service", href: "/terms" },
+                  { name: "Blog", href: "/blog" },
+                  { name: "FAQ", href: "/#faq" },
+                  { name: "Contact", href: "mailto:kevin@phasewise.io" },
                 ].map((item) => (
                   <li key={item.name}>
                     <a href={item.href} className="text-[13px] text-white/35 hover:text-white/75 transition-colors">
                       {item.name}
                     </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <div className="text-[10px] font-semibold tracking-[0.18em] uppercase text-white/30 mb-5">Legal</div>
+              <ul className="list-none space-y-3">
+                {[
+                  { name: "Privacy Policy", href: "/privacy" },
+                  { name: "Terms of Service", href: "/terms" },
+                ].map((item) => (
+                  <li key={item.name}>
+                    <Link href={item.href} className="text-[13px] text-white/35 hover:text-white/75 transition-colors">
+                      {item.name}
+                    </Link>
                   </li>
                 ))}
               </ul>

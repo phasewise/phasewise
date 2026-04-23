@@ -15,12 +15,61 @@ const dmSerifDisplay = DM_Serif_Display({
   style: ["normal", "italic"],
 });
 
+const SITE_URL = "https://phasewise.io";
+const SITE_TITLE = "Phasewise — Project management built for landscape architects";
+const SITE_DESCRIPTION =
+  "Phasewise is the operating system for landscape architecture firms. Project management, budgets, time tracking, submittals, MWELO, and profitability — built for how landscape architects actually work.";
+
 export const metadata: Metadata = {
-  metadataBase: new URL("https://phasewise.io"),
-  title: "Phasewise — Focus on the design. We'll handle everything else.",
-  description:
-    "Phasewise is the operating system for landscape architecture firms. Project management, budgets, time tracking, and profitability — built for how landscape architects actually work.",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: SITE_TITLE,
+    template: "%s — Phasewise",
+  },
+  description: SITE_DESCRIPTION,
   applicationName: "Phasewise",
+  keywords: [
+    "landscape architecture software",
+    "landscape architecture project management",
+    "landscape architect billing software",
+    "landscape architect time tracking",
+    "MWELO water budget calculator",
+    "landscape design firm software",
+    "phases of landscape architecture",
+    "submittal log software",
+    "plant schedule software",
+  ],
+  authors: [{ name: "Phasewise" }],
+  creator: "Phasewise",
+  publisher: "Phasewise",
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    url: SITE_URL,
+    siteName: "Phasewise",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    site: "@phasewise",
+    creator: "@phasewise",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
   appleWebApp: {
     capable: true,
     title: "Phasewise",
