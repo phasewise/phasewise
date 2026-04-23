@@ -200,10 +200,17 @@ async function syncSubscriptionToOrg(subscription: Stripe.Subscription) {
   const subWithPeriod = subscription as unknown as {
     current_period_end?: number;
     cancel_at_period_end?: boolean;
+    cancel_at?: number | null;
   };
   const item = subscription.items.data[0] as unknown as { current_period_end?: number };
   const periodEndSeconds = subWithPeriod.current_period_end ?? item?.current_period_end;
   const periodEnd = periodEndSeconds ? new Date(periodEndSeconds * 1000) : null;
+
+  // Stripe sets cancel_at (unix timestamp) when cancellation happens via Customer Portal,
+  // or cancel_at_period_end (boolean) when it's an API call. Treat both as "canceling at period end".
+  const isScheduledToCancel =
+    subWithPeriod.cancel_at_period_end === true ||
+    (subWithPeriod.cancel_at != null && subWithPeriod.cancel_at > 0);
 
   await prisma.organization.update({
     where: { id: org.id },
@@ -213,7 +220,7 @@ async function syncSubscriptionToOrg(subscription: Stripe.Subscription) {
       stripePriceId: priceId ?? null,
       subscriptionStatus: mapStripeStatus(subscription.status),
       currentPeriodEnd: periodEnd,
-      cancelAtPeriodEnd: subWithPeriod.cancel_at_period_end ?? false,
+      cancelAtPeriodEnd: isScheduledToCancel,
       plan: subscription.status === "active" || subscription.status === "trialing" ? plan : "TRIAL",
       trialEndsAt: subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
     },
