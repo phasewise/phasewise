@@ -188,7 +188,7 @@ Each vertical shares the core platform but adds industry-specific phase types, t
 ### Stripe Setup
 
 - **Account structure:** Flag Loma (organization) → Phasewise (account) — sibling to FocusTrack account
-- **Mode:** Test mode (sandbox) — all current Vercel env vars are `pk_test_*`/`sk_test_*`
+- **Mode:** LIVE ✅ (as of 2026-04-23). Production uses `pk_live_*`/`sk_live_*`. Preview + Development still use `pk_test_*`/`sk_test_*` to protect branch previews.
 - **Products created:** Starter ($99/mo), Professional ($199/mo, featured), Studio ($349/mo)
 - **Trial period:** 14 days, configured in code at `/api/stripe/checkout/route.ts` — applies on first subscription only (`isFirstSubscription` check prevents abuse)
 - **Webhook endpoint:** `https://phasewise.io/api/stripe/webhook` listening to 6 events:
@@ -537,28 +537,37 @@ Ordered by my estimated value-per-effort. Revisit during the forensic audit.
 - **Automated year-end rollover** — apply the `rolloverCap` automatically when the calendar year changes.
 - **Forensic audit** — top-to-bottom value review once the queue slows down. Rate each feature on value delivered vs maintenance cost. Cut or sharpen anything that doesn't earn its keep.
 
-## Where We Left Off (2026-04-21 EOD)
+## Where We Left Off (2026-04-23 EOD)
 
-**Status: Stripe live-mode swap partially complete.** Verifield outreach in simmer mode, so Kevin returned to Phasewise to start converting to sales. Ranked priorities this session: Stripe live mode → SEO content pipeline → directory listings → Product Hunt. Started with Stripe live mode swap.
+**Status: STRIPE LIVE MODE FULLY OPERATIONAL.** Full end-to-end test passed in live mode with a real card. Phasewise is now taking real payments (14-day trials on all plans, $0 due today). Ready for first paying customer.
 
-### What shipped today (2026-04-21)
+### What shipped today (2026-04-23)
 
-No code changes. Stripe dashboard work only.
+Commit: `e700f19` (cancelAtPeriodEnd storage fix).
 
-1. ✅ **Stripe account activation** — Completed full KYC flow: business verification, bank account, tax category (Software as a Service → General - Electronically Supplied Services), statement descriptors set to `PHASEWISE.IO` / `PHASEWISE`, phone visibility turned off on receipts, customer support address kept as Fresno business address for now.
-2. ✅ **Live mode active** — Toggled from sandbox to live account. Dashboard shows `pk_live_*` keys.
-3. ✅ **Products copied to live mode** — Used Stripe's "Choose what to copy" to bring the 3 products (Starter/Professional/Studio) and Billing settings over from sandbox in one click. Tax settings NOT copied (deliberately — placeholder CA registration from sandbox would overwrite the new category).
-4. ⏳ **Env var swap + webhook + redeploy** — PAUSED here. Production is still on test keys, so nothing is live-charging yet. Safe to resume or abandon from this point.
+1. ✅ **Stripe live API keys + price IDs copied** — All 3 live price IDs for Starter/Professional/Studio, live publishable + secret API keys.
+2. ✅ **Live webhook endpoint created** — `https://phasewise.io/api/stripe/webhook` listening to 6 events (checkout.session.completed, customer.subscription.{created,updated,deleted,trial_will_end}, invoice.payment_failed). Live `whsec_*` signing secret captured.
+3. ✅ **6 Vercel env vars swapped with environment split** — For each of `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `NEXT_PUBLIC_STRIPE_PRICE_{STARTER,PROFESSIONAL,STUDIO}`:
+   - Production entry = live key (secret vars marked Sensitive)
+   - Preview + Development entry = test key (protects branch previews from charging real cards)
+4. ✅ **Production redeployed** — New env vars picked up, deployment marked Current on phasewise.io.
+5. ✅ **Live-mode E2E test passed with real card** — Signup (`kgallo22+pwlive1@gmail.com` / Live Test Studios) → welcome email → Stripe checkout with live card → $0 trial confirmed → trial-started email → DB sync verified (PROFESSIONAL / TRIALING / `cus_UOF6...` / `sub_1TPSeUJ...`) → Customer Portal cancel → cancellation email. All green.
+6. ✅ **Bug fix: cancelAtPeriodEnd storage** — Stripe sends `cancel_at` (unix timestamp) when cancellation happens via Customer Portal, not `cancel_at_period_end: true`. Our webhook was only reading the boolean, so DB + billing page UI didn't reflect the scheduled cancellation. Webhook now treats either signal as "scheduled to cancel". Email trigger logic was already correct.
 
-### Stripe live mode — remaining steps (resume here next session)
+### Live test account to clean up (not urgent)
 
-Reference: `Switching Stripe to Live Mode` section above has the full process. We're through step 2.
+- Supabase Auth + DB: `kgallo22+pwlive1@gmail.com` / "Live Test Studios" org
+- Stripe: subscription `sub_1TPSeUJ...` scheduled to cancel May 7, 2026 — will auto-expire, no action needed
+- Safe to delete the user + org from DB anytime via Supabase dashboard
 
-1. **Copy 3 live `price_*` IDs** — Products → each product → copy price ID from Events/pricing panel. Save as `NEXT_PUBLIC_STRIPE_PRICE_STARTER / PROFESSIONAL / STUDIO`.
-2. **Copy live API keys** — Dashboard → API keys. Publishable (`pk_live_*`) is visible; Secret (`sk_live_*`) needs to be revealed. Save as `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` + `STRIPE_SECRET_KEY`.
-3. **Create live webhook endpoint** — Developers → Webhooks → Add endpoint pointing to `https://phasewise.io/api/stripe/webhook`. Select same 6 events as sandbox (`checkout.session.completed`, `customer.subscription.{created,updated,deleted,trial_will_end}`, `invoice.payment_failed`). Copy the `whsec_*` signing secret as `STRIPE_WEBHOOK_SECRET`.
-4. **Update 6 Vercel env vars (Production environment only)** — Keep Preview/Development on test keys for safe branch previews.
-5. **Redeploy + verify** — Sign up a fresh test account, use a real card (can refund after), confirm trial starts, then cancel. Since no Stripe-Tax registrations are active, no tax will be charged yet.
+### Next highest-ROI items (ranked by sales impact)
+
+1. **SEO content pipeline via n8n + AI** — Biggest leverage now that transactions work. Automated long-tail articles on `/blog`, targeting "MWELO water budget calculator", "landscape architecture firm management software", "LA billing rates by state", etc. Compounds passively over 3-6 months.
+2. **Directory listings** — One-time ~2 hours total. Submit to AlternativeTo, Capterra, G2, GetApp, Software Advice. Drives passive referral traffic for years.
+3. **Product Hunt launch** — One-time event. Typically 1-5K visitors + 20-100 signups.
+4. **Social profiles** — Upload v2 PNG logos to LinkedIn, X/Twitter, GitHub. Claim @phasewise on Instagram.
+5. **USPTO trademark filing** — File before any significant marketing push.
+6. **Cloudflare ops** — getphasewise.com → phasewise.io 301 redirect + remove duplicate google-site-verification TXT.
 
 ### Strategic pivot (2026-04-17 EOD)
 
@@ -645,7 +654,8 @@ After a strategy discussion this session, Kevin confirmed that his top prioritie
 - [x] E2E test: signup → checkout → emails → DB sync → cancel ✅ 2026-04-17
 - [x] Stripe account activation (KYC + bank + tax category + descriptors) ✅ 2026-04-21
 - [x] Stripe switched to live mode + products copied from sandbox ✅ 2026-04-21
-- [ ] **Stripe live mode — finish swap** (API keys, webhook, Vercel env vars, redeploy)
+- [x] Stripe live mode swap — API keys, webhook, 6 env vars split by env, redeploy ✅ 2026-04-23
+- [x] Live-mode E2E test passed with real card ($0 trial) ✅ 2026-04-23
 - [ ] SEO content pipeline via n8n + AI
 - [ ] Directory listings (AlternativeTo, Capterra, G2, GetApp, Software Advice)
 - [ ] Product Hunt launch
