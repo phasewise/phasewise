@@ -537,11 +537,54 @@ Ordered by my estimated value-per-effort. Revisit during the forensic audit.
 - **Automated year-end rollover** — apply the `rolloverCap` automatically when the calendar year changes.
 - **Forensic audit** — top-to-bottom value review once the queue slows down. Rate each feature on value delivered vs maintenance cost. Cut or sharpen anything that doesn't earn its keep.
 
-## Where We Left Off (2026-04-23 EOD)
+## Where We Left Off (2026-04-24 mid-morning)
 
-**Status: LANDING PAGE + BLOG LIVE.** Stripe live mode fully operational. Landing page scrubbed of fake social proof + dead promises. Blog infrastructure shipped at `/blog` with 3 pillar SEO articles. SEO flywheel spinning — now accumulating Google authority passively. Test account deleted.
+**Status: 8 PILLAR ARTICLES LIVE + DIRECTORY SUBMISSION PLAYBOOK READY.** Stripe live. Landing page clean and honest. Blog now has 8 pillar articles covering highest-intent LA firm searches. Directory listing copy prepared for AlternativeTo, Capterra, G2 submissions. SEO flywheel is spinning with real breadth now.
 
-### What shipped today (2026-04-23 — evening session)
+### What shipped today (2026-04-24)
+
+Commit: `f85e3e2` (5 new pillar articles).
+
+#### Blog: 5 more pillar SEO articles shipped (now 8 total)
+
+Targeting high-intent LA firm searches to accelerate Google authority. Each ~1,500–1,800 words, cross-linked, with soft product CTAs:
+
+4. **`/blog/monograph-alternatives-landscape-architecture`** — 🔥 **HIGHEST commercial intent.** Honest comparison of Monograph vs Phasewise, BQE Core, Deltek, Harvest+Asana+QBO stack, spreadsheets. Decision framework by firm size + migration guide.
+5. **`/blog/landscape-architect-fee-proposal-template`** — High search volume, funnel-top. Full proposal walkthrough: project understanding, scope, exclusions, fee structures (fixed/hourly/percentage), payment schedules, change order process. Industry fee benchmarks included.
+6. **`/blog/construction-administration-checklist-landscape-architects`** — Senior PM intent. Pre-construction, submittal review, RFI workflow, site observation, change orders, punch list, plant establishment period. CA efficiency metrics to track.
+7. **`/blog/how-to-calculate-landscape-architect-profit-margin`** — Owner intent, commercial searches. Direct labor, overhead allocation, worked example. 6 common mistakes firms make + industry benchmarks by firm size.
+8. **`/blog/landscape-architecture-submittal-log-best-practices`** — Direct match to Phasewise feature, deep funnel. Required fields, numbering systems, response time targets, ball-in-court protocol, substitution review.
+
+All articles ship with:
+- JSON-LD Article schema (Google rich snippets)
+- Cross-links to other articles + related product features
+- Branded `.prose-phasewise` typography
+- Bottom CTA back to signup
+- Static generation at build time (fastest possible page loads)
+
+Blog now rendering 8 routes at build time. See `app/content/blog/` for all articles.
+
+#### Directory submission playbook created
+
+New file at project root: **`directory-listings.md`** — not deployed, just a reference document. Contains copy-paste ready content for submitting Phasewise to SaaS directories:
+
+- Universal fields (company info, pricing, categories)
+- 4 pre-written descriptions (25 / 50 / 100 / 200 words) — match whatever field length the directory requires
+- Full feature list (20+ features)
+- Pricing tier details
+- Per-directory submission URLs and specific field requirements for:
+  - **AlternativeTo** (highest priority — ranks for "Monograph alternatives" etc.)
+  - **Capterra** (largest AEC SaaS directory)
+  - **G2** (second-largest, huge SEO authority)
+- Common mistakes to avoid (don't overpromise, don't skip screenshots, etc.)
+
+**Kevin's next action (15-30 min per site):** Open `directory-listings.md` → submit to AlternativeTo first, then Capterra, then G2. Each submission = passive referral traffic for years.
+
+### Earlier (2026-04-23 EOD)
+
+Landing page honesty pass + blog infrastructure + first 3 pillar articles (commits `8cf9007`, `3bc20cc`). Details below.
+
+### What shipped 2026-04-23 (evening session)
 
 Commits: `8cf9007` (landing page honesty pass + SEO foundations), `3bc20cc` (blog + 3 articles).
 
@@ -585,13 +628,14 @@ Each ~1,000+ words, targeting high-intent LA firm searches:
 
 ### Next highest-ROI items (ranked by sales impact)
 
-1. **Directory listings** — One-time ~2 hours total. Submit to AlternativeTo, Capterra, G2, GetApp, Software Advice, SaaSHub. Drives passive referral traffic for years. Brand-forward (respects anonymity).
-2. **Ship 5-10 more blog articles** — Faster Google authority. Target queries: "Monograph alternatives", "Landscape architecture firm software", "Landscape architect fee proposal template", "Construction administration checklist landscape", "Submittal log best practices", "How to calculate landscape architect profit margin".
-3. **n8n SEO content automation** — Auto-generate + GitHub-commit new markdown articles weekly. Uses Kevin's existing n8n Cloud infrastructure. Fits anonymity + automation + passive income values perfectly.
-4. **Product Hunt launch prep** — One-time event. Typically 1-5K visitors + 20-100 signups.
+1. **Submit directory listings** — Copy-paste playbook ready at `directory-listings.md`. Order: AlternativeTo → Capterra → G2. ~15–30 min each. Drives passive referral traffic for years.
+2. **n8n SEO content automation** — Build the automated content pipeline. Now that 8 pillar articles prove the structure works, automate article generation + GitHub commit. Uses Kevin's existing n8n Cloud. Fits anonymity + automation + passive income values perfectly. Multi-hour build.
+3. **Keep shipping blog articles** — Next wave of target keywords: "landscape architecture time tracking software", "how to price landscape design projects", "landscape architect utilization rate", "landscape architecture firm profit & loss", "punch list process for landscape architects", "irrigation design checklist".
+4. **Product Hunt launch prep** — One-time event. Typically 1-5K visitors + 20-100 signups. Needs launch-day assets (gif demo, screenshots, first comment).
 5. **Social profiles** — Upload v2 PNG logos to LinkedIn, X/Twitter, GitHub. Claim @phasewise on Instagram.
 6. **USPTO trademark filing** — File before significant marketing push.
 7. **Cloudflare ops** — getphasewise.com → phasewise.io 301 redirect + remove duplicate google-site-verification TXT.
+8. **Vercel Analytics + Plausible** — Add before significant traffic arrives so you can see which articles/directories actually convert.
 
 ### Earlier today (2026-04-23 — morning session): Stripe live mode swap
 
@@ -653,16 +697,18 @@ After a strategy discussion this session, Kevin confirmed that his top prioritie
 
 **Outstanding Phasewise items (low priority until Verifield goal is hit):**
 
-1. **Stripe live mode swap — finish it** (see "Stripe live mode — remaining steps" above, 4 sub-tasks: price IDs + keys + webhook + Vercel env vars + redeploy)
-2. **SEO content pipeline** — Next highest ROI after Stripe. Auto-generated long-tail articles on `/blog` via n8n + AI, targeting searches like "MWELO water budget calculator", "landscape architecture firm management software", "LA billing rates by state".
-3. **Directory listings** — Submit Phasewise to AlternativeTo, Capterra, G2, GetApp, Software Advice. One-time ~2 hours of work that drives passive referral traffic.
-4. **Product Hunt launch** — One-time event once Stripe live is complete. Brand-forward, not personal.
-5. **Social profiles** — Upload v2 PNG logos to LinkedIn, X/Twitter, GitHub. Claim @phasewise on Instagram.
-6. **USPTO trademark filing** — Protect the "Phasewise" name (file before any significant marketing push)
-7. **Cloudflare: getphasewise.com redirect** — Set up 301 redirect to phasewise.io
-8. **Cloudflare cleanup** — Remove duplicate `google-site-verification` TXT record
-9. **Optional: Loops INVITE template** — Automated invite emails (currently works via link sharing)
-10. **Optional: Error state testing** — Failed payments, network errors, validation edge cases
+1. **Stripe live mode swap** ✅ COMPLETE (2026-04-23)
+2. **SEO content foundation** ✅ COMPLETE — 8 pillar articles live on `/blog` (2026-04-23 + 2026-04-24)
+3. **Directory listings playbook** ✅ COMPLETE — ready for submission at `directory-listings.md`
+4. **Submit to directories** — Kevin's next action. Open `directory-listings.md`, start with AlternativeTo.
+5. **n8n SEO content automation** — Build the content pipeline so new articles ship weekly without manual work.
+6. **Product Hunt launch** — One-time event. Needs launch-day assets (gif demo, screenshots, first comment).
+7. **Social profiles** — Upload v2 PNG logos to LinkedIn, X/Twitter, GitHub. Claim @phasewise on Instagram.
+8. **USPTO trademark filing** — Protect the "Phasewise" name.
+9. **Cloudflare ops** — getphasewise.com → phasewise.io 301 redirect + remove duplicate `google-site-verification` TXT.
+10. **Analytics** — Add Vercel Analytics + Plausible before significant traffic arrives.
+11. **Optional: Loops INVITE template** — Automated invite emails (currently works via link sharing).
+12. **Optional: Error state testing** — Failed payments, network errors, validation edge cases.
 
 ### Test cards for future testing
 
@@ -695,9 +741,13 @@ After a strategy discussion this session, Kevin confirmed that his top prioritie
 - [x] SEO foundations (OG + Twitter Card + JSON-LD, robots.txt, sitemap.xml) ✅ 2026-04-23
 - [x] Blog infrastructure at `/blog` (markdown + static generation) ✅ 2026-04-23
 - [x] First 3 pillar SEO articles shipped (billing rates, MWELO, phases) ✅ 2026-04-23
-- [ ] Directory listings (AlternativeTo, Capterra, G2, GetApp, Software Advice, SaaSHub)
-- [ ] Ship 5-10 more blog articles for faster Google authority
+- [x] 5 more pillar SEO articles shipped (Monograph alternatives, fee proposal, CA checklist, profit margin, submittal log) ✅ 2026-04-24
+- [x] Directory listing playbook created at `directory-listings.md` ✅ 2026-04-24
+- [ ] Submit directory listings (AlternativeTo, Capterra, G2) — playbook ready, just needs Kevin to fill forms
+- [ ] Later: more directories (GetApp, Software Advice, SaaSHub)
+- [ ] Keep shipping blog articles (next wave: LA time tracking software, pricing landscape design projects, utilization rate, P&L, punch list, irrigation design checklist)
 - [ ] n8n SEO content automation (auto-commit new articles via GitHub API)
+- [ ] Add Vercel Analytics + Plausible (before significant traffic arrives)
 - [ ] Product Hunt launch
 - [ ] Upload v2 PNG logos to LinkedIn, X/Twitter, GitHub profiles
 - [ ] Claim @phasewise on Instagram
