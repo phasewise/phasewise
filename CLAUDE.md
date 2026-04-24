@@ -539,35 +539,69 @@ Ordered by my estimated value-per-effort. Revisit during the forensic audit.
 
 ## Where We Left Off (2026-04-23 EOD)
 
-**Status: STRIPE LIVE MODE FULLY OPERATIONAL.** Full end-to-end test passed in live mode with a real card. Phasewise is now taking real payments (14-day trials on all plans, $0 due today). Ready for first paying customer.
+**Status: LANDING PAGE + BLOG LIVE.** Stripe live mode fully operational. Landing page scrubbed of fake social proof + dead promises. Blog infrastructure shipped at `/blog` with 3 pillar SEO articles. SEO flywheel spinning — now accumulating Google authority passively. Test account deleted.
 
-### What shipped today (2026-04-23)
+### What shipped today (2026-04-23 — evening session)
 
-Commit: `e700f19` (cancelAtPeriodEnd storage fix).
+Commits: `8cf9007` (landing page honesty pass + SEO foundations), `3bc20cc` (blog + 3 articles).
 
-1. ✅ **Stripe live API keys + price IDs copied** — All 3 live price IDs for Starter/Professional/Studio, live publishable + secret API keys.
-2. ✅ **Live webhook endpoint created** — `https://phasewise.io/api/stripe/webhook` listening to 6 events (checkout.session.completed, customer.subscription.{created,updated,deleted,trial_will_end}, invoice.payment_failed). Live `whsec_*` signing secret captured.
-3. ✅ **6 Vercel env vars swapped with environment split** — For each of `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `NEXT_PUBLIC_STRIPE_PRICE_{STARTER,PROFESSIONAL,STUDIO}`:
-   - Production entry = live key (secret vars marked Sensitive)
-   - Preview + Development entry = test key (protects branch previews from charging real cards)
-4. ✅ **Production redeployed** — New env vars picked up, deployment marked Current on phasewise.io.
-5. ✅ **Live-mode E2E test passed with real card** — Signup (`kgallo22+pwlive1@gmail.com` / Live Test Studios) → welcome email → Stripe checkout with live card → $0 trial confirmed → trial-started email → DB sync verified (PROFESSIONAL / TRIALING / `cus_UOF6...` / `sub_1TPSeUJ...`) → Customer Portal cancel → cancellation email. All green.
-6. ✅ **Bug fix: cancelAtPeriodEnd storage** — Stripe sends `cancel_at` (unix timestamp) when cancellation happens via Customer Portal, not `cancel_at_period_end: true`. Our webhook was only reading the boolean, so DB + billing page UI didn't reflect the scheduled cancellation. Webhook now treats either signal as "scheduled to cancel". Email trigger logic was already correct.
+#### 1. Test account cleanup
+- ✅ Deleted `kgallo22+pwlive1@gmail.com` / "Live Test Studios" org from both Supabase Auth and Phasewise DB via admin API script. Stripe subscription left to auto-expire May 7.
 
-### Live test account to clean up (not urgent)
+#### 2. Landing page credibility + honesty pass
+Three categories of fabricated content removed — all were FTC-risk and trust-killers:
+- ✅ **3 fake testimonials** — "Principal, Landscape Architect" / "Studio Director" / "Senior Project Manager" quotes were invented. Replaced with honest value statements (Purpose-built for LA firms, See overruns before they happen, One subscription instead of three).
+- ✅ **5 fake firm names** in proof bar ("Clearwater Studio, Mesa + Associates, Groundwork LA, Terrain Group, Grove Design") — replaced with market segment labels (Solo practices, Boutique studios, Growing firms, Multi-disciplinary teams).
+- ✅ **3 fabricated stats** ("200+ Projects managed", "15% Avg budget savings", "5 hrs saved per PM weekly") — replaced with verifiable facts (7 standard LA phases, 14-day free trial, $99 starting price, $0 at signup).
+- ✅ **Removed "QuickBooks sync" + "Custom integrations"** from Studio tier (both landing page AND in-app billing page) — features aren't built. Replaced with honest Studio differentiators (Unlimited users, Unlimited projects, All modules included, Client portal, Dedicated support).
+- ✅ **Softened "Setup in 5 minutes"** → "Sign up in 2 minutes" (accurate).
+- ✅ **Removed obsolete waitlist form** — Phasewise is fully live now.
+- ✅ **Cleaned dead footer links** — Roadmap, Changelog, API, About, Careers, Documentation, Help Center, System Status all removed. Footer now has: Product (Features, Pricing, Signup, Login), Resources (Blog, FAQ, Contact), Legal (Privacy, Terms).
+- ✅ **Fixed broken nav "About" link** → points to new FAQ anchor.
 
-- Supabase Auth + DB: `kgallo22+pwlive1@gmail.com` / "Live Test Studios" org
-- Stripe: subscription `sub_1TPSeUJ...` scheduled to cancel May 7, 2026 — will auto-expire, no action needed
-- Safe to delete the user + org from DB anytime via Supabase dashboard
+#### 3. FAQ section added
+New section on landing page answering the top 6 pre-signup questions: Can I cancel? Setup time? Mobile? Data protection? What happens if I cancel? Who is Phasewise for? Accordion-style `<details>` tags, SEO-friendly markup.
+
+#### 4. SEO foundations
+- ✅ **Open Graph + Twitter Card tags** — social shares will now render with proper previews.
+- ✅ **JSON-LD structured data** — SoftwareApplication schema (with pricing offers), Organization schema, FAQPage schema. Google can show rich snippets in search results.
+- ✅ **Expanded keywords + canonical URL**.
+- ✅ **robots.txt** — disallows authenticated routes (`/dashboard`, `/projects`, etc.), allows `/` and `/blog/*`.
+- ✅ **sitemap.xml** — dynamic, auto-includes all published blog posts.
+
+#### 5. Blog infrastructure at `/blog`
+- ✅ **Markdown-based** — Articles live in `app/content/blog/*.md` with gray-matter frontmatter. Fastest possible page loads (static generation at build time), version-controlled, n8n-writeable via GitHub API for future automation.
+- ✅ **Dependencies:** `gray-matter` (frontmatter parser), `marked` (markdown→HTML).
+- ✅ **Blog index at `/blog`** — post list with date, reading time, description, hover affordances.
+- ✅ **Article pages at `/blog/[slug]`** — JSON-LD Article schema, OG + Twitter Card per-article metadata, reading time, tag chips, bottom CTA back to signup.
+- ✅ **`.prose-phasewise` CSS class** — branded article typography (serif headings, green accents, styled tables, code blocks, blockquotes).
+- ✅ **Static params** — all articles pre-rendered at build time.
+
+#### 6. First 3 pillar SEO articles shipped
+Each ~1,000+ words, targeting high-intent LA firm searches:
+1. **`/blog/landscape-architect-billing-rates-2026`** — Rule of Thirds, per-role rate tables, regional adjustments, utilization targets. Soft CTA references Phasewise billing defaults.
+2. **`/blog/mwelo-water-budget-calculator-guide`** — California MWELO compliance, MAWA + ETWU formulas with worked example, hydrozone plant factors. Soft CTA references Phasewise MWELO calculator.
+3. **`/blog/landscape-architecture-project-phases-explained`** — 7 standard phases from Pre-Design through Post-Construction with fee splits and common pitfalls. Soft CTA references Phasewise phase templates.
 
 ### Next highest-ROI items (ranked by sales impact)
 
-1. **SEO content pipeline via n8n + AI** — Biggest leverage now that transactions work. Automated long-tail articles on `/blog`, targeting "MWELO water budget calculator", "landscape architecture firm management software", "LA billing rates by state", etc. Compounds passively over 3-6 months.
-2. **Directory listings** — One-time ~2 hours total. Submit to AlternativeTo, Capterra, G2, GetApp, Software Advice. Drives passive referral traffic for years.
-3. **Product Hunt launch** — One-time event. Typically 1-5K visitors + 20-100 signups.
-4. **Social profiles** — Upload v2 PNG logos to LinkedIn, X/Twitter, GitHub. Claim @phasewise on Instagram.
-5. **USPTO trademark filing** — File before any significant marketing push.
-6. **Cloudflare ops** — getphasewise.com → phasewise.io 301 redirect + remove duplicate google-site-verification TXT.
+1. **Directory listings** — One-time ~2 hours total. Submit to AlternativeTo, Capterra, G2, GetApp, Software Advice, SaaSHub. Drives passive referral traffic for years. Brand-forward (respects anonymity).
+2. **Ship 5-10 more blog articles** — Faster Google authority. Target queries: "Monograph alternatives", "Landscape architecture firm software", "Landscape architect fee proposal template", "Construction administration checklist landscape", "Submittal log best practices", "How to calculate landscape architect profit margin".
+3. **n8n SEO content automation** — Auto-generate + GitHub-commit new markdown articles weekly. Uses Kevin's existing n8n Cloud infrastructure. Fits anonymity + automation + passive income values perfectly.
+4. **Product Hunt launch prep** — One-time event. Typically 1-5K visitors + 20-100 signups.
+5. **Social profiles** — Upload v2 PNG logos to LinkedIn, X/Twitter, GitHub. Claim @phasewise on Instagram.
+6. **USPTO trademark filing** — File before significant marketing push.
+7. **Cloudflare ops** — getphasewise.com → phasewise.io 301 redirect + remove duplicate google-site-verification TXT.
+
+### Earlier today (2026-04-23 — morning session): Stripe live mode swap
+
+Commits: `e700f19` (cancelAtPeriodEnd fix), prior commits through `883965a` + `a00fcd6`.
+
+- Stripe KYC/activation complete + live mode toggled + products copied from sandbox
+- 6 Vercel env vars swapped with Production/Preview-Dev split (live keys on Production, test keys on Preview+Dev)
+- Live webhook endpoint created listening to 6 subscription events
+- Full E2E test passed with real card: signup → welcome email → $0 trial checkout → trial-started email → DB sync → Customer Portal cancel → cancellation email
+- Bug fix: `cancelAtPeriodEnd` now correctly tracks Stripe Customer Portal cancellations (was only reading boolean, missed the `cancel_at` timestamp path)
 
 ### Strategic pivot (2026-04-17 EOD)
 
@@ -656,8 +690,14 @@ After a strategy discussion this session, Kevin confirmed that his top prioritie
 - [x] Stripe switched to live mode + products copied from sandbox ✅ 2026-04-21
 - [x] Stripe live mode swap — API keys, webhook, 6 env vars split by env, redeploy ✅ 2026-04-23
 - [x] Live-mode E2E test passed with real card ($0 trial) ✅ 2026-04-23
-- [ ] SEO content pipeline via n8n + AI
-- [ ] Directory listings (AlternativeTo, Capterra, G2, GetApp, Software Advice)
+- [x] Landing page honesty pass (remove fake testimonials/firms/stats, false claims, dead links) ✅ 2026-04-23
+- [x] FAQ section added to landing page ✅ 2026-04-23
+- [x] SEO foundations (OG + Twitter Card + JSON-LD, robots.txt, sitemap.xml) ✅ 2026-04-23
+- [x] Blog infrastructure at `/blog` (markdown + static generation) ✅ 2026-04-23
+- [x] First 3 pillar SEO articles shipped (billing rates, MWELO, phases) ✅ 2026-04-23
+- [ ] Directory listings (AlternativeTo, Capterra, G2, GetApp, Software Advice, SaaSHub)
+- [ ] Ship 5-10 more blog articles for faster Google authority
+- [ ] n8n SEO content automation (auto-commit new articles via GitHub API)
 - [ ] Product Hunt launch
 - [ ] Upload v2 PNG logos to LinkedIn, X/Twitter, GitHub profiles
 - [ ] Claim @phasewise on Instagram
