@@ -17,23 +17,23 @@ export default function manifest(): MetadataRoute.Manifest {
         sizes: "32x32",
         type: "image/png",
       },
-      // 192x192 standard PWA icon (PNG from icon-192.tsx)
+      // 192x192 standard PWA icon (PNG from icon1.tsx)
       {
-        src: "/icon-192",
+        src: "/icon1",
         sizes: "192x192",
         type: "image/png",
         purpose: "any",
       },
-      // 512x512 high-DPI / splash screen icon (PNG from icon-512.tsx)
+      // 512x512 high-DPI / splash screen icon (PNG from icon2.tsx)
       {
-        src: "/icon-512",
+        src: "/icon2",
         sizes: "512x512",
         type: "image/png",
         purpose: "any",
       },
-      // Maskable variant with safe-zone padding (PNG from icon-maskable.tsx)
+      // Maskable variant with safe-zone padding (PNG from icon3.tsx)
       {
-        src: "/icon-maskable",
+        src: "/icon3",
         sizes: "512x512",
         type: "image/png",
         purpose: "maskable",
