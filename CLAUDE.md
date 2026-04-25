@@ -575,7 +575,8 @@ Commits: `fe07e13` (workflow JSON v1), `35c3ffd` (first auto-generated article),
 - ⏳ **Capterra + G2 directory submissions** — copy-paste ready in `directory-listings.md`. Submit when convenient.
 - ⏳ **Optional: n8n error notifications** — n8n suggested setting these up so Kevin gets alerted if a future run fails silently. Takes 2 min in the workflow Settings tab.
 - ⏳ **Quality monitoring** — read each Friday's auto-generated article for the first 4 weeks. If quality holds, ramp cadence to 2/week (cron `0 14 * * 1,5` for Mon + Fri).
-- ⏳ **`/icon-512` 404 route fix** — small PWA manifest cleanup, low priority.
+- ⏳ **Auto-post articles to social media** — extend the n8n pipeline with social posting nodes after "Commit to GitHub". Architecture: `Commit to GitHub → Compose post (title + description + URL) → LinkedIn / X / Instagram nodes`. Blocked on social account setup + n8n credentials for each platform. Add when LinkedIn/X profiles are claimed and configured.
+- ✅ **`/icon-512` 404 route fix** — fixed 2026-04-25 (commit `e2824b0`). Renamed icon files to follow Next.js convention (icon1.tsx, icon2.tsx, icon3.tsx). Android home-screen icon now shows branded logo.
 - ⏳ **Vercel Analytics + Plausible** — add before significant traffic arrives so Kevin can see which articles convert.
 
 ### Earlier sessions on 2026-04-24
@@ -682,12 +683,11 @@ Each ~1,000+ words, targeting high-intent LA firm searches:
 
 1. **Submit directory listings** — Open `directory-listings.md`, submit to AlternativeTo (Monday-unlocked) → Capterra → G2. Each ~15-30 min. Drives passive referral traffic for years.
 2. **Product Hunt launch prep** — Needs launch-day assets (gif demo, screenshots, first comment). One-time event, 1-5K visitors typical.
-3. **Social profile uploads** — v2 PNG logos to LinkedIn, X/Twitter, GitHub. Claim @phasewise on Instagram.
+3. **Social profile uploads + auto-posting pipeline** — v2 PNG logos to LinkedIn, X/Twitter, GitHub. Claim @phasewise on Instagram. Then extend the n8n SEO pipeline with social posting nodes so each new article auto-posts to socials when it ships.
 4. **Vercel Analytics + Plausible** — Add now that articles will start generating traffic. Tells you which articles convert.
 5. **USPTO trademark filing** — File before significant marketing push.
 6. **Cloudflare ops** — getphasewise.com → phasewise.io 301 redirect + remove duplicate google-site-verification TXT.
 7. **Optional: n8n error workflow** — alert on silent failures.
-8. **Fix `/icon-512` route 404** — small PWA manifest cleanup, low priority.
 
 ### Earlier today (2026-04-23 — morning session): Stripe live mode swap
 
@@ -803,11 +803,12 @@ After a strategy discussion this session, Kevin confirmed that his top prioritie
 - [ ] Submit to AlternativeTo (text fields ready — blocked until Monday by their weekend-submission pause)
 - [ ] Submit to Capterra + G2 (copy-paste ready in `directory-listings.md`)
 - [ ] Later: more directories (GetApp, Software Advice, SaaSHub)
-- [ ] Fix `/icon-512` 404 route (PWA manifest cleanup — low priority)
+- [x] Fix Android home-screen icon (renamed icons to Next.js convention) ✅ 2026-04-25
 - [ ] Add Vercel Analytics + Plausible (now that articles will start generating traffic)
 - [ ] Product Hunt launch
 - [ ] Upload v2 PNG logos to LinkedIn, X/Twitter, GitHub profiles
 - [ ] Claim @phasewise on Instagram
+- [ ] **Auto-post blog articles to socials** — extend n8n pipeline with social posting nodes after each article ships. Blocked on social accounts being claimed + their API credentials configured in n8n.
 - [ ] File USPTO trademark for "Phasewise"
 - [ ] Set up getphasewise.com redirect to phasewise.io in Cloudflare
 - [ ] Remove duplicate `google-site-verification` TXT record from Cloudflare
