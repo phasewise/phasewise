@@ -537,55 +537,48 @@ Ordered by my estimated value-per-effort. Revisit during the forensic audit.
 - **Automated year-end rollover** — apply the `rolloverCap` automatically when the calendar year changes.
 - **Forensic audit** — top-to-bottom value review once the queue slows down. Rate each feature on value delivered vs maintenance cost. Cut or sharpen anything that doesn't earn its keep.
 
-## Where We Left Off (2026-04-24 EOD)
+## Where We Left Off (2026-04-25)
 
-**Status: 9 PILLAR ARTICLES LIVE + n8n AUTOMATION ENGINE BLUEPRINT READY.** Stripe live. Landing page clean. Blog has 9 pillar articles covering highest-intent LA firm searches (enough to seed Google authority). n8n SEO content automation fully designed (keyword list, article generation prompt, workflow setup guide). Kevin began n8n setup at EOD — **partially complete, needs resume next week.**
+**Status: 🟢 N8N SEO CONTENT PIPELINE IS LIVE AND AUTONOMOUS.** Stripe live. Landing page clean. Blog has 11 pillar articles. **The compound-interest play is now compounding** — n8n auto-generates a new pillar SEO article every Friday at 7am UTC, commits it to GitHub via API, Vercel auto-deploys it. Zero ongoing effort. Estimated cost: ~$2.50/month in API usage. Pipeline self-rotates through 40-keyword priority list and won't duplicate existing articles. Will run autonomously for ~6 months before exhausting the keyword list.
 
-### Resume-here checklist (Monday 2026-04-27)
+### What shipped today (2026-04-25)
 
-**Blocked on this single issue:** Anthropic credential in n8n shows **"Authorization failed"** on connection test. Likely causes: truncated paste, stray whitespace, or bad key. Fix sequence:
+Commits: `fe07e13` (workflow JSON v1), `35c3ffd` (first auto-generated article), `c2598b4` (frontmatter sanitizer + bug fix), `77c0029` (autonomous keyword rotation upgrade), `615f1cd` (second auto-generated article).
 
-1. **Open n8n** → Credentials → `Anthropic API (Phasewise blog)` → Edit
-2. **Clear the API Key field completely** (Ctrl+A, Delete — don't trust the dots)
-3. **Re-paste the key from password manager** — full key is ~108 chars, starts `sk-ant-api03-`
-4. **Save + wait for auto-retry**
-5. **If still fails:** revoke the key at `console.anthropic.com` → API Keys → revoke `n8n-phasewise-blog` → create fresh key → re-paste. Brand-new accounts sometimes need $5 of prepaid credits before API starts responding (check `console.anthropic.com/settings/billing`).
+#### n8n SEO content pipeline — fully wired
 
-Once that connection test passes green, follow the remaining sequence below.
+1. ✅ **Anthropic API credential** in n8n — connected to `n8n-phasewise-blog` API key, $10/mo spending cap, $5 alert threshold, $4.99 starting credit balance.
+2. ✅ **GitHub API credential** in n8n — connected to fine-grained PAT scoped to `phasewise/phasewise` repo (Contents R/W + Metadata RO, 1-year expiry).
+3. ✅ **Workflow built and imported** — 6-node pipeline: `Schedule Trigger → List existing articles → Build prompt → Generate article (Anthropic) → Extract article → Commit to GitHub`.
+4. ✅ **Schedule Trigger active** — fires every Friday at 7am UTC (= midnight Pacific). Workflow status toggle: **Active**.
+5. ✅ **Autonomous keyword rotation** — Build prompt node has a baked-in 40-keyword priority list (interleaved across 6 topical clusters). Each run, the workflow asks GitHub which slugs already exist and picks the first keyword whose slug is unused. After ~6 months at 1/week cadence, the list is exhausted and the workflow throws a clear error so Kevin knows to refresh.
+6. ✅ **Frontmatter sanitizer** in Extract article node — strips ` ``` ` code fences if the LLM wraps them (defensive coding after first run revealed this bug).
 
-### n8n setup state at pause
+#### Two articles auto-generated and live
 
-Done:
-- ✅ Anthropic API account + `n8n-phasewise-blog` key created (copied to password manager)
-- ✅ Anthropic spending cap set ($10/mo cap, $5 email alert)
-- ✅ GitHub fine-grained PAT `n8n-phasewise-blog-automation` created (1yr expiry, scoped to `phasewise/phasewise`, Contents R/W + Metadata RO)
-- ✅ n8n Anthropic credential **created but failing auth** (see debug sequence above)
+7. ✅ **`/blog/landscape-architect-utilization-rate`** — first auto-shipped article. Quality 8/10: real numbers, plausible benchmarks, no AI tells. (Frontmatter manually fixed after first run because of the code-fence bug — sanitizer prevents this going forward.)
+8. ✅ **`/blog/best-software-for-landscape-architects`** — second auto-shipped article. Frontmatter clean (sanitizer worked). Picked automatically as next-unused-keyword from the priority list.
 
-Remaining (in order, ~45 min after the auth fix):
-1. **Create n8n Header Auth credential for GitHub**
-   - Name: `GitHub PAT (Phasewise blog)`
-   - Header name: `Authorization`
-   - Header value: `token github_pat_...` (prefix with `token ` + space, then the PAT)
-2. **Build the 6-node workflow** following `automation/n8n-workflow-setup.md`:
-   - Node 1 — Schedule Trigger (cron `0 14 * * 5` for Friday 7am Pacific weekly start)
-   - Node 2 — Set: keyword + slug generation
-   - Node 3 — Anthropic API call (use native Anthropic node, not HTTP Request)
-   - Node 4 — Code: Base64-encode article for GitHub API
-   - Node 5 — HTTP Request: PUT to GitHub Contents API
-   - Node 6 — Send email on success (kevin@phasewise.io)
-3. **First test run** — manual execute with keyword `landscape architect utilization rate`
-4. **Quality check** — read generated article, 5/6 quality criteria must pass before scheduling
-5. **Re-enable schedule** — weekly Friday publishing to start; ramp to 2x/week after 4 weeks
+**Blog article count: 11 total** (9 hand-written + 2 auto-generated). At 1/week autonomous cadence, the blog will be at ~25 articles by mid-June, ~50 by end of Q3 — the threshold where Google typically treats a site as a topical authority.
 
-**Note on Anthropic node vs HTTP Request:** Original guide in `automation/n8n-workflow-setup.md` specified HTTP Request + Header Auth. Since n8n Cloud has a native Anthropic credential (cleaner), pivot to using n8n's native Anthropic Chat Model / Message a Model node. Same prompt + model config, cleaner node UI. Update the guide when the workflow is running.
+#### Reference files in `/automation/`
 
-### Also pending from today (2026-04-24)
+- `seo-keyword-targets.md` — 48 keywords across 6 topical clusters (rotation order documented)
+- `article-generation-prompt.md` — full prompt design + quality control rubric
+- `n8n-workflow-setup.md` — original step-by-step setup guide
+- `n8n-workflow.json` — **importable workflow file** (current authoritative version)
+- `IMPORT-WORKFLOW.md` — quick import instructions
 
-- ⏳ **AlternativeTo submission** — BLOCKED until Monday. AlternativeTo pauses new app submissions on weekends (CET). Text fields filled in, icon/screenshots pending. Form URL: `https://alternativeto.net/` → Suggest a new application (accessible only after login). Account `kgallo22@gmail.com`.
-- ⏳ **Capterra + G2 submissions** — not started. Copy-paste ready in `directory-listings.md`.
-- ⏳ **Small bug:** `/icon-512` route returns 404 on phasewise.io. Next.js icon file convention doesn't pick up `icon-192.tsx` / `icon-512.tsx` with dashes. PWA manifest references these routes but they don't exist. Low priority — doesn't break anything user-visible, just dead manifest refs. Fix: rename files to match `icon.tsx` / `icon1.tsx` / `icon2.tsx` convention OR convert to proper route handlers.
+### Pending follow-ups (not blocking)
 
-### What shipped today (2026-04-24)
+- ⏳ **AlternativeTo submission** — copy-paste content ready in `directory-listings.md`. Was blocked by their weekend submission pause; should be unblocked Monday 2026-04-27. Account already created (`kgallo22@gmail.com`).
+- ⏳ **Capterra + G2 directory submissions** — copy-paste ready in `directory-listings.md`. Submit when convenient.
+- ⏳ **Optional: n8n error notifications** — n8n suggested setting these up so Kevin gets alerted if a future run fails silently. Takes 2 min in the workflow Settings tab.
+- ⏳ **Quality monitoring** — read each Friday's auto-generated article for the first 4 weeks. If quality holds, ramp cadence to 2/week (cron `0 14 * * 1,5` for Mon + Fri).
+- ⏳ **`/icon-512` 404 route fix** — small PWA manifest cleanup, low priority.
+- ⏳ **Vercel Analytics + Plausible** — add before significant traffic arrives so Kevin can see which articles convert.
+
+### Earlier sessions on 2026-04-24
 
 Commits: `f85e3e2` (5 new pillar articles), `cebf3f1` (n8n automation blueprint + 9th article), `f37e53c` (directory listings playbook + CLAUDE.md update).
 
@@ -687,15 +680,14 @@ Each ~1,000+ words, targeting high-intent LA firm searches:
 
 ### Next session priorities (in order)
 
-1. **Unblock n8n Anthropic credential** — clean re-paste OR regenerate key. See Resume-here checklist above.
-2. **Finish n8n workflow** — GitHub Header Auth credential, 6 nodes, first test run, quality check, schedule. ~45 min after the auth unblock.
-3. **Submit AlternativeTo** (Monday-unlocked) + Capterra + G2 directory listings. Copy-paste ready in `directory-listings.md`.
-4. **Fix `/icon-512` route 404** — small PWA manifest cleanup, low priority.
-5. **Product Hunt launch prep** — One-time event, needs launch-day assets.
-6. **Social profile uploads** — v2 PNG logos to LinkedIn, X/Twitter, GitHub. Claim @phasewise on Instagram.
-7. **USPTO trademark filing** — Before significant marketing push.
-8. **Cloudflare ops** — getphasewise.com → phasewise.io 301 redirect + remove duplicate google-site-verification TXT.
-9. **Vercel Analytics + Plausible** — Add before significant traffic arrives.
+1. **Submit directory listings** — Open `directory-listings.md`, submit to AlternativeTo (Monday-unlocked) → Capterra → G2. Each ~15-30 min. Drives passive referral traffic for years.
+2. **Product Hunt launch prep** — Needs launch-day assets (gif demo, screenshots, first comment). One-time event, 1-5K visitors typical.
+3. **Social profile uploads** — v2 PNG logos to LinkedIn, X/Twitter, GitHub. Claim @phasewise on Instagram.
+4. **Vercel Analytics + Plausible** — Add now that articles will start generating traffic. Tells you which articles convert.
+5. **USPTO trademark filing** — File before significant marketing push.
+6. **Cloudflare ops** — getphasewise.com → phasewise.io 301 redirect + remove duplicate google-site-verification TXT.
+7. **Optional: n8n error workflow** — alert on silent failures.
+8. **Fix `/icon-512` route 404** — small PWA manifest cleanup, low priority.
 
 ### Earlier today (2026-04-23 — morning session): Stripe live mode swap
 
@@ -806,13 +798,13 @@ After a strategy discussion this session, Kevin confirmed that his top prioritie
 - [x] Directory listing playbook created at `directory-listings.md` ✅ 2026-04-24
 - [x] n8n SEO automation blueprint created (`/automation/` — keywords + prompt + setup guide) ✅ 2026-04-24
 - [x] Anthropic API key + GitHub PAT created for n8n pipeline ✅ 2026-04-24
-- [ ] **PAUSED:** n8n Anthropic credential in n8n — auth failing, needs clean re-paste or key regen
-- [ ] Finish n8n workflow (GitHub Header Auth creds + 6-node workflow + test run + schedule)
+- [x] **n8n SEO content pipeline LIVE and AUTONOMOUS** — fires every Friday 7am Pacific, picks unused keywords from priority list, ships pillar articles to `/blog` ✅ 2026-04-25
+- [x] First 2 auto-generated articles shipped (utilization rate, best software for LAs) ✅ 2026-04-25
 - [ ] Submit to AlternativeTo (text fields ready — blocked until Monday by their weekend-submission pause)
 - [ ] Submit to Capterra + G2 (copy-paste ready in `directory-listings.md`)
 - [ ] Later: more directories (GetApp, Software Advice, SaaSHub)
 - [ ] Fix `/icon-512` 404 route (PWA manifest cleanup — low priority)
-- [ ] Add Vercel Analytics + Plausible (before significant traffic arrives)
+- [ ] Add Vercel Analytics + Plausible (now that articles will start generating traffic)
 - [ ] Product Hunt launch
 - [ ] Upload v2 PNG logos to LinkedIn, X/Twitter, GitHub profiles
 - [ ] Claim @phasewise on Instagram
@@ -820,3 +812,5 @@ After a strategy discussion this session, Kevin confirmed that his top prioritie
 - [ ] Set up getphasewise.com redirect to phasewise.io in Cloudflare
 - [ ] Remove duplicate `google-site-verification` TXT record from Cloudflare
 - [ ] Create Loops INVITE template (optional — link sharing works without it)
+- [ ] Optional: n8n error notification workflow (alerts on silent failures)
+- [ ] Quality monitoring: read each Friday's auto-article for 4 weeks; if quality holds, ramp to 2/week cadence
