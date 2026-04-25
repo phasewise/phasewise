@@ -81,15 +81,19 @@ Read the generated article end-to-end. Score against these 6 criteria:
 
 ---
 
-## Changing the keyword each run
+## Autonomous keyword rotation (no manual editing required)
 
-Open the **Build prompt** node and edit line 4:
+The workflow now picks the next keyword automatically:
 
-```javascript
-const keyword = 'landscape architect utilization rate';
-```
+1. **List existing articles** node calls GitHub API to get all files in `/app/content/blog/`
+2. **Build prompt** node has a baked-in priority list of 40 target keywords (interleaved across 6 topical clusters)
+3. The Code node finds the first keyword whose slug isn't already published, and uses it for this run
 
-Change to whatever keyword you want next from `automation/seo-keyword-targets.md`.
+**You never have to edit the workflow.** Just run it (manually or on schedule) and it picks the next unused keyword.
+
+**When the 40-keyword list is exhausted** (in ~6 months at 2/week cadence), the workflow throws a clear error: "All 40 keywords have been published. Add more keywords to the list in this Code node." At that point, edit the `keywordList` array at the top of the **Build prompt** Code node and add 20-40 more keywords from `automation/seo-keyword-targets.md` or fresh research.
+
+**Rotation order:** keywords are interleaved across the 6 topical clusters (Software, Practice Management, Project Management, Compliance, Team & Ops, Plants & Specs) so Google sees consistent topical breadth, not a content burst on one topic.
 
 ## Switching from Manual to Schedule
 

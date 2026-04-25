@@ -14,15 +14,56 @@
     },
     {
       "parameters": {
+        "method": "GET",
+        "url": "https://api.github.com/repos/phasewise/phasewise/contents/app/content/blog",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            },
+            {
+              "name": "User-Agent",
+              "value": "n8n-phasewise-pipeline"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "0a1b2c3d-1010-1010-1010-101010101010",
+      "name": "List existing articles",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        300
+      ],
+      "credentials": {
+        "githubApi": {
+          "name": "GitHub API (Phasewise blog)"
+        }
+      }
+    },
+    {
+      "parameters": {
         "language": "javaScript",
-        "jsCode": "// =====================================================================\n// CONFIG: Change this keyword each run, or wire it up to a rotation later.\n// Pull keywords from automation/seo-keyword-targets.md\n// =====================================================================\nconst keyword = 'landscape architect utilization rate';\n\n// Auto-generate URL-safe slug\nconst slug = keyword\n  .toLowerCase()\n  .replace(/[^a-z0-9\\s-]/g, '')\n  .replace(/\\s+/g, '-')\n  .replace(/-+/g, '-')\n  .replace(/^-|-$/g, '');\n\n// Today's date for frontmatter\nconst today = new Date().toISOString().split('T')[0];\n\n// =====================================================================\n// PROMPT: Article generation prompt with quality constraints.\n// =====================================================================\nconst prompt = `You are a senior landscape architect who has run a landscape architecture firm for 15+ years. You're writing a blog article for Phasewise (phasewise.io), a project management platform built specifically for landscape architecture firms.\n\n## Target keyword for this article\n\n**Primary keyword:** ${keyword}\n\n## Audience\n\nThe reader is a principal, project manager, or senior designer at a landscape architecture firm. They have 5+ years of experience, no patience for marketing fluff or SEO-padded filler, active problems they're trying to solve, and the ability to recognize generic AI-generated content instantly.\n\n## Voice and style requirements\n\n- Direct and practical \\u2014 no hedging, no \"in today's world\" openers, no \"in conclusion\" closers.\n- Specific over general \\u2014 concrete numbers, real examples, specific tool names, actual dollar amounts, real workflow details.\n- Honest about trade-offs \\u2014 acknowledge when a practice has downsides.\n- Writer's authority \\u2014 write as someone who has done the work.\n- Short sentences in long paragraphs (2-4 sentences each).\n- DO NOT use: \"delve\", \"landscape\" as a verb, \"it's important to note\", \"in conclusion\", \"moreover\", \"furthermore\", \"embark on a journey\", \"unleash\", \"unlock\", \"streamline\". Avoid bulleted lists with 6+ items when prose is better. Avoid generic platitude closers.\n- Do not invent software products or integrations that don't exist.\n\n## Required structure\n\nReturn a complete markdown article with EXACTLY this structure:\n\n1. Frontmatter block (required):\n\n\\`\\`\\`\n---\ntitle: \"[SEO title, 55-65 chars, contains primary keyword]\"\ndescription: \"[Meta description, 150-160 chars, compelling, contains primary keyword]\"\ndate: \"${today}\"\nauthor: \"Phasewise\"\ntags: [\"3-5 relevant tags as a JSON array\"]\nprimaryKeyword: \"${keyword}\"\n---\n\\`\\`\\`\n\n2. Opening paragraph (2-3 sentences). Get to the point. Name the problem and promise the takeaway. No throat-clearing.\n\n3. Body sections: minimum 6 H2 headings, each 100-300 words. Use H3 subheadings for complex sections. Include where relevant: tables with real numbers, formulas with worked examples, 3-5 item bullet lists, comparison tables, specific dollar figures, real plant species or software names or spec section numbers.\n\n4. \"Common mistakes\" section: list 4-6 specific mistakes firms make on this topic. Be specific and practical.\n\n5. \"How Phasewise handles this\" section (REQUIRED): one short section (3-5 sentences) explaining how Phasewise specifically helps with this topic. Do NOT be salesy. Do NOT list all features. Name only the 1-2 features most relevant to this article.\n\n6. \"Related reading\" section: markdown list of 2-3 internal links from this exact list (pick the 2-3 most topically related):\n\n- [Landscape Architect Billing Rates by Role and Market (2026 Guide)](/blog/landscape-architect-billing-rates-2026)\n- [MWELO Water Budget Calculator: How It Works and How to Stay Compliant](/blog/mwelo-water-budget-calculator-guide)\n- [The 7 Phases of a Landscape Architecture Project (Explained)](/blog/landscape-architecture-project-phases-explained)\n- [Monograph Alternatives for Landscape Architecture Firms (2026)](/blog/monograph-alternatives-landscape-architecture)\n- [Landscape Architect Fee Proposal Template + Writing Guide](/blog/landscape-architect-fee-proposal-template)\n- [Construction Administration Checklist for Landscape Architects](/blog/construction-administration-checklist-landscape-architects)\n- [How to Calculate Landscape Architect Profit Margin](/blog/how-to-calculate-landscape-architect-profit-margin)\n- [Landscape Architecture Submittal Log: Best Practices for 2026](/blog/landscape-architecture-submittal-log-best-practices)\n- [Landscape Architecture Project Management Software: What Actually Matters](/blog/landscape-architecture-project-management-software)\n\n7. Closing italic line: 1-2 sentences tying back to Phasewise + link to /signup. Vary phrasing per article. Format example:\n\n*[One specific value statement]. Phasewise [specific feature]. [Try it free for 14 days](https://phasewise.io/signup).*\n\n## Length\n\n1,500 to 1,800 words of body copy (excluding frontmatter).\n\n## Output\n\nReturn ONLY the markdown article. Your response MUST start with the literal three characters: --- (no whitespace before, no code fence, no triple-backticks, no markdown wrapper). The first line of your response is exactly: ---\n\nReturn raw markdown. DO NOT wrap your response in \\`\\`\\`markdown or any other code fence. DO NOT include preamble like \"Here is your article\" or commentary. End with the closing italic line.`;\n\nreturn [{\n  json: {\n    keyword,\n    slug,\n    today,\n    prompt\n  }\n}];"
+        "jsCode": "// =====================================================================\n// KEYWORD PRIORITY LIST: rotation order based on seo-keyword-targets.md\n// Topical clusters interleaved (PM, Project, Compliance, Software,\n// Team & Ops, Plants & Specs) so Google sees consistent breadth.\n// =====================================================================\nconst keywordList = [\n  // Cluster 4 — Software (highest commercial intent first)\n  'best software for landscape architects',\n  // Cluster 1 — Practice Management\n  'how to price landscape design projects',\n  // Cluster 2 — Project Management\n  'landscape architecture RFI process',\n  // Cluster 3 — Compliance\n  'MWELO compliance checklist California',\n  // Cluster 6 — Plants & Specs\n  'plant schedule template landscape architecture',\n  // Cluster 4\n  'BQE Core alternatives landscape architecture',\n  // Cluster 1\n  'how to calculate landscape architect fees',\n  // Cluster 2\n  'construction documents checklist landscape',\n  // Cluster 3\n  'ADA accessibility checklist site design',\n  // Cluster 5 — Team & Ops\n  'landscape architect salary survey 2026',\n  // Cluster 4\n  'landscape design firm time tracking software',\n  // Cluster 1\n  'landscape architecture firm overhead rate',\n  // Cluster 2\n  'landscape design punch list template',\n  // Cluster 3\n  'SITES certification guide landscape architecture',\n  // Cluster 6\n  'how to write landscape architecture specifications',\n  // Cluster 1\n  'landscape architect hourly rate vs fixed fee',\n  // Cluster 2\n  'change order process landscape architecture',\n  // Cluster 3\n  'LEED credits for landscape architects',\n  // Cluster 5\n  'landscape designer vs landscape architect career',\n  // Cluster 4\n  'AEC project management software comparison',\n  // Cluster 6\n  'plant substitution request form template',\n  // Cluster 1\n  'starting a landscape architecture firm checklist',\n  // Cluster 2\n  'landscape architect site observation report template',\n  // Cluster 3\n  'stormwater BMP landscape architecture',\n  // Cluster 5\n  'landscape architecture billable vs non-billable hours',\n  // Cluster 4\n  'landscape architecture billing software',\n  // Cluster 6\n  'native plant palette California landscape design',\n  // Cluster 1\n  'landscape architect retainer agreement template',\n  // Cluster 2\n  'landscape architect schedule of values',\n  // Cluster 3\n  'hydrozone plant factor reference WUCOLS',\n  // Cluster 5\n  'how to hire a landscape architect employee',\n  // Cluster 4\n  'best CRM for landscape architecture firms',\n  // Cluster 6\n  'drought tolerant plant schedule example',\n  // Cluster 2\n  'landscape design schematic vs design development',\n  // Cluster 3\n  'irrigation efficiency calculation landscape',\n  // Cluster 5\n  'landscape architecture firm bonus structure',\n  // Cluster 6\n  'tree protection plan landscape architecture',\n  // Cluster 2\n  'how to manage landscape architecture project scope',\n  // Cluster 3\n  'landscape architecture permit checklist',\n  // Cluster 5\n  'landscape architect licensure requirements by state'\n];\n\n// =====================================================================\n// SLUG GENERATOR\n// =====================================================================\nfunction toSlug(keyword) {\n  return keyword\n    .toLowerCase()\n    .replace(/[^a-z0-9\\s-]/g, '')\n    .replace(/\\s+/g, '-')\n    .replace(/-+/g, '-')\n    .replace(/^-|-$/g, '');\n}\n\n// =====================================================================\n// FIND FIRST UNUSED KEYWORD\n// GitHub returns an array of file objects; each has a .name field.\n// We strip .md to compare against our generated slugs.\n// =====================================================================\nconst githubFiles = $input.first().json;\nconst existingFiles = Array.isArray(githubFiles) ? githubFiles : [];\nconst existingSlugs = new Set(\n  existingFiles\n    .filter(f => f.name && f.name.endsWith('.md'))\n    .map(f => f.name.replace(/\\.md$/, ''))\n);\n\nlet keyword = null;\nlet slug = null;\nfor (const kw of keywordList) {\n  const s = toSlug(kw);\n  if (!existingSlugs.has(s)) {\n    keyword = kw;\n    slug = s;\n    break;\n  }\n}\n\nif (!keyword) {\n  throw new Error(`All ${keywordList.length} keywords have been published. Add more keywords to the list in this Code node, OR rotate this list out for a new one. Existing slugs count: ${existingSlugs.size}`);\n}\n\n// Today's date for frontmatter\nconst today = new Date().toISOString().split('T')[0];\n\n// =====================================================================\n// PROMPT: Article generation prompt with quality constraints.\n// =====================================================================\nconst prompt = `You are a senior landscape architect who has run a landscape architecture firm for 15+ years. You're writing a blog article for Phasewise (phasewise.io), a project management platform built specifically for landscape architecture firms.\n\n## Target keyword for this article\n\n**Primary keyword:** ${keyword}\n\n## Audience\n\nThe reader is a principal, project manager, or senior designer at a landscape architecture firm. They have 5+ years of experience, no patience for marketing fluff or SEO-padded filler, active problems they're trying to solve, and the ability to recognize generic AI-generated content instantly.\n\n## Voice and style requirements\n\n- Direct and practical \\u2014 no hedging, no \"in today's world\" openers, no \"in conclusion\" closers.\n- Specific over general \\u2014 concrete numbers, real examples, specific tool names, actual dollar amounts, real workflow details.\n- Honest about trade-offs \\u2014 acknowledge when a practice has downsides.\n- Writer's authority \\u2014 write as someone who has done the work.\n- Short sentences in long paragraphs (2-4 sentences each).\n- DO NOT use: \"delve\", \"landscape\" as a verb, \"it's important to note\", \"in conclusion\", \"moreover\", \"furthermore\", \"embark on a journey\", \"unleash\", \"unlock\", \"streamline\". Avoid bulleted lists with 6+ items when prose is better. Avoid generic platitude closers.\n- Do not invent software products or integrations that don't exist.\n\n## Required structure\n\nReturn a complete markdown article with EXACTLY this structure:\n\n1. Frontmatter block (required) using this exact format:\n\n---\ntitle: \"[SEO title, 55-65 chars, contains primary keyword]\"\ndescription: \"[Meta description, 150-160 chars, compelling, contains primary keyword]\"\ndate: \"${today}\"\nauthor: \"Phasewise\"\ntags: [\"3-5 relevant tags as a JSON array\"]\nprimaryKeyword: \"${keyword}\"\n---\n\n2. Opening paragraph (2-3 sentences). Get to the point. Name the problem and promise the takeaway. No throat-clearing.\n\n3. Body sections: minimum 6 H2 headings, each 100-300 words. Use H3 subheadings for complex sections. Include where relevant: tables with real numbers, formulas with worked examples, 3-5 item bullet lists, comparison tables, specific dollar figures, real plant species or software names or spec section numbers.\n\n4. \"Common mistakes\" section: list 4-6 specific mistakes firms make on this topic. Be specific and practical.\n\n5. \"How Phasewise handles this\" section (REQUIRED): one short section (3-5 sentences) explaining how Phasewise specifically helps with this topic. Do NOT be salesy. Do NOT list all features. Name only the 1-2 features most relevant to this article.\n\n6. \"Related reading\" section: markdown list of 2-3 internal links from this exact list (pick the 2-3 most topically related):\n\n- [Landscape Architect Billing Rates by Role and Market (2026 Guide)](/blog/landscape-architect-billing-rates-2026)\n- [MWELO Water Budget Calculator: How It Works and How to Stay Compliant](/blog/mwelo-water-budget-calculator-guide)\n- [The 7 Phases of a Landscape Architecture Project (Explained)](/blog/landscape-architecture-project-phases-explained)\n- [Monograph Alternatives for Landscape Architecture Firms (2026)](/blog/monograph-alternatives-landscape-architecture)\n- [Landscape Architect Fee Proposal Template + Writing Guide](/blog/landscape-architect-fee-proposal-template)\n- [Construction Administration Checklist for Landscape Architects](/blog/construction-administration-checklist-landscape-architects)\n- [How to Calculate Landscape Architect Profit Margin](/blog/how-to-calculate-landscape-architect-profit-margin)\n- [Landscape Architecture Submittal Log: Best Practices for 2026](/blog/landscape-architecture-submittal-log-best-practices)\n- [Landscape Architecture Project Management Software: What Actually Matters](/blog/landscape-architecture-project-management-software)\n- [Landscape Architect Utilization Rate: A Practical Guide](/blog/landscape-architect-utilization-rate)\n\n7. Closing italic line: 1-2 sentences tying back to Phasewise + link to /signup. Vary phrasing per article. Format example:\n\n*[One specific value statement]. Phasewise [specific feature]. [Try it free for 14 days](https://phasewise.io/signup).*\n\n## Length\n\n1,500 to 1,800 words of body copy (excluding frontmatter).\n\n## Output\n\nReturn ONLY the markdown article. Your response MUST start with the literal three characters: --- (no whitespace before, no code fence, no triple-backticks, no markdown wrapper). The first line of your response is exactly: ---\n\nReturn raw markdown. DO NOT wrap your response in \\`\\`\\`markdown or any other code fence. DO NOT include preamble like \"Here is your article\" or commentary. End with the closing italic line.`;\n\nreturn [{\n  json: {\n    keyword,\n    slug,\n    today,\n    prompt,\n    existingCount: existingSlugs.size\n  }\n}];"
       },
       "id": "0a1b2c3d-2222-2222-2222-222222222222",
       "name": "Build prompt",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        460,
+        660,
         300
       ]
     },
@@ -53,7 +94,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        680,
+        880,
         300
       ],
       "credentials": {
@@ -65,14 +106,14 @@
     {
       "parameters": {
         "language": "javaScript",
-        "jsCode": "// Pull article markdown out of Anthropic's response shape\nconst response = $input.first().json;\nlet article = response.content && response.content[0] && response.content[0].text;\n\nif (!article) {\n  throw new Error('No article text in Anthropic response. Full response: ' + JSON.stringify(response).slice(0, 500));\n}\n\n// Defensive sanitizers\n// 1. Strip leading ```markdown / ``` fences and trailing ``` fences if the LLM wrapped the file\narticle = article.trim();\nif (article.startsWith('```markdown') || article.startsWith('```md')) {\n  article = article.replace(/^```(markdown|md)\\n?/, '').replace(/\\n?```\\s*$/, '').trim();\n} else if (article.startsWith('```')) {\n  article = article.replace(/^```\\n?/, '').replace(/\\n?```\\s*$/, '').trim();\n}\n\n// 2. If the LLM wrapped JUST the frontmatter in fences (the common bug),\n//    strip the leading ``` and the closing ``` immediately after the frontmatter end\n// Pattern: ```\\n---\\n...frontmatter...\\n---\\n```\\n\\nbody...\nconst fmFenceRe = /^```\\s*\\n(---\\n[\\s\\S]*?\\n---)\\n```\\s*\\n/;\nif (fmFenceRe.test(article)) {\n  article = article.replace(fmFenceRe, '$1\\n\\n');\n}\n\n// 3. Validate frontmatter exists at start\nif (!article.startsWith('---')) {\n  throw new Error('Article does not start with frontmatter (---). First 200 chars: ' + article.slice(0, 200));\n}\n\n// Carry slug forward from the earlier Build prompt node\nconst slug = $('Build prompt').first().json.slug;\n\nreturn [{\n  json: {\n    slug,\n    article,\n    filePath: `app/content/blog/${slug}.md`,\n    commitMessage: `Auto-generated pillar article: ${slug}`\n  }\n}];"
+        "jsCode": "// Pull article markdown out of Anthropic's response shape\nconst response = $input.first().json;\nlet article = response.content && response.content[0] && response.content[0].text;\n\nif (!article) {\n  throw new Error('No article text in Anthropic response. Full response: ' + JSON.stringify(response).slice(0, 500));\n}\n\n// Defensive sanitizers\n// 1. Strip leading ```markdown / ``` fences and trailing ``` fences if the LLM wrapped the file\narticle = article.trim();\nif (article.startsWith('```markdown') || article.startsWith('```md')) {\n  article = article.replace(/^```(markdown|md)\\n?/, '').replace(/\\n?```\\s*$/, '').trim();\n} else if (article.startsWith('```')) {\n  article = article.replace(/^```\\n?/, '').replace(/\\n?```\\s*$/, '').trim();\n}\n\n// 2. If the LLM wrapped JUST the frontmatter in fences (the common bug),\n//    strip the leading ``` and the closing ``` immediately after the frontmatter end\nconst fmFenceRe = /^```\\s*\\n(---\\n[\\s\\S]*?\\n---)\\n```\\s*\\n/;\nif (fmFenceRe.test(article)) {\n  article = article.replace(fmFenceRe, '$1\\n\\n');\n}\n\n// 3. Validate frontmatter exists at start\nif (!article.startsWith('---')) {\n  throw new Error('Article does not start with frontmatter (---). First 200 chars: ' + article.slice(0, 200));\n}\n\n// Carry slug forward from the earlier Build prompt node\nconst slug = $('Build prompt').first().json.slug;\n\nreturn [{\n  json: {\n    slug,\n    article,\n    filePath: `app/content/blog/${slug}.md`,\n    commitMessage: `Auto-generated pillar article: ${slug}`\n  }\n}];"
       },
       "id": "0a1b2c3d-4444-4444-4444-444444444444",
       "name": "Extract article",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        900,
+        1100,
         300
       ]
     },
@@ -105,7 +146,7 @@
       "type": "n8n-nodes-base.github",
       "typeVersion": 1.1,
       "position": [
-        1120,
+        1320,
         300
       ],
       "credentials": {
@@ -117,6 +158,17 @@
   ],
   "connections": {
     "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "List existing articles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List existing articles": {
       "main": [
         [
           {
