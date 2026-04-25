@@ -1,0 +1,168 @@
+{
+  "name": "Phasewise SEO content pipeline",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "0a1b2c3d-1111-1111-1111-111111111111",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "language": "javaScript",
+        "jsCode": "// =====================================================================\n// CONFIG: Change this keyword each run, or wire it up to a rotation later.\n// Pull keywords from automation/seo-keyword-targets.md\n// =====================================================================\nconst keyword = 'landscape architect utilization rate';\n\n// Auto-generate URL-safe slug\nconst slug = keyword\n  .toLowerCase()\n  .replace(/[^a-z0-9\\s-]/g, '')\n  .replace(/\\s+/g, '-')\n  .replace(/-+/g, '-')\n  .replace(/^-|-$/g, '');\n\n// Today's date for frontmatter\nconst today = new Date().toISOString().split('T')[0];\n\n// =====================================================================\n// PROMPT: Article generation prompt with quality constraints.\n// =====================================================================\nconst prompt = `You are a senior landscape architect who has run a landscape architecture firm for 15+ years. You're writing a blog article for Phasewise (phasewise.io), a project management platform built specifically for landscape architecture firms.\n\n## Target keyword for this article\n\n**Primary keyword:** ${keyword}\n\n## Audience\n\nThe reader is a principal, project manager, or senior designer at a landscape architecture firm. They have 5+ years of experience, no patience for marketing fluff or SEO-padded filler, active problems they're trying to solve, and the ability to recognize generic AI-generated content instantly.\n\n## Voice and style requirements\n\n- Direct and practical \\u2014 no hedging, no \"in today's world\" openers, no \"in conclusion\" closers.\n- Specific over general \\u2014 concrete numbers, real examples, specific tool names, actual dollar amounts, real workflow details.\n- Honest about trade-offs \\u2014 acknowledge when a practice has downsides.\n- Writer's authority \\u2014 write as someone who has done the work.\n- Short sentences in long paragraphs (2-4 sentences each).\n- DO NOT use: \"delve\", \"landscape\" as a verb, \"it's important to note\", \"in conclusion\", \"moreover\", \"furthermore\", \"embark on a journey\", \"unleash\", \"unlock\", \"streamline\". Avoid bulleted lists with 6+ items when prose is better. Avoid generic platitude closers.\n- Do not invent software products or integrations that don't exist.\n\n## Required structure\n\nReturn a complete markdown article with EXACTLY this structure:\n\n1. Frontmatter block (required):\n\n\\`\\`\\`\n---\ntitle: \"[SEO title, 55-65 chars, contains primary keyword]\"\ndescription: \"[Meta description, 150-160 chars, compelling, contains primary keyword]\"\ndate: \"${today}\"\nauthor: \"Phasewise\"\ntags: [\"3-5 relevant tags as a JSON array\"]\nprimaryKeyword: \"${keyword}\"\n---\n\\`\\`\\`\n\n2. Opening paragraph (2-3 sentences). Get to the point. Name the problem and promise the takeaway. No throat-clearing.\n\n3. Body sections: minimum 6 H2 headings, each 100-300 words. Use H3 subheadings for complex sections. Include where relevant: tables with real numbers, formulas with worked examples, 3-5 item bullet lists, comparison tables, specific dollar figures, real plant species or software names or spec section numbers.\n\n4. \"Common mistakes\" section: list 4-6 specific mistakes firms make on this topic. Be specific and practical.\n\n5. \"How Phasewise handles this\" section (REQUIRED): one short section (3-5 sentences) explaining how Phasewise specifically helps with this topic. Do NOT be salesy. Do NOT list all features. Name only the 1-2 features most relevant to this article.\n\n6. \"Related reading\" section: markdown list of 2-3 internal links from this exact list (pick the 2-3 most topically related):\n\n- [Landscape Architect Billing Rates by Role and Market (2026 Guide)](/blog/landscape-architect-billing-rates-2026)\n- [MWELO Water Budget Calculator: How It Works and How to Stay Compliant](/blog/mwelo-water-budget-calculator-guide)\n- [The 7 Phases of a Landscape Architecture Project (Explained)](/blog/landscape-architecture-project-phases-explained)\n- [Monograph Alternatives for Landscape Architecture Firms (2026)](/blog/monograph-alternatives-landscape-architecture)\n- [Landscape Architect Fee Proposal Template + Writing Guide](/blog/landscape-architect-fee-proposal-template)\n- [Construction Administration Checklist for Landscape Architects](/blog/construction-administration-checklist-landscape-architects)\n- [How to Calculate Landscape Architect Profit Margin](/blog/how-to-calculate-landscape-architect-profit-margin)\n- [Landscape Architecture Submittal Log: Best Practices for 2026](/blog/landscape-architecture-submittal-log-best-practices)\n- [Landscape Architecture Project Management Software: What Actually Matters](/blog/landscape-architecture-project-management-software)\n\n7. Closing italic line: 1-2 sentences tying back to Phasewise + link to /signup. Vary phrasing per article. Format example:\n\n*[One specific value statement]. Phasewise [specific feature]. [Try it free for 14 days](https://phasewise.io/signup).*\n\n## Length\n\n1,500 to 1,800 words of body copy (excluding frontmatter).\n\n## Output\n\nReturn ONLY the markdown article. Start with the --- of the frontmatter and end with the closing italic line. NO preamble, NO commentary, NO \"Here's your article:\" text.`;\n\nreturn [{\n  json: {\n    keyword,\n    slug,\n    today,\n    prompt\n  }\n}];"
+      },
+      "id": "0a1b2c3d-2222-2222-2222-222222222222",
+      "name": "Build prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "anthropicApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"claude-sonnet-4-6\",\n  \"max_tokens\": 6000,\n  \"temperature\": 0.7,\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": {{ JSON.stringify($json.prompt) }}\n    }\n  ]\n}",
+        "options": {
+          "timeout": 180000
+        }
+      },
+      "id": "0a1b2c3d-3333-3333-3333-333333333333",
+      "name": "Generate article (Anthropic)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        680,
+        300
+      ],
+      "credentials": {
+        "anthropicApi": {
+          "name": "Anthropic API (Phasewise blog)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "language": "javaScript",
+        "jsCode": "// Pull article markdown out of Anthropic's response shape\nconst response = $input.first().json;\nconst article = response.content && response.content[0] && response.content[0].text;\n\nif (!article) {\n  throw new Error('No article text in Anthropic response. Full response: ' + JSON.stringify(response).slice(0, 500));\n}\n\n// Carry slug forward from the earlier Build prompt node\nconst slug = $('Build prompt').first().json.slug;\n\nreturn [{\n  json: {\n    slug,\n    article,\n    filePath: `app/content/blog/${slug}.md`,\n    commitMessage: `Auto-generated pillar article: ${slug}`\n  }\n}];"
+      },
+      "id": "0a1b2c3d-4444-4444-4444-444444444444",
+      "name": "Extract article",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "create",
+        "owner": {
+          "__rl": true,
+          "mode": "name",
+          "value": "phasewise"
+        },
+        "repository": {
+          "__rl": true,
+          "mode": "name",
+          "value": "phasewise"
+        },
+        "filePath": "={{ $json.filePath }}",
+        "binaryData": false,
+        "fileContent": "={{ $json.article }}",
+        "commitMessage": "={{ $json.commitMessage }}",
+        "additionalParameters": {
+          "branch": {
+            "branch": "main"
+          }
+        }
+      },
+      "id": "0a1b2c3d-5555-5555-5555-555555555555",
+      "name": "Commit to GitHub",
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1.1,
+      "position": [
+        1120,
+        300
+      ],
+      "credentials": {
+        "githubApi": {
+          "name": "GitHub API (Phasewise blog)"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Build prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build prompt": {
+      "main": [
+        [
+          {
+            "node": "Generate article (Anthropic)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate article (Anthropic)": {
+      "main": [
+        [
+          {
+            "node": "Extract article",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract article": {
+      "main": [
+        [
+          {
+            "node": "Commit to GitHub",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
