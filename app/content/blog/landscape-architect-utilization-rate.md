@@ -1,4 +1,3 @@
-```
 ---
 title: "Landscape Architect Utilization Rate: A Practical Guide"
 description: "Learn how to calculate and improve landscape architect utilization rate with real benchmarks, formulas, and workflow fixes that protect your firm's margins."
@@ -7,7 +6,6 @@ author: "Phasewise"
 tags: ["project management", "firm finances", "utilization rate", "billing", "profitability"]
 primaryKeyword: "landscape architect utilization rate"
 ---
-```
 
 Most landscape architecture firms track utilization loosely—if at all. That's a margin problem disguised as a time-tracking problem, and fixing it starts with understanding what utilization actually measures and what a healthy number looks like for your firm size and project mix.
 
