@@ -539,7 +539,11 @@ Ordered by my estimated value-per-effort. Revisit during the forensic audit.
 
 ## Where We Left Off (2026-04-26)
 
-**Status: 🚨 CRITICAL MIDDLEWARE BUG FIXED.** Discovered today that the auth middleware was redirecting all unwhitelisted public routes to `/login` — including `/manifest.webmanifest`, `/icon*`, AND `/blog/*`. This meant **Googlebot couldn't index any of our 11 SEO articles**, AND Android couldn't fetch the PWA manifest (which is why "Add to Home Screen" was showing the gray fallback "P" instead of the branded logo). Fix shipped at commit `fe0cefb` — explicit allowlist for all public routes.
+**Status: 🚨 CRITICAL MIDDLEWARE BUG FIXED + GOOGLE SEARCH CONSOLE LIVE.** Two huge wins today:
+1. Discovered + fixed a catastrophic middleware bug that was blocking Googlebot from indexing all 11 SEO articles AND blocking Android from fetching the PWA manifest. (Same root cause for both.)
+2. Set up Google Search Console for phasewise.io, submitted sitemap (15 URLs discovered), and requested priority indexing for the top 3 commercial-intent articles.
+
+The autonomous n8n SEO content pipeline that's been running every Friday is finally connected to Google's crawler. Articles can now be indexed.
 
 ### What shipped today (2026-04-26)
 
@@ -555,13 +559,38 @@ Both bugs traced to one root cause: `/lib/supabase/middleware.ts` had a sparse `
 
 **Implication:** all 11 pillar SEO articles shipped over the past 3 days were never indexable by Google. The autonomous n8n pipeline shipping new articles every Friday was running into the same wall. **Now unblocked** — Google should start indexing within a few days. Existing blog backlog may take 1-2 weeks to fully crawl.
 
-### Followup to verify (after Vercel deploy completes ~90 sec from commit)
+### Verification — all complete ✅
 
-- [ ] `curl https://phasewise.io/manifest.webmanifest` returns JSON (not HTML)
-- [ ] `curl https://phasewise.io/blog` returns blog index HTML (not 307 redirect)
-- [ ] `curl https://phasewise.io/icon1` returns image/png content-type
-- [ ] On Android: remove existing Phasewise home-screen shortcut, clear browser cache, "Add to Home Screen" → branded green phase-bars icon should appear
-- [ ] Submit phasewise.io to Google Search Console for re-crawl (optional but accelerates indexing)
+- [x] `curl https://phasewise.io/manifest.webmanifest` returns JSON (200, application/manifest+json) ✅
+- [x] `curl https://phasewise.io/blog` returns 200 (no longer 307 redirect) ✅
+- [x] `curl https://phasewise.io/icon1` returns 200 + image/png content-type ✅
+- [x] Android home-screen icon now shows branded green phase-bars logo ✅
+- [x] Google Search Console property verified for phasewise.io (via Cloudflare DNS auto-auth) ✅
+- [x] Sitemap submitted successfully — 15 URLs discovered ✅
+- [x] Priority indexing requested for 3 highest commercial-intent articles ✅
+
+### Google Search Console state
+
+- **Property:** phasewise.io (Domain property — covers all subdomains/protocols)
+- **Verification:** DNS TXT via Cloudflare auto-auth (no manual TXT record management needed)
+- **Sitemap:** `https://phasewise.io/sitemap.xml` — Status: Success, 15 discovered pages
+- **Priority indexing requests submitted:**
+  - `/blog/monograph-alternatives-landscape-architecture` (highest commercial intent)
+  - `/blog/landscape-architecture-project-management-software` (BOFU keyword)
+  - `/blog/landscape-architect-billing-rates-2026` (high search volume)
+- **Other 12 URLs:** queued naturally via sitemap; will index over 1-2 weeks
+
+### Indexing timeline expectations
+
+- **24-72 hours from 2026-04-26:** Top 3 priority articles likely crawled + indexed
+- **1-2 weeks:** Remaining 8 blog articles indexed via sitemap
+- **4-8 weeks:** Articles start ranking for target keywords (positions 30-100 initially)
+- **3-6 months:** Compounding organic traffic becomes visible
+- **6-12 months:** Site reaches topical authority threshold for landscape architecture practice management
+
+### Note: Cleanup item for later
+
+The `google-site-verification` TXT record(s) Google added during today's auto-verification may now coexist with the older duplicate(s) flagged in CLAUDE.md as a cleanup item. Lower priority — multiple google-site-verification TXT records don't cause problems, just clutter. Defer cleanup until next Cloudflare DNS session.
 
 ## Where We Left Off (2026-04-25)
 
