@@ -736,13 +736,14 @@ Each ~1,000+ words, targeting high-intent LA firm searches:
 
 ### Next session priorities (in order)
 
-1. **Submit directory listings** — Open `directory-listings.md`, submit to AlternativeTo (Monday-unlocked) → Capterra → G2. Each ~15-30 min. Drives passive referral traffic for years.
-2. **Product Hunt launch prep** — Needs launch-day assets (gif demo, screenshots, first comment). One-time event, 1-5K visitors typical.
-3. **Social profile uploads + auto-posting pipeline** — v2 PNG logos to LinkedIn, X/Twitter, GitHub. Claim @phasewise on Instagram. Then extend the n8n SEO pipeline with social posting nodes so each new article auto-posts to socials when it ships.
-4. **Vercel Analytics + Plausible** — Add now that articles will start generating traffic. Tells you which articles convert.
-5. **USPTO trademark filing** — File before significant marketing push.
-6. **Cloudflare ops** — getphasewise.com → phasewise.io 301 redirect + remove duplicate google-site-verification TXT.
-7. **Optional: n8n error workflow** — alert on silent failures.
+1. **Check Search Console indexing progress** — visit https://search.google.com/search-console and look at the "Pages" report. By tomorrow you should see at least the 3 priority articles indexed (Monograph alternatives, LA PM software, billing rates). The other 8 should index within 1-2 weeks via the sitemap.
+2. **Add Vercel Analytics + Plausible** — quick setup (~15 min). Now that Google can index articles, you'll start getting visitors. Need analytics in place to see which articles convert before traffic accumulates.
+3. **Submit directory listings** — AlternativeTo should be unblocked from its weekend pause now. Then Capterra → G2. Each 15-30 min. Copy-paste ready in `directory-listings.md`.
+4. **Product Hunt launch prep** — Needs launch-day assets (gif demo, screenshots, first comment). One-time event, 1-5K visitors typical.
+5. **Social profile uploads + auto-posting pipeline** — v2 PNG logos to LinkedIn, X/Twitter, GitHub. Claim @phasewise on Instagram. Then extend the n8n SEO pipeline with social posting nodes so each new article auto-posts to socials when it ships.
+6. **USPTO trademark filing** — File before significant marketing push.
+7. **Cloudflare ops** — getphasewise.com → phasewise.io 301 redirect + remove duplicate google-site-verification TXT records (now there are likely 2-3 of them after today's auto-verification).
+8. **Optional: n8n error workflow** — alert on silent failures.
 
 ### Earlier today (2026-04-23 — morning session): Stripe live mode swap
 
@@ -855,10 +856,16 @@ After a strategy discussion this session, Kevin confirmed that his top prioritie
 - [x] Anthropic API key + GitHub PAT created for n8n pipeline ✅ 2026-04-24
 - [x] **n8n SEO content pipeline LIVE and AUTONOMOUS** — fires every Friday 7am Pacific, picks unused keywords from priority list, ships pillar articles to `/blog` ✅ 2026-04-25
 - [x] First 2 auto-generated articles shipped (utilization rate, best software for LAs) ✅ 2026-04-25
-- [ ] Submit to AlternativeTo (text fields ready — blocked until Monday by their weekend-submission pause)
+- [x] Fix Android home-screen icon (renamed icons to Next.js convention) ✅ 2026-04-25
+- [x] **CRITICAL bug fix:** middleware was redirecting /blog, /manifest.webmanifest, /icon* to /login — Googlebot couldn't index 11 SEO articles + Android couldn't fetch PWA manifest. Fixed via explicit allowlist for public routes ✅ 2026-04-26
+- [x] Verify Android home-screen icon now shows branded logo (confirmed by Kevin) ✅ 2026-04-26
+- [x] Google Search Console — Domain property verified for phasewise.io via Cloudflare auto-auth ✅ 2026-04-26
+- [x] Sitemap submitted to Search Console (15 URLs discovered, status: Success) ✅ 2026-04-26
+- [x] Priority indexing requested for top 3 commercial-intent articles (Monograph alternatives, LA PM software, billing rates) ✅ 2026-04-26
+- [ ] **Monitor indexing progress** in Search Console over next 1-2 weeks (Performance + Indexing reports)
+- [ ] Submit to AlternativeTo (text fields ready — was blocked by weekend pause; should be unblocked now)
 - [ ] Submit to Capterra + G2 (copy-paste ready in `directory-listings.md`)
 - [ ] Later: more directories (GetApp, Software Advice, SaaSHub)
-- [x] Fix Android home-screen icon (renamed icons to Next.js convention) ✅ 2026-04-25
 - [ ] Add Vercel Analytics + Plausible (now that articles will start generating traffic)
 - [ ] Product Hunt launch
 - [ ] Upload v2 PNG logos to LinkedIn, X/Twitter, GitHub profiles
