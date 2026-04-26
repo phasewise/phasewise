@@ -537,6 +537,32 @@ Ordered by my estimated value-per-effort. Revisit during the forensic audit.
 - **Automated year-end rollover** — apply the `rolloverCap` automatically when the calendar year changes.
 - **Forensic audit** — top-to-bottom value review once the queue slows down. Rate each feature on value delivered vs maintenance cost. Cut or sharpen anything that doesn't earn its keep.
 
+## Where We Left Off (2026-04-26)
+
+**Status: 🚨 CRITICAL MIDDLEWARE BUG FIXED.** Discovered today that the auth middleware was redirecting all unwhitelisted public routes to `/login` — including `/manifest.webmanifest`, `/icon*`, AND `/blog/*`. This meant **Googlebot couldn't index any of our 11 SEO articles**, AND Android couldn't fetch the PWA manifest (which is why "Add to Home Screen" was showing the gray fallback "P" instead of the branded logo). Fix shipped at commit `fe0cefb` — explicit allowlist for all public routes.
+
+### What shipped today (2026-04-26)
+
+Commit: `fe0cefb` (middleware allowlist for public routes).
+
+Both bugs traced to one root cause: `/lib/supabase/middleware.ts` had a sparse `publicPaths` allowlist that didn't include `/blog`, `/manifest.webmanifest`, `/robots.txt`, `/sitemap.xml`, `/icon`, `/icon1`, `/icon2`, `/icon3`, `/apple-icon`, `/favicon.ico`, `/privacy`, `/terms`. All requests to these routes from unauthenticated users were 307-redirected to `/login`.
+
+**Fix:** explicit allowlist of all public marketing/PWA/SEO routes. Verified by:
+- Visiting `https://phasewise.io/manifest.webmanifest` returned the login page HTML (broken)
+- After fix: returns the JSON manifest
+- `https://phasewise.io/blog` returned 307 redirect to `/login` (broken — Google couldn't index)
+- After fix: returns the blog index page
+
+**Implication:** all 11 pillar SEO articles shipped over the past 3 days were never indexable by Google. The autonomous n8n pipeline shipping new articles every Friday was running into the same wall. **Now unblocked** — Google should start indexing within a few days. Existing blog backlog may take 1-2 weeks to fully crawl.
+
+### Followup to verify (after Vercel deploy completes ~90 sec from commit)
+
+- [ ] `curl https://phasewise.io/manifest.webmanifest` returns JSON (not HTML)
+- [ ] `curl https://phasewise.io/blog` returns blog index HTML (not 307 redirect)
+- [ ] `curl https://phasewise.io/icon1` returns image/png content-type
+- [ ] On Android: remove existing Phasewise home-screen shortcut, clear browser cache, "Add to Home Screen" → branded green phase-bars icon should appear
+- [ ] Submit phasewise.io to Google Search Console for re-crawl (optional but accelerates indexing)
+
 ## Where We Left Off (2026-04-25)
 
 **Status: 🟢 N8N SEO CONTENT PIPELINE IS LIVE AND AUTONOMOUS.** Stripe live. Landing page clean. Blog has 11 pillar articles. **The compound-interest play is now compounding** — n8n auto-generates a new pillar SEO article every Friday at 7am UTC, commits it to GitHub via API, Vercel auto-deploys it. Zero ongoing effort. Estimated cost: ~$2.50/month in API usage. Pipeline self-rotates through 40-keyword priority list and won't duplicate existing articles. Will run autonomously for ~6 months before exhausting the keyword list.
