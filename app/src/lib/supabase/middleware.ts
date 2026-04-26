@@ -30,20 +30,38 @@ export async function handleAuth(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   // Public routes: anyone can access these without being logged in.
-  const publicPaths = [
+  // Exact-match paths
+  const publicExact = new Set([
     "/",
     "/login",
     "/signup",
     "/forgot-password",
     "/reset-password",
     "/invite",
-  ];
+    // Public marketing pages
+    "/blog",
+    "/privacy",
+    "/terms",
+    // PWA + SEO assets
+    "/manifest.webmanifest",
+    "/robots.txt",
+    "/sitemap.xml",
+    "/icon",
+    "/icon1",
+    "/icon2",
+    "/icon3",
+    "/apple-icon",
+    "/favicon.ico",
+  ]);
+
+  // Path-prefix matches
+  const path = request.nextUrl.pathname;
   const isPublicPath =
-    publicPaths.some(
-      (p) => request.nextUrl.pathname === p || request.nextUrl.pathname.startsWith("/invite/")
-    ) ||
-    request.nextUrl.pathname.startsWith("/api/auth/") ||
-    request.nextUrl.pathname.startsWith("/api/invitations/");
+    publicExact.has(path) ||
+    path.startsWith("/blog/") ||
+    path.startsWith("/invite/") ||
+    path.startsWith("/api/auth/") ||
+    path.startsWith("/api/invitations/");
 
   if (!user && !isPublicPath) {
     const url = request.nextUrl.clone();
