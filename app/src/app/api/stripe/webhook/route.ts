@@ -3,7 +3,7 @@ import type Stripe from "stripe";
 import { stripe, planFromPriceId } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
 import { sendTransactional, LOOPS_TEMPLATES } from "@/lib/loops";
-import type { SubscriptionStatus, Plan } from "@prisma/client";
+import { Prisma, type SubscriptionStatus, type Plan } from "@prisma/client";
 
 const PLAN_DISPLAY_NAME: Record<Plan, string> = {
   TRIAL: "Trial",
@@ -38,6 +38,24 @@ export async function POST(request: Request) {
     const message = error instanceof Error ? error.message : "Invalid signature";
     console.error("Webhook signature verification failed:", message);
     return NextResponse.json({ error: `Webhook Error: ${message}` }, { status: 400 });
+  }
+
+  // Idempotency: Stripe retries on 5xx and timeouts. If we've seen this
+  // event ID before, skip processing so we don't send duplicate emails or
+  // re-apply state changes. The unique constraint on stripe_event_id is the
+  // source of truth — try to insert first, return early on conflict.
+  try {
+    await prisma.processedStripeEvent.create({
+      data: { stripeEventId: event.id, eventType: event.type },
+    });
+  } catch (err) {
+    if (
+      err instanceof Prisma.PrismaClientKnownRequestError &&
+      err.code === "P2002"
+    ) {
+      return NextResponse.json({ received: true, deduplicated: true });
+    }
+    throw err;
   }
 
   try {

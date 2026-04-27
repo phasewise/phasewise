@@ -478,3 +478,15 @@ enum InvoiceStatus {
   OVERDUE
   VOID
 }
+
+// ── Stripe Webhook Idempotency ────────────────────────────────────────
+// Tracks every Stripe event we've successfully accepted so retries (which
+// Stripe issues on 5xx and timeouts) don't double-process the same event.
+model ProcessedStripeEvent {
+  id            String   @id @default(uuid()) @db.Uuid
+  stripeEventId String   @unique @map("stripe_event_id")
+  eventType     String   @map("event_type")
+  processedAt   DateTime @default(now()) @map("processed_at")
+
+  @@map("processed_stripe_events")
+}
