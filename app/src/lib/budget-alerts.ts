@@ -83,39 +83,39 @@ export async function checkAndSendBudgetAlert(projectId: string): Promise<void> 
       throw err;
     }
 
-    // Send the alert email
+    // Send the alert email. We require the dedicated BUDGET_ALERT
+    // template — falling back to PAYMENT_FAILED would silently send mail
+    // with the wrong variable schema, leaving the customer confused
+    // about what failed. Better to skip and surface a loud log line.
+    if (!LOOPS_TEMPLATES.BUDGET_ALERT) {
+      console.error(
+        "[budget-alert] LOOPS_TEMPLATE_BUDGET_ALERT env var is not set — skipping email for project",
+        project.name,
+        alertLevel
+      );
+      return;
+    }
+
     const burnRate = Math.round((hoursUsed / budgetedHours) * 100);
     const budgetedFee = project.phases.reduce(
       (sum, phase) => sum + Number(phase.budgetedFee ?? 0),
       0
     );
     const firstName = project.createdBy.fullName.split(/\s+/)[0] || "there";
-
     const alertInfo = ALERT_LABELS[alertLevel];
-
-    // Prefer the dedicated Budget Alert template; fall back to
-    // PAYMENT_FAILED so alerts keep sending even before the template
-    // is installed in Loops.
-    const templateId =
-      LOOPS_TEMPLATES.BUDGET_ALERT || LOOPS_TEMPLATES.PAYMENT_FAILED;
 
     await sendTransactional({
       email: project.createdBy.email,
-      transactionalId: templateId,
-      dataVariables: LOOPS_TEMPLATES.BUDGET_ALERT
-        ? {
-            recipientName: firstName,
-            projectName: project.name,
-            alertLabel: alertInfo.label,
-            burnRate: String(burnRate),
-            hoursUsed: hoursUsed.toFixed(1),
-            budgetedHours: budgetedHours.toFixed(1),
-            budgetedFee: budgetedFee.toLocaleString(),
-          }
-        : {
-            recipientName: firstName,
-            firmName: `${project.name} — ${alertInfo.label}. ${burnRate}% of budgeted hours used (${hoursUsed.toFixed(1)}h of ${budgetedHours.toFixed(1)}h). Budget: $${budgetedFee.toLocaleString()}.`,
-          },
+      transactionalId: LOOPS_TEMPLATES.BUDGET_ALERT,
+      dataVariables: {
+        recipientName: firstName,
+        projectName: project.name,
+        alertLabel: alertInfo.label,
+        burnRate: String(burnRate),
+        hoursUsed: hoursUsed.toFixed(1),
+        budgetedHours: budgetedHours.toFixed(1),
+        budgetedFee: budgetedFee.toLocaleString(),
+      },
     });
 
     console.log(`[budget-alert] Sent ${alertLevel} alert for project ${project.name} (${burnRate}%)`);

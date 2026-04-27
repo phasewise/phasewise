@@ -444,13 +444,13 @@ export default function ComplianceClient({ items: initialItems, projects }: Prop
                     className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-[#E2EBE4] rounded-lg py-4 text-sm text-[#6B8C74] hover:border-[#52B788] hover:text-[#2D6A4F] transition-colors"
                   >
                     <FileUp className="w-4 h-4" />
-                    {uploading ? "Uploading..." : "Upload PDF, Word, or image (max 10MB)"}
+                    {uploading ? "Uploading..." : "Upload PDF, Word, Excel, or image (max 10MB)"}
                   </button>
                 )}
                 <input
                   ref={fileRef}
                   type="file"
-                  accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
                   className="hidden"
                   onChange={(e) => handleFileUpload(e, editingItem?.id)}
                 />

@@ -63,66 +63,93 @@ export async function POST(request: Request) {
       );
     }
 
-    const project = await prisma.project.create({
-      data: {
-        organizationId: currentUser.organizationId,
-        createdById: currentUser.id,
-        name,
-        projectNumber: projectNumber || undefined,
-        clientName: clientName || undefined,
-        clientEmail: clientEmail || undefined,
-        status: status || "ACTIVE",
-        startDate: startDate ? new Date(startDate) : undefined,
-        targetCompletion: targetCompletion ? new Date(targetCompletion) : undefined,
-        contractFee:
-          contractFee !== undefined && contractFee !== ""
-            ? new Prisma.Decimal(contractFee)
-            : undefined,
-        phases: {
-          create: (phases as PhaseInput[])
-            .filter(
-              (phase) => phase.phaseType && phase.selected !== false
-            )
-            .map((phase, index) => {
-              const fee =
-                phase.budgetedFee !== undefined && phase.budgetedFee !== ""
-                  ? new Prisma.Decimal(phase.budgetedFee)
-                  : undefined;
-              const hours =
-                phase.budgetedHours !== undefined && phase.budgetedHours !== ""
-                  ? new Prisma.Decimal(phase.budgetedHours)
-                  : undefined;
-
-              return {
-                phaseType: phase.phaseType as PhaseType,
-                status: (phase.status || "NOT_STARTED") as PhaseStatus,
-                sortOrder: phase.sortOrder ?? index,
-                budgetedFee: fee,
-                budgetedHours: hours,
-              };
-            }),
+    // Auto-numbering needs to be atomic — two simultaneous create requests
+    // could otherwise both read counter=N and both write project number
+    // PW-N. Increment the counter inside a transaction and use the
+    // pre-increment value for the project's number. The Prisma update
+    // returns the post-increment value so we subtract 1 for ours.
+    const project = await prisma.$transaction(async (tx) => {
+      const org = await tx.organization.findUnique({
+        where: { id: currentUser.organizationId },
+        select: {
+          autoNumberProjects: true,
+          projectNumberPrefix: true,
         },
-      },
-      include: {
-        phases: true,
-      },
-    });
+      });
 
-    // If auto-numbering is enabled, increment the org's counter
-    const org = await prisma.organization.findUnique({
-      where: { id: currentUser.organizationId },
-      select: { autoNumberProjects: true, projectNumberPrefix: true, projectNumberNext: true },
-    });
-    if (org?.autoNumberProjects && projectNumber) {
-      // Only increment if the project number matches the auto-generated format
-      const expectedNumber = `${org.projectNumberPrefix}-${String(org.projectNumberNext).padStart(3, "0")}`;
-      if (projectNumber === expectedNumber) {
-        await prisma.organization.update({
+      let resolvedNumber = projectNumber || undefined;
+      if (org?.autoNumberProjects && !projectNumber) {
+        const updated = await tx.organization.update({
           where: { id: currentUser.organizationId },
           data: { projectNumberNext: { increment: 1 } },
+          select: { projectNumberNext: true, projectNumberPrefix: true },
         });
+        const used = updated.projectNumberNext - 1;
+        resolvedNumber = `${updated.projectNumberPrefix}-${String(used).padStart(3, "0")}`;
+      } else if (org?.autoNumberProjects && projectNumber) {
+        // Client passed a value — only consume a counter slot if the value
+        // matches what the counter would have produced. This preserves
+        // the existing UX where the form pre-fills the number.
+        const updated = await tx.organization.update({
+          where: { id: currentUser.organizationId },
+          data: { projectNumberNext: { increment: 1 } },
+          select: { projectNumberNext: true, projectNumberPrefix: true },
+        });
+        const used = updated.projectNumberNext - 1;
+        const expected = `${updated.projectNumberPrefix}-${String(used).padStart(3, "0")}`;
+        if (projectNumber !== expected) {
+          // User edited the auto-suggested number — roll the counter back
+          // so we don't burn a slot we didn't use.
+          await tx.organization.update({
+            where: { id: currentUser.organizationId },
+            data: { projectNumberNext: { decrement: 1 } },
+          });
+        }
       }
-    }
+
+      return tx.project.create({
+        data: {
+          organizationId: currentUser.organizationId,
+          createdById: currentUser.id,
+          name,
+          projectNumber: resolvedNumber,
+          clientName: clientName || undefined,
+          clientEmail: clientEmail || undefined,
+          status: status || "ACTIVE",
+          startDate: startDate ? new Date(startDate) : undefined,
+          targetCompletion: targetCompletion ? new Date(targetCompletion) : undefined,
+          contractFee:
+            contractFee !== undefined && contractFee !== ""
+              ? new Prisma.Decimal(contractFee)
+              : undefined,
+          phases: {
+            create: (phases as PhaseInput[])
+              .filter(
+                (phase) => phase.phaseType && phase.selected !== false
+              )
+              .map((phase, index) => {
+                const fee =
+                  phase.budgetedFee !== undefined && phase.budgetedFee !== ""
+                    ? new Prisma.Decimal(phase.budgetedFee)
+                    : undefined;
+                const hours =
+                  phase.budgetedHours !== undefined && phase.budgetedHours !== ""
+                    ? new Prisma.Decimal(phase.budgetedHours)
+                    : undefined;
+
+                return {
+                  phaseType: phase.phaseType as PhaseType,
+                  status: (phase.status || "NOT_STARTED") as PhaseStatus,
+                  sortOrder: phase.sortOrder ?? index,
+                  budgetedFee: fee,
+                  budgetedHours: hours,
+                };
+              }),
+          },
+        },
+        include: { phases: true },
+      });
+    });
 
     return NextResponse.json({ projectId: project.id });
   } catch (error) {
