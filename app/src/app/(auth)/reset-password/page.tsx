@@ -117,9 +117,10 @@ export default function ResetPasswordPage() {
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">New password</label>
+                <label htmlFor="reset-password" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">New password</label>
                 <div className="relative">
                   <input
+                    id="reset-password"
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -132,6 +133,7 @@ export default function ResetPasswordPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A3BEA9] hover:text-[#3D5C48] transition-colors"
                     tabIndex={-1}
                   >
@@ -140,9 +142,10 @@ export default function ResetPasswordPage() {
                 </div>
               </div>
               <div>
-                <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Confirm new password</label>
+                <label htmlFor="reset-password-confirm" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Confirm new password</label>
                 <div className="relative">
                   <input
+                    id="reset-password-confirm"
                     type={showConfirm ? "text" : "password"}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
@@ -155,6 +158,7 @@ export default function ResetPasswordPage() {
                   <button
                     type="button"
                     onClick={() => setShowConfirm(!showConfirm)}
+                    aria-label={showConfirm ? "Hide password" : "Show password"}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A3BEA9] hover:text-[#3D5C48] transition-colors"
                     tabIndex={-1}
                   >

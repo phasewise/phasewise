@@ -96,53 +96,62 @@ export default function SignupPage() {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Your name</label>
+              <label htmlFor="signup-name" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Your name</label>
               <input
+                id="signup-name"
                 type="text"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 required
+                autoComplete="name"
                 className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-[#1A2E22] text-sm focus:outline-none focus:border-[#52B788] focus:bg-white transition-colors"
                 placeholder="Ada Rivera"
               />
             </div>
             <div>
-              <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Firm name</label>
+              <label htmlFor="signup-firm" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Firm name</label>
               <input
+                id="signup-firm"
                 type="text"
                 value={firmName}
                 onChange={(e) => setFirmName(e.target.value)}
                 required
+                autoComplete="organization"
                 className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-[#1A2E22] text-sm focus:outline-none focus:border-[#52B788] focus:bg-white transition-colors"
                 placeholder="Meridian Landscape Studio"
               />
             </div>
             <div>
-              <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Work email</label>
+              <label htmlFor="signup-email" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Work email</label>
               <input
+                id="signup-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                autoComplete="email"
                 className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-[#1A2E22] text-sm focus:outline-none focus:border-[#52B788] focus:bg-white transition-colors"
                 placeholder="ada@meridian.design"
               />
             </div>
             <div>
-              <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Password</label>
+              <label htmlFor="signup-password" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Password</label>
               <div className="relative">
                 <input
+                  id="signup-password"
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   minLength={8}
+                  autoComplete="new-password"
                   className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 pr-10 text-[#1A2E22] text-sm focus:outline-none focus:border-[#52B788] focus:bg-white transition-colors"
                   placeholder="Min 8 characters"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A3BEA9] hover:text-[#3D5C48] transition-colors"
                   tabIndex={-1}
                 >
