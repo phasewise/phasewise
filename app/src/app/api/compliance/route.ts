@@ -1,6 +1,21 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/supabase/auth";
+import { createClient } from "@/lib/supabase/server";
+
+async function deleteStoredDocument(path: string | null | undefined) {
+  if (!path) return;
+  // Only delete what we know lives in our private bucket. Legacy rows could
+  // still hold a public URL string; skip those rather than risk a wrong
+  // remove() call.
+  if (path.startsWith("http")) return;
+  try {
+    const supabase = await createClient();
+    await supabase.storage.from("compliance-docs").remove([path]);
+  } catch (err) {
+    console.error("[compliance] Failed to delete stored document:", err);
+  }
+}
 
 export const dynamic = "force-dynamic";
 
@@ -175,7 +190,7 @@ export async function PATCH(request: Request) {
     // Verify item belongs to org
     const existing = await prisma.complianceItem.findUnique({
       where: { id },
-      select: { organizationId: true },
+      select: { organizationId: true, documentUrl: true },
     });
     if (!existing || existing.organizationId !== currentUser.organizationId) {
       return NextResponse.json({ error: "Compliance item not found." }, { status: 404 });
@@ -198,9 +213,56 @@ export async function PATCH(request: Request) {
       },
     });
 
+    // If the document path changed (replaced or cleared), remove the
+    // previously-stored file from the bucket so we don't leak storage.
+    if (
+      fields.documentUrl !== undefined &&
+      existing.documentUrl &&
+      existing.documentUrl !== updated.documentUrl
+    ) {
+      await deleteStoredDocument(existing.documentUrl);
+    }
+
     return NextResponse.json({ success: true, item: updated });
   } catch (error) {
     console.error("Update compliance item error:", error);
     return NextResponse.json({ error: "Failed to update compliance item." }, { status: 500 });
+  }
+}
+
+/**
+ * DELETE /api/compliance?id=xxx
+ *
+ * Remove a compliance item and any attached document file.
+ */
+export async function DELETE(request: Request) {
+  try {
+    const currentUser = await getCurrentUser();
+    if (!currentUser) {
+      return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
+    }
+
+    const url = new URL(request.url);
+    const id = url.searchParams.get("id");
+
+    if (!id) {
+      return NextResponse.json({ error: "id is required." }, { status: 400 });
+    }
+
+    const existing = await prisma.complianceItem.findUnique({
+      where: { id },
+      select: { organizationId: true, documentUrl: true },
+    });
+    if (!existing || existing.organizationId !== currentUser.organizationId) {
+      return NextResponse.json({ error: "Compliance item not found." }, { status: 404 });
+    }
+
+    await prisma.complianceItem.delete({ where: { id } });
+    await deleteStoredDocument(existing.documentUrl);
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Delete compliance item error:", error);
+    return NextResponse.json({ error: "Failed to delete compliance item." }, { status: 500 });
   }
 }

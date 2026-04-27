@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Droplets } from "lucide-react";
 import { getCurrentUser } from "@/lib/supabase/auth";
 import { prisma } from "@/lib/prisma";
+import { createClient } from "@/lib/supabase/server";
 import ComplianceClient from "./ComplianceClient";
 
 export const dynamic = "force-dynamic";
@@ -32,18 +33,35 @@ export default async function CompliancePage() {
     orderBy: { name: "asc" },
   });
 
-  const itemsForClient = complianceItems.map((item) => ({
-    id: item.id,
-    category: item.category,
-    name: item.name,
-    description: item.description,
-    status: item.status,
-    dueDate: item.dueDate?.toISOString() ?? null,
-    documentUrl: item.documentUrl,
-    notes: item.notes,
-    projectId: item.projectId,
-    projectName: item.project.name,
-  }));
+  // The compliance-docs bucket is private. item.documentUrl now holds the
+  // storage path (not a public URL) so we mint a 1-hour signed URL on each
+  // render. We send the signed URL (for display) and the path (which the
+  // client echoes back to the API on save) as two separate fields.
+  const supabase = await createClient();
+  const itemsForClient = await Promise.all(
+    complianceItems.map(async (item) => {
+      let signedUrl: string | null = null;
+      if (item.documentUrl) {
+        const { data: signed } = await supabase.storage
+          .from("compliance-docs")
+          .createSignedUrl(item.documentUrl, 60 * 60);
+        signedUrl = signed?.signedUrl ?? null;
+      }
+      return {
+        id: item.id,
+        category: item.category,
+        name: item.name,
+        description: item.description,
+        status: item.status,
+        dueDate: item.dueDate?.toISOString() ?? null,
+        documentUrl: signedUrl,
+        documentPath: item.documentUrl,
+        notes: item.notes,
+        projectId: item.projectId,
+        projectName: item.project.name,
+      };
+    })
+  );
 
   return (
     <div className="p-6 sm:p-8 max-w-6xl">

@@ -39,7 +39,6 @@ export async function POST(request: NextRequest) {
   }
 
   const supabase = await createClient();
-  const ext = file.name.split(".").pop() || "pdf";
   const timestamp = Date.now();
   const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
   const path = `compliance/${currentUser.organizationId}/${complianceId ?? "new"}_${timestamp}_${safeName}`;
@@ -56,9 +55,24 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: uploadError.message }, { status: 500 });
   }
 
-  const { data: { publicUrl } } = supabase.storage
+  // Compliance bucket is private. Return a 1-hour signed URL for immediate
+  // preview, and the storage path so the client can save the path (not the
+  // ephemeral URL) to the compliance row. Subsequent renders generate fresh
+  // signed URLs from that path on the server side.
+  const { data: signed, error: signError } = await supabase.storage
     .from("compliance-docs")
-    .getPublicUrl(path);
+    .createSignedUrl(path, 60 * 60);
 
-  return NextResponse.json({ url: publicUrl, fileName: file.name });
+  if (signError || !signed) {
+    return NextResponse.json(
+      { error: signError?.message ?? "Failed to sign URL." },
+      { status: 500 }
+    );
+  }
+
+  return NextResponse.json({
+    url: signed.signedUrl,
+    path,
+    fileName: file.name,
+  });
 }

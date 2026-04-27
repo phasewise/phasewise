@@ -10,7 +10,10 @@ type ComplianceItem = {
   description: string | null;
   status: string;
   dueDate: string | null;
+  // Signed URL (1-hour TTL) for clickable preview. Regenerated each render.
   documentUrl: string | null;
+  // Storage path. The API persists this; the page server signs it for display.
+  documentPath: string | null;
   notes: string | null;
   projectId: string;
   projectName: string;
@@ -63,6 +66,7 @@ export default function ComplianceClient({ items: initialItems, projects }: Prop
   const [formDueDate, setFormDueDate] = useState("");
   const [formNotes, setFormNotes] = useState("");
   const [formDocUrl, setFormDocUrl] = useState("");
+  const [formDocPath, setFormDocPath] = useState("");
 
   function openEdit(item: ComplianceItem) {
     setEditingItem(item);
@@ -73,6 +77,7 @@ export default function ComplianceClient({ items: initialItems, projects }: Prop
     setFormDueDate(item.dueDate ? item.dueDate.split("T")[0] : "");
     setFormNotes(item.notes ?? "");
     setFormDocUrl(item.documentUrl ?? "");
+    setFormDocPath(item.documentPath ?? "");
     setError(null);
   }
 
@@ -83,6 +88,7 @@ export default function ComplianceClient({ items: initialItems, projects }: Prop
     setFormDueDate("");
     setFormNotes("");
     setFormDocUrl("");
+    setFormDocPath("");
   }
 
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>, complianceId?: string) {
@@ -101,18 +107,22 @@ export default function ComplianceClient({ items: initialItems, projects }: Prop
         const body = await res.json();
         throw new Error(body.error || "Upload failed");
       }
-      const { url } = await res.json();
+      const { url, path } = await res.json();
       setFormDocUrl(url);
+      setFormDocPath(path);
 
-      // If editing, also save the URL to the item
+      // If editing, persist the storage path to the item. The API field
+      // is named documentUrl for legacy compat but now holds a path.
       if (complianceId) {
         await fetch("/api/compliance", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: complianceId, documentUrl: url }),
+          body: JSON.stringify({ id: complianceId, documentUrl: path }),
         });
         setItems((prev) =>
-          prev.map((i) => (i.id === complianceId ? { ...i, documentUrl: url } : i))
+          prev.map((i) =>
+            i.id === complianceId ? { ...i, documentUrl: url, documentPath: path } : i
+          )
         );
       }
     } catch (err) {
@@ -139,7 +149,9 @@ export default function ComplianceClient({ items: initialItems, projects }: Prop
         description: formDescription || null,
         dueDate: formDueDate || null,
         notes: formNotes || null,
-        documentUrl: formDocUrl || null,
+        // The API stores the storage path as documentUrl (field name kept
+        // for compat). null clears + deletes the file server-side.
+        documentUrl: formDocPath || null,
       }),
     });
 
@@ -161,7 +173,10 @@ export default function ComplianceClient({ items: initialItems, projects }: Prop
               name: updated.name,
               description: updated.description,
               dueDate: updated.dueDate,
-              documentUrl: updated.documentUrl,
+              // Server returns the storage path; preserve the signed URL
+              // for display since the underlying file is unchanged.
+              documentUrl: formDocUrl || null,
+              documentPath: updated.documentUrl,
               notes: updated.notes,
               status: updated.status,
             }
@@ -186,6 +201,8 @@ export default function ComplianceClient({ items: initialItems, projects }: Prop
         description: formDescription || undefined,
         dueDate: formDueDate || undefined,
         notes: formNotes || undefined,
+        // documentUrl carries the storage path, not a URL.
+        documentUrl: formDocPath || undefined,
       }),
     });
 
@@ -206,7 +223,10 @@ export default function ComplianceClient({ items: initialItems, projects }: Prop
       description: newItem.description,
       status: newItem.status,
       dueDate: newItem.dueDate,
-      documentUrl: newItem.documentUrl,
+      // newItem.documentUrl is the storage path; the upload handler
+      // already captured the signed URL into formDocUrl for preview.
+      documentUrl: formDocUrl || null,
+      documentPath: newItem.documentUrl,
       notes: newItem.notes,
       projectId: newItem.projectId,
       projectName: project?.name ?? "",
@@ -412,7 +432,7 @@ export default function ComplianceClient({ items: initialItems, projects }: Prop
                     <a href={formDocUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-[#2D6A4F] hover:underline truncate flex-1">
                       View attached document
                     </a>
-                    <button type="button" onClick={() => setFormDocUrl("")} aria-label="Remove attachment" className="text-[#A3BEA9] hover:text-rose-500 transition-colors">
+                    <button type="button" onClick={() => { setFormDocUrl(""); setFormDocPath(""); }} aria-label="Remove attachment" className="text-[#A3BEA9] hover:text-rose-500 transition-colors">
                       <X size={14} />
                     </button>
                   </div>
