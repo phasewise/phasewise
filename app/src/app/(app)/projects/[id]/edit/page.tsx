@@ -216,8 +216,9 @@ export default function EditProjectPage() {
           <h2 className="text-lg font-semibold text-[#1A2E22] mb-4">Project details</h2>
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium text-[#3D5C48]">Project name</label>
+              <label htmlFor="pedit-name" className="text-sm font-medium text-[#3D5C48]">Project name</label>
               <input
+                id="pedit-name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
@@ -226,16 +227,18 @@ export default function EditProjectPage() {
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="text-sm font-medium text-[#3D5C48]">Project number</label>
+                <label htmlFor="pedit-project-number" className="text-sm font-medium text-[#3D5C48]">Project number</label>
                 <input
+                  id="pedit-project-number"
                   value={projectNumber}
                   onChange={(e) => setProjectNumber(e.target.value)}
                   className="mt-2 w-full rounded-lg border border-[#E2EBE4] bg-[#F7F9F7] px-4 py-3 text-sm text-[#1A2E22] outline-none focus:border-[#52B788] focus:bg-white"
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-[#3D5C48]">Status</label>
+                <label htmlFor="pedit-status" className="text-sm font-medium text-[#3D5C48]">Status</label>
                 <select
+                  id="pedit-status"
                   value={status}
                   onChange={(e) => setStatus(e.target.value)}
                   className="mt-2 w-full rounded-lg border border-[#E2EBE4] bg-[#F7F9F7] px-4 py-3 text-sm text-[#1A2E22] outline-none focus:border-[#52B788] focus:bg-white"
@@ -249,27 +252,32 @@ export default function EditProjectPage() {
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="text-sm font-medium text-[#3D5C48]">Client name</label>
+                <label htmlFor="pedit-client-name" className="text-sm font-medium text-[#3D5C48]">Client name</label>
                 <input
+                  id="pedit-client-name"
                   value={clientName}
                   onChange={(e) => setClientName(e.target.value)}
+                  autoComplete="organization"
                   className="mt-2 w-full rounded-lg border border-[#E2EBE4] bg-[#F7F9F7] px-4 py-3 text-sm text-[#1A2E22] outline-none focus:border-[#52B788] focus:bg-white"
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-[#3D5C48]">Client email</label>
+                <label htmlFor="pedit-client-email" className="text-sm font-medium text-[#3D5C48]">Client email</label>
                 <input
+                  id="pedit-client-email"
                   type="email"
                   value={clientEmail}
                   onChange={(e) => setClientEmail(e.target.value)}
+                  autoComplete="email"
                   className="mt-2 w-full rounded-lg border border-[#E2EBE4] bg-[#F7F9F7] px-4 py-3 text-sm text-[#1A2E22] outline-none focus:border-[#52B788] focus:bg-white"
                 />
               </div>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="text-sm font-medium text-[#3D5C48]">Start date</label>
+                <label htmlFor="pedit-start-date" className="text-sm font-medium text-[#3D5C48]">Start date</label>
                 <input
+                  id="pedit-start-date"
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
@@ -277,8 +285,9 @@ export default function EditProjectPage() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-[#3D5C48]">Target completion</label>
+                <label htmlFor="pedit-target-completion" className="text-sm font-medium text-[#3D5C48]">Target completion</label>
                 <input
+                  id="pedit-target-completion"
                   type="date"
                   value={targetCompletion}
                   onChange={(e) => setTargetCompletion(e.target.value)}
@@ -287,10 +296,11 @@ export default function EditProjectPage() {
               </div>
             </div>
             <div>
-              <label className="text-sm font-medium text-[#3D5C48]">Contract fee (optional)</label>
+              <label htmlFor="pedit-contract-fee" className="text-sm font-medium text-[#3D5C48]">Contract fee (optional)</label>
               <div className="relative mt-2">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#A3BEA9] text-sm">$</span>
                 <input
+                  id="pedit-contract-fee"
                   type="number"
                   min="0"
                   step="0.01"
@@ -305,8 +315,9 @@ export default function EditProjectPage() {
               </p>
             </div>
             <div>
-              <label className="text-sm font-medium text-[#3D5C48]">Description</label>
+              <label htmlFor="pedit-description" className="text-sm font-medium text-[#3D5C48]">Description</label>
               <textarea
+                id="pedit-description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
@@ -336,15 +347,18 @@ export default function EditProjectPage() {
           </div>
 
           <div className="space-y-3">
-            {phases.map((phase, index) => (
+            {phases.map((phase, index) => {
+              const rowKey = phase.id || `new-${index}`;
+              return (
               <div
-                key={phase.id || `new-${index}`}
+                key={rowKey}
                 className="rounded-xl border border-[#E8EDE9] bg-[#F7F9F7] p-4"
               >
                 <div className="grid gap-3 sm:grid-cols-[1fr_1fr_140px_100px_120px_40px] items-end">
                   <div>
-                    <label className="text-xs font-medium text-[#6B8C74]">Phase type</label>
+                    <label htmlFor={`pedit-phase-type-${rowKey}`} className="text-xs font-medium text-[#6B8C74]">Phase type</label>
                     <select
+                      id={`pedit-phase-type-${rowKey}`}
                       value={phase.phaseType}
                       onChange={(e) => updatePhase(index, {
                         phaseType: e.target.value,
@@ -360,10 +374,11 @@ export default function EditProjectPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="text-xs font-medium text-[#6B8C74]">
+                    <label htmlFor={`pedit-phase-custom-name-${rowKey}`} className="text-xs font-medium text-[#6B8C74]">
                       {phase.phaseType === "OTHER" ? "Phase name *" : "Custom name (optional)"}
                     </label>
                     <input
+                      id={`pedit-phase-custom-name-${rowKey}`}
                       value={phase.customName}
                       onChange={(e) => updatePhase(index, { customName: e.target.value })}
                       required={phase.phaseType === "OTHER"}
@@ -372,8 +387,9 @@ export default function EditProjectPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-medium text-[#6B8C74]">Status</label>
+                    <label htmlFor={`pedit-phase-status-${rowKey}`} className="text-xs font-medium text-[#6B8C74]">Status</label>
                     <select
+                      id={`pedit-phase-status-${rowKey}`}
                       value={phase.status}
                       onChange={(e) => updatePhase(index, { status: e.target.value })}
                       className="mt-1 w-full bg-white border border-[#E2EBE4] rounded-lg px-3 py-2 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]"
@@ -399,6 +415,7 @@ export default function EditProjectPage() {
                     <button
                       type="button"
                       onClick={() => removePhase(index)}
+                      aria-label="Remove phase"
                       className="mt-5 text-[#A3BEA9] hover:text-rose-500 transition-colors p-1"
                       title="Remove phase"
                     >
@@ -407,7 +424,8 @@ export default function EditProjectPage() {
                   </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
             {phases.length === 0 && (
               <div className="text-center py-8 text-[#A3BEA9] text-sm">
                 No phases. Click &quot;Add phase&quot; to get started.

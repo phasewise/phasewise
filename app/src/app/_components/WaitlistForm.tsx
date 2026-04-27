@@ -54,22 +54,26 @@ export default function WaitlistForm() {
     >
       <div className="grid sm:grid-cols-2 gap-4 mb-4">
         <div>
-          <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Firm name</label>
+          <label htmlFor="waitlist-firm" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Firm name</label>
           <input
+            id="waitlist-firm"
             type="text"
             value={firmName}
             onChange={(e) => setFirmName(e.target.value)}
+            autoComplete="organization"
             className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-[#1A2E22] text-sm focus:outline-none focus:border-[#52B788] focus:bg-white transition-colors"
             placeholder="Meridian Landscape Studio"
           />
         </div>
         <div>
-          <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Work email</label>
+          <label htmlFor="waitlist-email" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Work email</label>
           <input
+            id="waitlist-email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            autoComplete="email"
             className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-[#1A2E22] text-sm focus:outline-none focus:border-[#52B788] focus:bg-white transition-colors"
             placeholder="ada@meridian.design"
           />

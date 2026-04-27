@@ -225,8 +225,9 @@ export default function SubmittalsClient({
           </div>
           <div className="grid sm:grid-cols-2 gap-4 mb-4">
             <div>
-              <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Type</label>
+              <label htmlFor="sub-type" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Type</label>
               <select
+                id="sub-type"
                 value={formType}
                 onChange={(e) => setFormType(e.target.value as "SUBMITTAL" | "RFI")}
                 className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]"
@@ -236,8 +237,9 @@ export default function SubmittalsClient({
               </select>
             </div>
             <div>
-              <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Project</label>
+              <label htmlFor="sub-project" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Project</label>
               <select
+                id="sub-project"
                 value={formProjectId}
                 onChange={(e) => setFormProjectId(e.target.value)}
                 required
@@ -251,8 +253,9 @@ export default function SubmittalsClient({
             </div>
           </div>
           <div className="mb-4">
-            <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Subject</label>
+            <label htmlFor="sub-subject" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Subject</label>
             <input
+              id="sub-subject"
               value={formSubject}
               onChange={(e) => setFormSubject(e.target.value)}
               required
@@ -262,8 +265,9 @@ export default function SubmittalsClient({
           </div>
           <div className="grid sm:grid-cols-3 gap-4 mb-4">
             <div>
-              <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Ball in court</label>
+              <label htmlFor="sub-ball-in-court" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Ball in court</label>
               <input
+                id="sub-ball-in-court"
                 value={formBallInCourt}
                 onChange={(e) => setFormBallInCourt(e.target.value)}
                 className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]"
@@ -271,8 +275,9 @@ export default function SubmittalsClient({
               />
             </div>
             <div>
-              <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Due date</label>
+              <label htmlFor="sub-due-date" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Due date</label>
               <input
+                id="sub-due-date"
                 type="date"
                 value={formDueDate}
                 onChange={(e) => setFormDueDate(e.target.value)}
@@ -280,8 +285,9 @@ export default function SubmittalsClient({
               />
             </div>
             <div>
-              <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Assigned to</label>
+              <label htmlFor="sub-assigned-to" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Assigned to</label>
               <select
+                id="sub-assigned-to"
                 value={formAssignedTo}
                 onChange={(e) => setFormAssignedTo(e.target.value)}
                 className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]"
@@ -365,6 +371,8 @@ export default function SubmittalsClient({
                     </td>
                     <td className="px-4 sm:px-6 py-4" onClick={(e) => e.stopPropagation()}>
                       <select
+                        id={`sub-row-status-${item.id}`}
+                        aria-label="Submittal status"
                         value={item.status}
                         onChange={(e) => updateStatus(item.id, e.target.value)}
                         disabled={updatingId === item.id}
@@ -397,29 +405,29 @@ export default function SubmittalsClient({
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between p-6 pb-0">
               <h2 className="font-serif text-xl text-[#1A2E22]">Edit {editingItem.type === "RFI" ? "RFI" : "Submittal"}</h2>
-              <button type="button" onClick={closeEdit} className="text-[#A3BEA9] hover:text-[#1A2E22] transition-colors"><X size={18} /></button>
+              <button type="button" onClick={closeEdit} aria-label="Close edit modal" className="text-[#A3BEA9] hover:text-[#1A2E22] transition-colors"><X size={18} /></button>
             </div>
             <form onSubmit={handleUpdate} className="p-6 space-y-4">
               <div>
-                <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Subject *</label>
-                <input value={formSubject} onChange={(e) => setFormSubject(e.target.value)} required className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+                <label htmlFor="sub-edit-subject" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Subject *</label>
+                <input id="sub-edit-subject" value={formSubject} onChange={(e) => setFormSubject(e.target.value)} required className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
               </div>
               <div>
-                <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Description</label>
-                <textarea value={formDescription} onChange={(e) => setFormDescription(e.target.value)} rows={3} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788] resize-y" />
+                <label htmlFor="sub-edit-description" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Description</label>
+                <textarea id="sub-edit-description" value={formDescription} onChange={(e) => setFormDescription(e.target.value)} rows={3} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788] resize-y" />
               </div>
               <div className="grid sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Ball in court</label>
-                  <input value={formBallInCourt} onChange={(e) => setFormBallInCourt(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+                  <label htmlFor="sub-edit-ball-in-court" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Ball in court</label>
+                  <input id="sub-edit-ball-in-court" value={formBallInCourt} onChange={(e) => setFormBallInCourt(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
                 </div>
                 <div>
-                  <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Due date</label>
-                  <input type="date" value={formDueDate} onChange={(e) => setFormDueDate(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+                  <label htmlFor="sub-edit-due-date" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Due date</label>
+                  <input id="sub-edit-due-date" type="date" value={formDueDate} onChange={(e) => setFormDueDate(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
                 </div>
                 <div>
-                  <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Assigned to</label>
-                  <select value={formAssignedTo} onChange={(e) => setFormAssignedTo(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]">
+                  <label htmlFor="sub-edit-assigned-to" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Assigned to</label>
+                  <select id="sub-edit-assigned-to" value={formAssignedTo} onChange={(e) => setFormAssignedTo(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]">
                     <option value="">Unassigned</option>
                     {teamMembers.map((m) => <option key={m.id} value={m.id}>{m.fullName}</option>)}
                   </select>

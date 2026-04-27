@@ -173,47 +173,47 @@ export default function ClientsClient({ clients: initialClients }: Props) {
           </div>
           <div className="grid sm:grid-cols-2 gap-4 mb-4">
             <div>
-              <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Company / Client name *</label>
-              <input value={formName} onChange={(e) => setFormName(e.target.value)} required placeholder="Clearwater Development LLC" className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+              <label htmlFor="client-name" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Company / Client name *</label>
+              <input id="client-name" value={formName} onChange={(e) => setFormName(e.target.value)} required placeholder="Clearwater Development LLC" autoComplete="organization" className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
             </div>
             <div>
-              <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Contact person</label>
-              <input value={formContact} onChange={(e) => setFormContact(e.target.value)} placeholder="Sarah Chen" className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+              <label htmlFor="client-contact" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Contact person</label>
+              <input id="client-contact" value={formContact} onChange={(e) => setFormContact(e.target.value)} placeholder="Sarah Chen" autoComplete="name" className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
             </div>
           </div>
           <div className="grid sm:grid-cols-2 gap-4 mb-4">
             <div>
-              <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Email</label>
-              <input type="email" value={formEmail} onChange={(e) => setFormEmail(e.target.value)} placeholder="sarah@clearwater.dev" className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+              <label htmlFor="client-email" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Email</label>
+              <input id="client-email" type="email" value={formEmail} onChange={(e) => setFormEmail(e.target.value)} placeholder="sarah@clearwater.dev" autoComplete="email" className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
             </div>
             <div>
-              <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Phone</label>
-              <input value={formPhone} onChange={(e) => setFormPhone(e.target.value)} placeholder="(559) 555-0100" className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+              <label htmlFor="client-phone" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Phone</label>
+              <input id="client-phone" value={formPhone} onChange={(e) => setFormPhone(e.target.value)} placeholder="(559) 555-0100" autoComplete="tel" className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
             </div>
           </div>
           <div className="grid sm:grid-cols-4 gap-4 mb-4">
             <div className="sm:col-span-2">
-              <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Address</label>
-              <input value={formAddress} onChange={(e) => setFormAddress(e.target.value)} placeholder="123 Main Street" className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+              <label htmlFor="client-address" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Address</label>
+              <input id="client-address" value={formAddress} onChange={(e) => setFormAddress(e.target.value)} placeholder="123 Main Street" className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
             </div>
             <div>
-              <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">City</label>
-              <input value={formCity} onChange={(e) => setFormCity(e.target.value)} placeholder="Fresno" className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+              <label htmlFor="client-city" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">City</label>
+              <input id="client-city" value={formCity} onChange={(e) => setFormCity(e.target.value)} placeholder="Fresno" className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">State</label>
-                <input value={formState} onChange={(e) => setFormState(e.target.value)} placeholder="CA" maxLength={2} className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] uppercase focus:outline-none focus:border-[#52B788]" />
+                <label htmlFor="client-state" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">State</label>
+                <input id="client-state" value={formState} onChange={(e) => setFormState(e.target.value)} placeholder="CA" maxLength={2} className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] uppercase focus:outline-none focus:border-[#52B788]" />
               </div>
               <div>
-                <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">ZIP</label>
-                <input value={formZip} onChange={(e) => setFormZip(e.target.value)} placeholder="93720" className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+                <label htmlFor="client-zip" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">ZIP</label>
+                <input id="client-zip" value={formZip} onChange={(e) => setFormZip(e.target.value)} placeholder="93720" className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
               </div>
             </div>
           </div>
           <div className="mb-4">
-            <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Notes</label>
-            <textarea value={formNotes} onChange={(e) => setFormNotes(e.target.value)} rows={2} placeholder="Referred by Mesa Associates. Prefers email communication." className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788] resize-y" />
+            <label htmlFor="client-notes" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Notes</label>
+            <textarea id="client-notes" value={formNotes} onChange={(e) => setFormNotes(e.target.value)} rows={2} placeholder="Referred by Mesa Associates. Prefers email communication." className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788] resize-y" />
           </div>
           <div className="flex gap-3">
             <button type="submit" disabled={saving} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-[#2D6A4F] text-white hover:bg-[#40916C] transition-colors disabled:opacity-50">
@@ -280,52 +280,52 @@ export default function ClientsClient({ clients: initialClients }: Props) {
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between p-6 pb-0">
               <h2 className="font-serif text-xl text-[#1A2E22]">Edit Client</h2>
-              <button type="button" onClick={closeEdit} className="text-[#A3BEA9] hover:text-[#1A2E22] transition-colors"><X size={18} /></button>
+              <button type="button" onClick={closeEdit} aria-label="Close edit modal" className="text-[#A3BEA9] hover:text-[#1A2E22] transition-colors"><X size={18} /></button>
             </div>
             <form onSubmit={handleUpdate} className="p-6 space-y-4">
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Company / Client name *</label>
-                  <input value={formName} onChange={(e) => setFormName(e.target.value)} required className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+                  <label htmlFor="client-edit-name" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Company / Client name *</label>
+                  <input id="client-edit-name" value={formName} onChange={(e) => setFormName(e.target.value)} required autoComplete="organization" className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
                 </div>
                 <div>
-                  <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Contact person</label>
-                  <input value={formContact} onChange={(e) => setFormContact(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+                  <label htmlFor="client-edit-contact" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Contact person</label>
+                  <input id="client-edit-contact" value={formContact} onChange={(e) => setFormContact(e.target.value)} autoComplete="name" className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
                 </div>
               </div>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Email</label>
-                  <input type="email" value={formEmail} onChange={(e) => setFormEmail(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+                  <label htmlFor="client-edit-email" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Email</label>
+                  <input id="client-edit-email" type="email" value={formEmail} onChange={(e) => setFormEmail(e.target.value)} autoComplete="email" className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
                 </div>
                 <div>
-                  <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Phone</label>
-                  <input value={formPhone} onChange={(e) => setFormPhone(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+                  <label htmlFor="client-edit-phone" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Phone</label>
+                  <input id="client-edit-phone" value={formPhone} onChange={(e) => setFormPhone(e.target.value)} autoComplete="tel" className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
                 </div>
               </div>
               <div className="grid sm:grid-cols-4 gap-4">
                 <div className="sm:col-span-2">
-                  <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Address</label>
-                  <input value={formAddress} onChange={(e) => setFormAddress(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+                  <label htmlFor="client-edit-address" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Address</label>
+                  <input id="client-edit-address" value={formAddress} onChange={(e) => setFormAddress(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
                 </div>
                 <div>
-                  <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">City</label>
-                  <input value={formCity} onChange={(e) => setFormCity(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+                  <label htmlFor="client-edit-city" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">City</label>
+                  <input id="client-edit-city" value={formCity} onChange={(e) => setFormCity(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">State</label>
-                    <input value={formState} onChange={(e) => setFormState(e.target.value)} maxLength={2} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] uppercase focus:outline-none focus:border-[#52B788]" />
+                    <label htmlFor="client-edit-state" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">State</label>
+                    <input id="client-edit-state" value={formState} onChange={(e) => setFormState(e.target.value)} maxLength={2} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] uppercase focus:outline-none focus:border-[#52B788]" />
                   </div>
                   <div>
-                    <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">ZIP</label>
-                    <input value={formZip} onChange={(e) => setFormZip(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+                    <label htmlFor="client-edit-zip" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">ZIP</label>
+                    <input id="client-edit-zip" value={formZip} onChange={(e) => setFormZip(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
                   </div>
                 </div>
               </div>
               <div>
-                <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Notes</label>
-                <textarea value={formNotes} onChange={(e) => setFormNotes(e.target.value)} rows={2} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788] resize-y" />
+                <label htmlFor="client-edit-notes" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Notes</label>
+                <textarea id="client-edit-notes" value={formNotes} onChange={(e) => setFormNotes(e.target.value)} rows={2} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788] resize-y" />
               </div>
               {error && <p className="text-[#B04030] text-sm">{error}</p>}
               <div className="flex gap-3 pt-2">

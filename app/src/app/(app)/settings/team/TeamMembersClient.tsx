@@ -299,23 +299,27 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
           </div>
           <div className="grid sm:grid-cols-2 gap-4 mb-4">
             <div>
-              <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Full name</label>
+              <label htmlFor="team-full-name" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Full name</label>
               <input
+                id="team-full-name"
                 type="text"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 required
+                autoComplete="name"
                 className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-[#1A2E22] text-sm focus:outline-none focus:border-[#52B788] transition-colors"
                 placeholder="Jordan Reyes"
               />
             </div>
             <div>
-              <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Email</label>
+              <label htmlFor="team-email" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Email</label>
               <input
+                id="team-email"
                 type="email"
                 value={newEmail}
                 onChange={(e) => setNewEmail(e.target.value)}
                 required
+                autoComplete="email"
                 className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-[#1A2E22] text-sm focus:outline-none focus:border-[#52B788] transition-colors"
                 placeholder="jordan@firm.com"
               />
@@ -323,10 +327,11 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
           </div>
           <div className="grid sm:grid-cols-2 gap-4 mb-4">
             <div>
-              <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Job Title</label>
+              <label htmlFor="team-title" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Job Title</label>
               {customTitle ? (
                 <div className="flex gap-2">
                   <input
+                    id="team-title"
                     type="text"
                     value={newTitle}
                     onChange={(e) => setNewTitle(e.target.value)}
@@ -343,6 +348,7 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
                 </div>
               ) : (
                 <select
+                  id="team-title"
                   value={newTitle}
                   onChange={(e) => handleTitleSelect(e.target.value)}
                   className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-[#1A2E22] text-sm focus:outline-none focus:border-[#52B788] transition-colors"
@@ -358,8 +364,9 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
               )}
             </div>
             <div>
-              <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Permission Level</label>
+              <label htmlFor="team-role" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Permission Level</label>
               <select
+                id="team-role"
                 value={newRole}
                 onChange={(e) => setNewRole(e.target.value)}
                 className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-[#1A2E22] text-sm focus:outline-none focus:border-[#52B788] transition-colors"

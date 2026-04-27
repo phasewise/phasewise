@@ -268,6 +268,8 @@ export default function ProjectTasksClient({ projectId, currentUserRole, users, 
                     <td className="px-4 py-4 text-slate-600">{task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "—"}</td>
                     <td className="px-4 py-4 text-slate-600">
                       <select
+                        id={`task-status-${task.id}`}
+                        aria-label="Task status"
                         value={task.status}
                         onChange={(event) => updateTask(task.id, { status: event.target.value })}
                         disabled={!canManage && task.assignedToId !== undefined}
@@ -304,16 +306,18 @@ export default function ProjectTasksClient({ projectId, currentUserRole, users, 
             <h3 className="text-lg font-semibold text-slate-900">New task</h3>
             <div className="space-y-4 mt-4">
               <div>
-                <label className="text-sm font-medium text-slate-700">Name</label>
+                <label htmlFor="task-name" className="text-sm font-medium text-slate-700">Name</label>
                 <input
+                  id="task-name"
                   value={newTaskName}
                   onChange={(event) => setNewTaskName(event.target.value)}
                   className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none focus:border-emerald-500"
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-slate-700">Description</label>
+                <label htmlFor="task-description" className="text-sm font-medium text-slate-700">Description</label>
                 <textarea
+                  id="task-description"
                   value={newTaskDescription}
                   onChange={(event) => setNewTaskDescription(event.target.value)}
                   className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none focus:border-emerald-500"
@@ -321,8 +325,9 @@ export default function ProjectTasksClient({ projectId, currentUserRole, users, 
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-slate-700">Due date</label>
+                <label htmlFor="task-due-date" className="text-sm font-medium text-slate-700">Due date</label>
                 <input
+                  id="task-due-date"
                   type="date"
                   value={newTaskDueDate}
                   onChange={(event) => setNewTaskDueDate(event.target.value)}
@@ -330,8 +335,9 @@ export default function ProjectTasksClient({ projectId, currentUserRole, users, 
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-slate-700">Assign to</label>
+                <label htmlFor="task-assignee" className="text-sm font-medium text-slate-700">Assign to</label>
                 <select
+                  id="task-assignee"
                   value={newTaskAssignee}
                   onChange={(event) => setNewTaskAssignee(event.target.value)}
                   className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none focus:border-emerald-500"
@@ -384,9 +390,10 @@ export default function ProjectTasksClient({ projectId, currentUserRole, users, 
 
             {canManage ? (
               <div className="mt-6 space-y-3">
-                <label className="block text-sm font-medium text-slate-700">Add team member</label>
+                <label htmlFor="task-add-member" className="block text-sm font-medium text-slate-700">Add team member</label>
                 <div className="flex gap-3">
                   <select
+                    id="task-add-member"
                     value={selectedAssignee}
                     onChange={(event) => setSelectedAssignee(event.target.value)}
                     className="flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none focus:border-emerald-500"
@@ -425,16 +432,18 @@ export default function ProjectTasksClient({ projectId, currentUserRole, users, 
             </div>
             <div className="px-6 py-5 space-y-4">
               <div>
-                <label className="text-sm font-medium text-[#3D5C48]">Name</label>
+                <label htmlFor="task-edit-name" className="text-sm font-medium text-[#3D5C48]">Name</label>
                 <input
+                  id="task-edit-name"
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
                   className="mt-2 w-full rounded-lg border border-[#E2EBE4] bg-[#F7F9F7] px-4 py-3 text-sm text-[#1A2E22] outline-none focus:border-[#52B788] focus:bg-white"
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-[#3D5C48]">Description</label>
+                <label htmlFor="task-edit-description" className="text-sm font-medium text-[#3D5C48]">Description</label>
                 <textarea
+                  id="task-edit-description"
                   value={editDescription}
                   onChange={(e) => setEditDescription(e.target.value)}
                   rows={3}
@@ -443,8 +452,9 @@ export default function ProjectTasksClient({ projectId, currentUserRole, users, 
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="text-sm font-medium text-[#3D5C48]">Due date</label>
+                  <label htmlFor="task-edit-due-date" className="text-sm font-medium text-[#3D5C48]">Due date</label>
                   <input
+                    id="task-edit-due-date"
                     type="date"
                     value={editDueDate}
                     onChange={(e) => setEditDueDate(e.target.value)}
@@ -452,8 +462,9 @@ export default function ProjectTasksClient({ projectId, currentUserRole, users, 
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-[#3D5C48]">Status</label>
+                  <label htmlFor="task-edit-status" className="text-sm font-medium text-[#3D5C48]">Status</label>
                   <select
+                    id="task-edit-status"
                     value={editStatus}
                     onChange={(e) => setEditStatus(e.target.value)}
                     className="mt-2 w-full rounded-lg border border-[#E2EBE4] bg-[#F7F9F7] px-4 py-3 text-sm text-[#1A2E22] outline-none focus:border-[#52B788] focus:bg-white"
@@ -465,8 +476,9 @@ export default function ProjectTasksClient({ projectId, currentUserRole, users, 
                 </div>
               </div>
               <div>
-                <label className="text-sm font-medium text-[#3D5C48]">Assignee</label>
+                <label htmlFor="task-edit-assignee" className="text-sm font-medium text-[#3D5C48]">Assignee</label>
                 <select
+                  id="task-edit-assignee"
                   value={editAssignee}
                   onChange={(e) => setEditAssignee(e.target.value)}
                   className="mt-2 w-full rounded-lg border border-[#E2EBE4] bg-[#F7F9F7] px-4 py-3 text-sm text-[#1A2E22] outline-none focus:border-[#52B788] focus:bg-white"

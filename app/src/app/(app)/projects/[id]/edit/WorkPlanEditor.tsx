@@ -227,9 +227,11 @@ export default function WorkPlanEditor({ projectId, phases, teamMembers, onSaved
                   <div key={staffIndex} className="grid grid-cols-[1fr_100px_100px_32px] gap-2 mb-2 items-end">
                     <div>
                       {staffIndex === 0 && (
-                        <label className="text-[10px] font-medium text-[#6B8C74] uppercase tracking-wider">Staff</label>
+                        <label htmlFor={`wp-staff-${phase.phaseId}-${staffIndex}`} className="text-[10px] font-medium text-[#6B8C74] uppercase tracking-wider">Staff</label>
                       )}
                       <select
+                        id={`wp-staff-${phase.phaseId}-${staffIndex}`}
+                        aria-label="Staff member"
                         value={entry.userId}
                         onChange={(e) => updateStaffEntry(phaseIndex, staffIndex, "userId", e.target.value)}
                         className="mt-1 w-full bg-white border border-[#E2EBE4] rounded-lg px-2 py-2 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]"
@@ -244,9 +246,11 @@ export default function WorkPlanEditor({ projectId, phases, teamMembers, onSaved
                     </div>
                     <div>
                       {staffIndex === 0 && (
-                        <label className="text-[10px] font-medium text-[#6B8C74] uppercase tracking-wider">Hours</label>
+                        <label htmlFor={`wp-hours-${phase.phaseId}-${staffIndex}`} className="text-[10px] font-medium text-[#6B8C74] uppercase tracking-wider">Hours</label>
                       )}
                       <input
+                        id={`wp-hours-${phase.phaseId}-${staffIndex}`}
+                        aria-label="Planned hours"
                         type="number"
                         step="0.5"
                         min="0"
@@ -268,6 +272,7 @@ export default function WorkPlanEditor({ projectId, phases, teamMembers, onSaved
                       <button
                         type="button"
                         onClick={() => removeStaffFromPhase(phaseIndex, staffIndex)}
+                        aria-label="Remove staff from phase"
                         className={`${staffIndex === 0 ? "mt-5" : ""} text-[#A3BEA9] hover:text-rose-500 transition-colors p-1`}
                       >
                         <Trash2 className="w-3.5 h-3.5" />

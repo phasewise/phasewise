@@ -194,43 +194,51 @@ export default function ProfilePage() {
       {/* Form */}
       <div className="bg-white border border-[#E2EBE4] rounded-xl p-6 space-y-5">
         <div>
-          <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Full Name</label>
+          <label htmlFor="profile-name" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Full Name</label>
           <input
+            id="profile-name"
             type="text"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
+            autoComplete="name"
             className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-[#1A2E22] text-sm focus:outline-none focus:border-[#52B788] focus:bg-white transition-colors"
           />
         </div>
 
         <div>
-          <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Email</label>
+          <label htmlFor="profile-email" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Email</label>
           <input
+            id="profile-email"
             type="email"
             value={profile.email}
             disabled
+            autoComplete="email"
             className="w-full bg-[#F0F2F0] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-[#6B8C74] text-sm cursor-not-allowed"
           />
           <p className="text-xs text-[#A3BEA9] mt-1">Email is tied to your login and cannot be changed here.</p>
         </div>
 
         <div>
-          <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Job Title</label>
+          <label htmlFor="profile-title" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Job Title</label>
           <input
+            id="profile-title"
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
+            autoComplete="organization-title"
             placeholder="e.g. Senior Landscape Architect"
             className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-[#1A2E22] text-sm focus:outline-none focus:border-[#52B788] focus:bg-white transition-colors"
           />
         </div>
 
         <div>
-          <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Phone</label>
+          <label htmlFor="profile-phone" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Phone</label>
           <input
+            id="profile-phone"
             type="tel"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
+            autoComplete="tel"
             placeholder="(555) 123-4567"
             className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-[#1A2E22] text-sm focus:outline-none focus:border-[#52B788] focus:bg-white transition-colors"
           />

@@ -246,39 +246,39 @@ export default function PlantsClient({ plants: initialPlants, projects }: Props)
           </div>
           <div className="grid sm:grid-cols-2 gap-4 mb-4">
             <div>
-              <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Project *</label>
-              <select value={projectId} onChange={(e) => setProjectId(e.target.value)} required className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]">
+              <label htmlFor="plant-project" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Project *</label>
+              <select id="plant-project" value={projectId} onChange={(e) => setProjectId(e.target.value)} required className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]">
                 <option value="">Select project</option>
                 {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Botanical name *</label>
-              <input value={botanicalName} onChange={(e) => setBotanicalName(e.target.value)} required placeholder="Quercus agrifolia" className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] italic focus:outline-none focus:border-[#52B788]" />
+              <label htmlFor="plant-botanical-name" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Botanical name *</label>
+              <input id="plant-botanical-name" value={botanicalName} onChange={(e) => setBotanicalName(e.target.value)} required placeholder="Quercus agrifolia" className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] italic focus:outline-none focus:border-[#52B788]" />
             </div>
           </div>
           <div className="grid sm:grid-cols-3 gap-4 mb-4">
             <div>
-              <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Common name *</label>
-              <input value={commonName} onChange={(e) => setCommonName(e.target.value)} required placeholder="Coast Live Oak" className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+              <label htmlFor="plant-common-name" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Common name *</label>
+              <input id="plant-common-name" value={commonName} onChange={(e) => setCommonName(e.target.value)} required placeholder="Coast Live Oak" className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
             </div>
             <div>
-              <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Size</label>
-              <input value={size} onChange={(e) => setSize(e.target.value)} placeholder='24" box' className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+              <label htmlFor="plant-size" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Size</label>
+              <input id="plant-size" value={size} onChange={(e) => setSize(e.target.value)} placeholder='24" box' className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
             </div>
             <div>
-              <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Quantity</label>
-              <input type="number" min="1" value={quantity} onChange={(e) => setQuantity(e.target.value)} className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+              <label htmlFor="plant-quantity" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Quantity</label>
+              <input id="plant-quantity" type="number" min="1" value={quantity} onChange={(e) => setQuantity(e.target.value)} className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
             </div>
           </div>
           <div className="grid sm:grid-cols-3 gap-4 mb-4">
             <div>
-              <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Spacing</label>
-              <input value={spacing} onChange={(e) => setSpacing(e.target.value)} placeholder="6' O.C." className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+              <label htmlFor="plant-spacing" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Spacing</label>
+              <input id="plant-spacing" value={spacing} onChange={(e) => setSpacing(e.target.value)} placeholder="6' O.C." className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
             </div>
             <div>
-              <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Water use</label>
-              <select value={waterUse} onChange={(e) => setWaterUse(e.target.value)} className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]">
+              <label htmlFor="plant-water-use" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Water use</label>
+              <select id="plant-water-use" value={waterUse} onChange={(e) => setWaterUse(e.target.value)} className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]">
                 <option value="">—</option>
                 <option value="LOW">Low</option>
                 <option value="MODERATE">Moderate</option>
@@ -286,16 +286,16 @@ export default function PlantsClient({ plants: initialPlants, projects }: Props)
               </select>
             </div>
             <div>
-              <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Unit cost ($)</label>
+              <label htmlFor="plant-unit-cost" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Unit cost ($)</label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A3BEA9] text-sm">$</span>
-                <input type="number" step="0.01" min="0" value={unitCost} onChange={(e) => setUnitCost(e.target.value)} placeholder="0.00" className="w-full bg-white border border-[#E2EBE4] rounded-lg pl-7 pr-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+                <input id="plant-unit-cost" type="number" step="0.01" min="0" value={unitCost} onChange={(e) => setUnitCost(e.target.value)} placeholder="0.00" className="w-full bg-white border border-[#E2EBE4] rounded-lg pl-7 pr-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
               </div>
             </div>
           </div>
           <div className="mb-4">
-            <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Notes</label>
-            <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={'e.g., Container grown, 2" caliper min.'} className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+            <label htmlFor="plant-notes" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Notes</label>
+            <input id="plant-notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={'e.g., Container grown, 2" caliper min.'} className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
           </div>
           <div className="flex gap-3">
             <button type="submit" disabled={saving} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-[#2D6A4F] text-white hover:bg-[#40916C] transition-colors disabled:opacity-50">
@@ -348,6 +348,8 @@ export default function PlantsClient({ plants: initialPlants, projects }: Props)
                   </td>
                   <td className="px-4 sm:px-6 py-4 text-center" onClick={(e) => e.stopPropagation()}>
                     <select
+                      id={`plant-row-status-${plant.id}`}
+                      aria-label="Plant approval status"
                       value={plant.approvalStatus ?? "PENDING"}
                       onChange={(e) => updateStatus(plant.id, e.target.value)}
                       className={`text-xs font-semibold px-2 py-1 rounded-full border ${STATUS_COLORS[plant.approvalStatus ?? "PENDING"] ?? ""}`}
@@ -376,37 +378,37 @@ export default function PlantsClient({ plants: initialPlants, projects }: Props)
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between p-6 pb-0">
               <h2 className="font-serif text-xl text-[#1A2E22]">Edit Plant</h2>
-              <button type="button" onClick={closeEdit} className="text-[#A3BEA9] hover:text-[#1A2E22] transition-colors"><X size={18} /></button>
+              <button type="button" onClick={closeEdit} aria-label="Close edit modal" className="text-[#A3BEA9] hover:text-[#1A2E22] transition-colors"><X size={18} /></button>
             </div>
             <form onSubmit={handleUpdate} className="p-6 space-y-4">
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Botanical name *</label>
-                  <input value={botanicalName} onChange={(e) => setBotanicalName(e.target.value)} required className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] italic focus:outline-none focus:border-[#52B788]" />
+                  <label htmlFor="plant-edit-botanical-name" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Botanical name *</label>
+                  <input id="plant-edit-botanical-name" value={botanicalName} onChange={(e) => setBotanicalName(e.target.value)} required className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] italic focus:outline-none focus:border-[#52B788]" />
                 </div>
                 <div>
-                  <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Common name *</label>
-                  <input value={commonName} onChange={(e) => setCommonName(e.target.value)} required className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+                  <label htmlFor="plant-edit-common-name" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Common name *</label>
+                  <input id="plant-edit-common-name" value={commonName} onChange={(e) => setCommonName(e.target.value)} required className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
                 </div>
               </div>
               <div className="grid sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Size</label>
-                  <input value={size} onChange={(e) => setSize(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+                  <label htmlFor="plant-edit-size" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Size</label>
+                  <input id="plant-edit-size" value={size} onChange={(e) => setSize(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
                 </div>
                 <div>
-                  <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Quantity</label>
-                  <input type="number" min="1" value={quantity} onChange={(e) => setQuantity(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+                  <label htmlFor="plant-edit-quantity" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Quantity</label>
+                  <input id="plant-edit-quantity" type="number" min="1" value={quantity} onChange={(e) => setQuantity(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
                 </div>
                 <div>
-                  <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Spacing</label>
-                  <input value={spacing} onChange={(e) => setSpacing(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+                  <label htmlFor="plant-edit-spacing" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Spacing</label>
+                  <input id="plant-edit-spacing" value={spacing} onChange={(e) => setSpacing(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
                 </div>
               </div>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Water use</label>
-                  <select value={waterUse} onChange={(e) => setWaterUse(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]">
+                  <label htmlFor="plant-edit-water-use" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Water use</label>
+                  <select id="plant-edit-water-use" value={waterUse} onChange={(e) => setWaterUse(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]">
                     <option value="">--</option>
                     <option value="LOW">Low</option>
                     <option value="MODERATE">Moderate</option>
@@ -414,20 +416,20 @@ export default function PlantsClient({ plants: initialPlants, projects }: Props)
                   </select>
                 </div>
                 <div>
-                  <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Unit cost ($)</label>
+                  <label htmlFor="plant-edit-unit-cost" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Unit cost ($)</label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A3BEA9] text-sm">$</span>
-                    <input type="number" step="0.01" min="0" value={unitCost} onChange={(e) => setUnitCost(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg pl-7 pr-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+                    <input id="plant-edit-unit-cost" type="number" step="0.01" min="0" value={unitCost} onChange={(e) => setUnitCost(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg pl-7 pr-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
                   </div>
                 </div>
               </div>
               <div>
-                <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Substitution</label>
-                <input value={substitution} onChange={(e) => setSubstitution(e.target.value)} placeholder="Alternative plant if unavailable" className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+                <label htmlFor="plant-edit-substitution" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Substitution</label>
+                <input id="plant-edit-substitution" value={substitution} onChange={(e) => setSubstitution(e.target.value)} placeholder="Alternative plant if unavailable" className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
               </div>
               <div>
-                <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Notes</label>
-                <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788] resize-y" />
+                <label htmlFor="plant-edit-notes" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Notes</label>
+                <textarea id="plant-edit-notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788] resize-y" />
               </div>
               {error && <p className="text-[#B04030] text-sm">{error}</p>}
               <div className="flex gap-3 pt-2">

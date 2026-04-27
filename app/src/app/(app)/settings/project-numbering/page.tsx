@@ -113,11 +113,12 @@ export default function ProjectNumberingPage() {
           <div className="space-y-6">
             {/* Prefix */}
             <div>
-              <label className="text-sm font-medium text-[#3D5C48]">Prefix</label>
+              <label htmlFor="proj-num-prefix" className="text-sm font-medium text-[#3D5C48]">Prefix</label>
               <p className="text-xs text-[#A3BEA9] mt-0.5 mb-2">
                 The letters that appear before the number (e.g., &quot;PW&quot; for PW-001).
               </p>
               <input
+                id="proj-num-prefix"
                 value={prefix}
                 onChange={(e) => setPrefix(e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, ""))}
                 maxLength={10}
@@ -128,11 +129,12 @@ export default function ProjectNumberingPage() {
 
             {/* Next number */}
             <div>
-              <label className="text-sm font-medium text-[#3D5C48]">Next project number</label>
+              <label htmlFor="proj-num-next" className="text-sm font-medium text-[#3D5C48]">Next project number</label>
               <p className="text-xs text-[#A3BEA9] mt-0.5 mb-2">
                 The next number that will be assigned. Change this to start from a different point.
               </p>
               <input
+                id="proj-num-next"
                 type="number"
                 min={1}
                 value={nextNumber}

@@ -269,23 +269,23 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
           </div>
           <div className="grid sm:grid-cols-4 gap-4 mb-4">
             <div>
-              <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Project *</label>
-              <select value={formProjectId} onChange={(e) => setFormProjectId(e.target.value)} required className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]">
+              <label htmlFor="inv-project" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Project *</label>
+              <select id="inv-project" value={formProjectId} onChange={(e) => setFormProjectId(e.target.value)} required className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]">
                 <option value="">Select project</option>
                 {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Invoice # *</label>
-              <input value={formInvoiceNumber} onChange={(e) => setFormInvoiceNumber(e.target.value)} required placeholder="INV-001" className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+              <label htmlFor="inv-number" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Invoice # *</label>
+              <input id="inv-number" value={formInvoiceNumber} onChange={(e) => setFormInvoiceNumber(e.target.value)} required placeholder="INV-001" className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
             </div>
             <div>
-              <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Issue date *</label>
-              <input type="date" value={formIssueDate} onChange={(e) => setFormIssueDate(e.target.value)} required className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+              <label htmlFor="inv-issue-date" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Issue date *</label>
+              <input id="inv-issue-date" type="date" value={formIssueDate} onChange={(e) => setFormIssueDate(e.target.value)} required className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
             </div>
             <div>
-              <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Due date *</label>
-              <input type="date" value={formDueDate} onChange={(e) => setFormDueDate(e.target.value)} required className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+              <label htmlFor="inv-due-date" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Due date *</label>
+              <input id="inv-due-date" type="date" value={formDueDate} onChange={(e) => setFormDueDate(e.target.value)} required className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
             </div>
           </div>
 
@@ -294,13 +294,13 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
             <label className="text-sm text-[#3D5C48] block mb-2 font-medium">Line Items</label>
             {formLines.map((line, i) => (
               <div key={i} className="grid grid-cols-[1fr_80px_100px_32px] gap-2 mb-2 items-end">
-                <input value={line.description} onChange={(e) => updateLine(i, "description", e.target.value)} placeholder="Description" className="bg-white border border-[#E2EBE4] rounded-lg px-3 py-2 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
-                <input type="number" min="1" value={line.quantity} onChange={(e) => updateLine(i, "quantity", e.target.value)} placeholder="Qty" className="bg-white border border-[#E2EBE4] rounded-lg px-3 py-2 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+                <input id={`inv-line-description-${i}`} aria-label="Line item description" value={line.description} onChange={(e) => updateLine(i, "description", e.target.value)} placeholder="Description" className="bg-white border border-[#E2EBE4] rounded-lg px-3 py-2 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+                <input id={`inv-line-quantity-${i}`} aria-label="Line item quantity" type="number" min="1" value={line.quantity} onChange={(e) => updateLine(i, "quantity", e.target.value)} placeholder="Qty" className="bg-white border border-[#E2EBE4] rounded-lg px-3 py-2 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
                 <div className="relative">
                   <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#A3BEA9] text-sm">$</span>
-                  <input type="number" step="0.01" min="0" value={line.unitPrice} onChange={(e) => updateLine(i, "unitPrice", e.target.value)} placeholder="0.00" className="w-full bg-white border border-[#E2EBE4] rounded-lg pl-6 pr-2 py-2 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+                  <input id={`inv-line-unit-price-${i}`} aria-label="Line item unit price" type="number" step="0.01" min="0" value={line.unitPrice} onChange={(e) => updateLine(i, "unitPrice", e.target.value)} placeholder="0.00" className="w-full bg-white border border-[#E2EBE4] rounded-lg pl-6 pr-2 py-2 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
                 </div>
-                <button type="button" onClick={() => removeLine(i)} className="text-[#A3BEA9] hover:text-rose-500 transition-colors p-1" disabled={formLines.length === 1}>
+                <button type="button" onClick={() => removeLine(i)} aria-label="Remove line item" className="text-[#A3BEA9] hover:text-rose-500 transition-colors p-1" disabled={formLines.length === 1}>
                   <X size={14} />
                 </button>
               </div>
@@ -314,8 +314,8 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
           </div>
 
           <div className="mb-4">
-            <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Notes</label>
-            <input value={formNotes} onChange={(e) => setFormNotes(e.target.value)} placeholder="Payment terms, etc." className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+            <label htmlFor="inv-notes" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Notes</label>
+            <input id="inv-notes" value={formNotes} onChange={(e) => setFormNotes(e.target.value)} placeholder="Payment terms, etc." className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
           </div>
           <div className="flex gap-3">
             <button type="submit" disabled={saving} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-[#2D6A4F] text-white hover:bg-[#40916C] transition-colors disabled:opacity-50">
@@ -417,22 +417,22 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
               </div>
 
               <div>
-                <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Status</label>
-                <select value={editStatus} onChange={(e) => setEditStatus(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]">
+                <label htmlFor="inv-edit-status" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Status</label>
+                <select id="inv-edit-status" value={editStatus} onChange={(e) => setEditStatus(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]">
                   {STATUS_OPTIONS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Amount paid ($)</label>
+                  <label htmlFor="inv-edit-paid-amount" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Amount paid ($)</label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A3BEA9] text-sm">$</span>
-                    <input type="number" step="0.01" min="0" value={editPaidAmount} onChange={(e) => setEditPaidAmount(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg pl-7 pr-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+                    <input id="inv-edit-paid-amount" type="number" step="0.01" min="0" value={editPaidAmount} onChange={(e) => setEditPaidAmount(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg pl-7 pr-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Paid date</label>
-                  <input type="date" value={editPaidDate} onChange={(e) => setEditPaidDate(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+                  <label htmlFor="inv-edit-paid-date" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Paid date</label>
+                  <input id="inv-edit-paid-date" type="date" value={editPaidDate} onChange={(e) => setEditPaidDate(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
                 </div>
               </div>
               {error && <p className="text-[#B04030] text-sm">{error}</p>}

@@ -106,8 +106,9 @@ export default function NewProjectPage() {
           <form onSubmit={handleSubmit} className="space-y-8">
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-slate-700">Project name</label>
+                <label htmlFor="pnew-name" className="text-sm font-medium text-slate-700">Project name</label>
                 <input
+                  id="pnew-name"
                   value={name}
                   onChange={(event) => setName(event.target.value)}
                   required
@@ -117,9 +118,10 @@ export default function NewProjectPage() {
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="text-sm font-medium text-slate-700">Project number</label>
+                  <label htmlFor="pnew-project-number" className="text-sm font-medium text-slate-700">Project number</label>
                   <div className="relative mt-2">
                     <input
+                      id="pnew-project-number"
                       value={projectNumber}
                       onChange={(event) => {
                         setProjectNumber(event.target.value);
@@ -135,6 +137,7 @@ export default function NewProjectPage() {
                           setProjectNumber(autoNumber);
                           setIsCustomNumber(false);
                         }}
+                        aria-label="Reset to auto-generated number"
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-emerald-600 transition-colors"
                         title="Reset to auto-generated number"
                       >
@@ -147,8 +150,9 @@ export default function NewProjectPage() {
                   )}
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-slate-700">Status</label>
+                  <label htmlFor="pnew-status" className="text-sm font-medium text-slate-700">Status</label>
                   <select
+                    id="pnew-status"
                     value={status}
                     onChange={(event) => setStatus(event.target.value)}
                     className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none focus:border-emerald-500"
@@ -163,19 +167,23 @@ export default function NewProjectPage() {
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="text-sm font-medium text-slate-700">Client name</label>
+                  <label htmlFor="pnew-client-name" className="text-sm font-medium text-slate-700">Client name</label>
                   <input
+                    id="pnew-client-name"
                     value={clientName}
                     onChange={(event) => setClientName(event.target.value)}
+                    autoComplete="organization"
                     className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none focus:border-emerald-500"
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-slate-700">Client email</label>
+                  <label htmlFor="pnew-client-email" className="text-sm font-medium text-slate-700">Client email</label>
                   <input
+                    id="pnew-client-email"
                     value={clientEmail}
                     type="email"
                     onChange={(event) => setClientEmail(event.target.value)}
+                    autoComplete="email"
                     className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none focus:border-emerald-500"
                   />
                 </div>
@@ -183,8 +191,9 @@ export default function NewProjectPage() {
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="text-sm font-medium text-slate-700">Start date</label>
+                  <label htmlFor="pnew-start-date" className="text-sm font-medium text-slate-700">Start date</label>
                   <input
+                    id="pnew-start-date"
                     type="date"
                     value={startDate}
                     onChange={(event) => setStartDate(event.target.value)}
@@ -192,8 +201,9 @@ export default function NewProjectPage() {
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-slate-700">Target completion</label>
+                  <label htmlFor="pnew-target-completion" className="text-sm font-medium text-slate-700">Target completion</label>
                   <input
+                    id="pnew-target-completion"
                     type="date"
                     value={targetCompletion}
                     onChange={(event) => setTargetCompletion(event.target.value)}
@@ -203,12 +213,13 @@ export default function NewProjectPage() {
               </div>
 
               <div>
-                <label className="text-sm font-medium text-slate-700">
+                <label htmlFor="pnew-contract-fee" className="text-sm font-medium text-slate-700">
                   Contract fee <span className="text-slate-400 font-normal">(optional)</span>
                 </label>
                 <div className="relative mt-2">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
                   <input
+                    id="pnew-contract-fee"
                     type="number"
                     min="0"
                     step="0.01"

@@ -268,30 +268,30 @@ export default function ComplianceClient({ items: initialItems, projects }: Prop
           </div>
           <div className="grid sm:grid-cols-3 gap-4 mb-4">
             <div>
-              <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Project *</label>
-              <select value={formProjectId} onChange={(e) => setFormProjectId(e.target.value)} required className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]">
+              <label htmlFor="comp-project" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Project *</label>
+              <select id="comp-project" value={formProjectId} onChange={(e) => setFormProjectId(e.target.value)} required className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]">
                 <option value="">Select project</option>
                 {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Category *</label>
-              <select value={formCategory} onChange={(e) => setFormCategory(e.target.value)} className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]">
+              <label htmlFor="comp-category" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Category *</label>
+              <select id="comp-category" value={formCategory} onChange={(e) => setFormCategory(e.target.value)} className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]">
                 {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Due date</label>
-              <input type="date" value={formDueDate} onChange={(e) => setFormDueDate(e.target.value)} className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+              <label htmlFor="comp-due-date" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Due date</label>
+              <input id="comp-due-date" type="date" value={formDueDate} onChange={(e) => setFormDueDate(e.target.value)} className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
             </div>
           </div>
           <div className="mb-4">
-            <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Name *</label>
-            <input value={formName} onChange={(e) => setFormName(e.target.value)} required placeholder="e.g., MWELO Water Budget Calculation" className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+            <label htmlFor="comp-name" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Name *</label>
+            <input id="comp-name" value={formName} onChange={(e) => setFormName(e.target.value)} required placeholder="e.g., MWELO Water Budget Calculation" className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
           </div>
           <div className="mb-4">
-            <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Description</label>
-            <input value={formDescription} onChange={(e) => setFormDescription(e.target.value)} placeholder="Details about this requirement" className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+            <label htmlFor="comp-description" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Description</label>
+            <input id="comp-description" value={formDescription} onChange={(e) => setFormDescription(e.target.value)} placeholder="Details about this requirement" className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
           </div>
           <div className="flex gap-3">
             <button type="submit" disabled={saving} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-[#2D6A4F] text-white hover:bg-[#40916C] transition-colors disabled:opacity-50">
@@ -348,6 +348,8 @@ export default function ComplianceClient({ items: initialItems, projects }: Prop
                     </td>
                     <td className="px-4 sm:px-6 py-4" onClick={(e) => e.stopPropagation()}>
                       <select
+                        id={`comp-row-status-${item.id}`}
+                        aria-label="Compliance status"
                         value={item.status}
                         onChange={(e) => updateStatus(item.id, e.target.value)}
                         className={`text-xs font-semibold px-2 py-1 rounded-full border ${STATUS_COLORS[item.status] ?? ""}`}
@@ -375,32 +377,32 @@ export default function ComplianceClient({ items: initialItems, projects }: Prop
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between p-6 pb-0">
               <h2 className="font-serif text-xl text-[#1A2E22]">Edit Compliance Item</h2>
-              <button type="button" onClick={closeEdit} className="text-[#A3BEA9] hover:text-[#1A2E22] transition-colors"><X size={18} /></button>
+              <button type="button" onClick={closeEdit} aria-label="Close edit modal" className="text-[#A3BEA9] hover:text-[#1A2E22] transition-colors"><X size={18} /></button>
             </div>
             <form onSubmit={handleUpdate} className="p-6 space-y-4">
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Category *</label>
-                  <select value={formCategory} onChange={(e) => setFormCategory(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]">
+                  <label htmlFor="comp-edit-category" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Category *</label>
+                  <select id="comp-edit-category" value={formCategory} onChange={(e) => setFormCategory(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]">
                     {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Due date</label>
-                  <input type="date" value={formDueDate} onChange={(e) => setFormDueDate(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+                  <label htmlFor="comp-edit-due-date" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Due date</label>
+                  <input id="comp-edit-due-date" type="date" value={formDueDate} onChange={(e) => setFormDueDate(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
                 </div>
               </div>
               <div>
-                <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Name *</label>
-                <input value={formName} onChange={(e) => setFormName(e.target.value)} required className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+                <label htmlFor="comp-edit-name" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Name *</label>
+                <input id="comp-edit-name" value={formName} onChange={(e) => setFormName(e.target.value)} required className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
               </div>
               <div>
-                <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Description</label>
-                <textarea value={formDescription} onChange={(e) => setFormDescription(e.target.value)} rows={2} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788] resize-y" />
+                <label htmlFor="comp-edit-description" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Description</label>
+                <textarea id="comp-edit-description" value={formDescription} onChange={(e) => setFormDescription(e.target.value)} rows={2} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788] resize-y" />
               </div>
               <div>
-                <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Notes</label>
-                <textarea value={formNotes} onChange={(e) => setFormNotes(e.target.value)} rows={2} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788] resize-y" />
+                <label htmlFor="comp-edit-notes" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Notes</label>
+                <textarea id="comp-edit-notes" value={formNotes} onChange={(e) => setFormNotes(e.target.value)} rows={2} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788] resize-y" />
               </div>
               <div>
                 <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Document Attachment</label>
@@ -410,7 +412,7 @@ export default function ComplianceClient({ items: initialItems, projects }: Prop
                     <a href={formDocUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-[#2D6A4F] hover:underline truncate flex-1">
                       View attached document
                     </a>
-                    <button type="button" onClick={() => setFormDocUrl("")} className="text-[#A3BEA9] hover:text-rose-500 transition-colors">
+                    <button type="button" onClick={() => setFormDocUrl("")} aria-label="Remove attachment" className="text-[#A3BEA9] hover:text-rose-500 transition-colors">
                       <X size={14} />
                     </button>
                   </div>

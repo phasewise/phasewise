@@ -133,18 +133,18 @@ export default function MWELOCalculatorPage() {
           <h2 className="text-sm font-semibold text-[#1A2E22] mb-4">Project Information</h2>
           <div className="grid sm:grid-cols-3 gap-4">
             <div>
-              <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Project Name</label>
-              <input value={projectName} onChange={(e) => setProjectName(e.target.value)} placeholder="Meridian Park Renovation" className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+              <label htmlFor="mwelo-project-name" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Project Name</label>
+              <input id="mwelo-project-name" value={projectName} onChange={(e) => setProjectName(e.target.value)} placeholder="Meridian Park Renovation" className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
             </div>
             <div>
-              <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Climate Region *</label>
-              <select value={region} onChange={(e) => setRegion(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]">
+              <label htmlFor="mwelo-region" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Climate Region *</label>
+              <select id="mwelo-region" value={region} onChange={(e) => setRegion(e.target.value)} className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]">
                 {Object.keys(ETO_REGIONS).map((r) => <option key={r} value={r}>{r} (ETo: {ETO_REGIONS[r]}"/yr)</option>)}
               </select>
             </div>
             <div>
-              <label className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Special Landscape Area (sq ft)</label>
-              <input type="number" min="0" value={specialLandscapeArea} onChange={(e) => setSpecialLandscapeArea(e.target.value)} placeholder="0" className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+              <label htmlFor="mwelo-sla" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Special Landscape Area (sq ft)</label>
+              <input id="mwelo-sla" type="number" min="0" value={specialLandscapeArea} onChange={(e) => setSpecialLandscapeArea(e.target.value)} placeholder="0" className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
               <p className="text-[10px] text-[#A3BEA9] mt-1">Edible gardens, areas using recycled water, etc.</p>
             </div>
           </div>
@@ -163,27 +163,27 @@ export default function MWELOCalculatorPage() {
             {hydrozones.map((zone, i) => (
               <div key={i} className="grid grid-cols-[1fr_100px_1fr_1fr_32px] gap-2 items-end">
                 <div>
-                  {i === 0 && <label className="text-[10px] font-medium text-[#6B8C74] uppercase tracking-wider">Zone name</label>}
-                  <input value={zone.name} onChange={(e) => updateZone(i, "name", e.target.value)} className="mt-1 w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3 py-2 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+                  {i === 0 && <label htmlFor={`mwelo-zone-name-${i}`} className="text-[10px] font-medium text-[#6B8C74] uppercase tracking-wider">Zone name</label>}
+                  <input id={`mwelo-zone-name-${i}`} aria-label="Zone name" value={zone.name} onChange={(e) => updateZone(i, "name", e.target.value)} className="mt-1 w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3 py-2 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
                 </div>
                 <div>
-                  {i === 0 && <label className="text-[10px] font-medium text-[#6B8C74] uppercase tracking-wider">Area (sf)</label>}
-                  <input type="number" min="0" value={zone.areaSqFt} onChange={(e) => updateZone(i, "areaSqFt", e.target.value)} placeholder="0" className="mt-1 w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3 py-2 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+                  {i === 0 && <label htmlFor={`mwelo-zone-area-${i}`} className="text-[10px] font-medium text-[#6B8C74] uppercase tracking-wider">Area (sf)</label>}
+                  <input id={`mwelo-zone-area-${i}`} aria-label="Zone area in square feet" type="number" min="0" value={zone.areaSqFt} onChange={(e) => updateZone(i, "areaSqFt", e.target.value)} placeholder="0" className="mt-1 w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3 py-2 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
                 </div>
                 <div>
-                  {i === 0 && <label className="text-[10px] font-medium text-[#6B8C74] uppercase tracking-wider">Plant Factor</label>}
-                  <select value={zone.plantFactor} onChange={(e) => updateZone(i, "plantFactor", e.target.value)} className="mt-1 w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3 py-2 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]">
+                  {i === 0 && <label htmlFor={`mwelo-zone-plant-factor-${i}`} className="text-[10px] font-medium text-[#6B8C74] uppercase tracking-wider">Plant Factor</label>}
+                  <select id={`mwelo-zone-plant-factor-${i}`} aria-label="Plant factor" value={zone.plantFactor} onChange={(e) => updateZone(i, "plantFactor", e.target.value)} className="mt-1 w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3 py-2 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]">
                     {Object.keys(PLANT_FACTORS).map((pf) => <option key={pf} value={pf}>{pf}</option>)}
                   </select>
                 </div>
                 <div>
-                  {i === 0 && <label className="text-[10px] font-medium text-[#6B8C74] uppercase tracking-wider">Irrigation</label>}
-                  <select value={zone.irrigationEfficiency} onChange={(e) => updateZone(i, "irrigationEfficiency", e.target.value)} className="mt-1 w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3 py-2 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]">
+                  {i === 0 && <label htmlFor={`mwelo-zone-irrigation-${i}`} className="text-[10px] font-medium text-[#6B8C74] uppercase tracking-wider">Irrigation</label>}
+                  <select id={`mwelo-zone-irrigation-${i}`} aria-label="Irrigation efficiency" value={zone.irrigationEfficiency} onChange={(e) => updateZone(i, "irrigationEfficiency", e.target.value)} className="mt-1 w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3 py-2 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]">
                     {Object.keys(IRRIGATION_EFFICIENCIES).map((ie) => <option key={ie} value={ie}>{ie}</option>)}
                   </select>
                 </div>
                 <div>
-                  <button type="button" onClick={() => removeZone(i)} disabled={hydrozones.length === 1} className={`${i === 0 ? "mt-5" : ""} text-[#A3BEA9] hover:text-rose-500 transition-colors p-1 disabled:opacity-30`}>
+                  <button type="button" onClick={() => removeZone(i)} aria-label="Remove hydrozone" disabled={hydrozones.length === 1} className={`${i === 0 ? "mt-5" : ""} text-[#A3BEA9] hover:text-rose-500 transition-colors p-1 disabled:opacity-30`}>
                     <Trash2 size={14} />
                   </button>
                 </div>
