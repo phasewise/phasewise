@@ -78,6 +78,10 @@ export default function ResetPasswordPage() {
       return;
     }
 
+    // Fire-and-forget: notify the user via email that their password just
+    // changed. Don't await — failure here shouldn't block their dashboard.
+    fetch("/api/user/password-changed", { method: "POST" }).catch(() => {});
+
     router.push("/dashboard");
     router.refresh();
   }

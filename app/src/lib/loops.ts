@@ -27,6 +27,7 @@ export const LOOPS_TEMPLATES = {
   SUBMITTAL_REMINDER: process.env.LOOPS_TEMPLATE_SUBMITTAL_REMINDER ?? "",
   BUDGET_ALERT: process.env.LOOPS_TEMPLATE_BUDGET_ALERT ?? "",
   INVITE: process.env.LOOPS_TEMPLATE_INVITE ?? "",
+  PASSWORD_CHANGED: process.env.LOOPS_TEMPLATE_PASSWORD_CHANGED ?? "",
 } as const;
 
 type SendOptions = {
