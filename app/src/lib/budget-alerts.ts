@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { sendTransactional, LOOPS_TEMPLATES } from "@/lib/loops";
 
@@ -30,13 +31,11 @@ export const ALERT_LABELS: Record<string, { label: string; color: string; bgColo
  * budget alert threshold. If so, send an email to the project creator
  * (usually the PM or owner).
  *
- * We track the "last alert level sent" to avoid spamming — if we already
- * sent a 75% alert, we won't send it again until the project crosses
- * the 90% threshold.
- *
- * For MVP, we store the last alert level in project description metadata
- * (a simple approach that avoids schema changes). In the future, this
- * should be a proper AlertHistory table.
+ * Dedup uses the BudgetAlert table: a unique (projectId, alertLevel)
+ * row is the source of truth for "we already sent this alert". We try
+ * to insert before sending — on P2002 we skip silently. This guarantees
+ * exactly-once email delivery per (project, threshold) pair even under
+ * concurrent time entry writes.
  */
 export async function checkAndSendBudgetAlert(projectId: string): Promise<void> {
   try {
@@ -67,27 +66,22 @@ export async function checkAndSendBudgetAlert(projectId: string): Promise<void> 
     const alertLevel = getBudgetAlertLevel(hoursUsed, budgetedHours);
     if (!alertLevel) return;
 
-    // Check if we already sent this alert level (stored as a simple
-    // marker in the project's description field as [ALERT:LEVEL]).
-    // This is a temporary MVP approach — proper solution would use a
-    // dedicated alerts table.
-    const lastAlertMarker = project.description?.match(/\[ALERT:(\w+)\]/)?.[1];
-    const alertOrder = ["WARNING_75", "CRITICAL_90", "OVER_100"];
-    const lastAlertIndex = lastAlertMarker ? alertOrder.indexOf(lastAlertMarker) : -1;
-    const currentAlertIndex = alertOrder.indexOf(alertLevel);
-
-    if (currentAlertIndex <= lastAlertIndex) {
-      // Already sent this level or a higher one
-      return;
+    // Claim the alert by inserting the row. If a row already exists for
+    // (projectId, alertLevel) we treat that as "already sent" and bail.
+    // This is atomic at the DB layer — no double-sends even under load.
+    try {
+      await prisma.budgetAlert.create({
+        data: { projectId, alertLevel },
+      });
+    } catch (err) {
+      if (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === "P2002"
+      ) {
+        return;
+      }
+      throw err;
     }
-
-    // Update the marker
-    const cleanDescription = (project.description ?? "").replace(/\[ALERT:\w+\]/g, "").trim();
-    const newDescription = `${cleanDescription} [ALERT:${alertLevel}]`.trim();
-    await prisma.project.update({
-      where: { id: projectId },
-      data: { description: newDescription },
-    });
 
     // Send the alert email
     const burnRate = Math.round((hoursUsed / budgetedHours) * 100);
