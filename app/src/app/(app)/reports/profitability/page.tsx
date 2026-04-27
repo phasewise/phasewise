@@ -33,7 +33,7 @@ export default async function ProfitabilityReportPage() {
     orderBy: { updatedAt: "desc" },
   });
 
-  // Time totals per project
+  // Time totals per project (overall)
   const timeTotals = await prisma.timeEntry.groupBy({
     by: ["projectId"],
     where: { organizationId: currentUser.organizationId },
@@ -42,6 +42,47 @@ export default async function ProfitabilityReportPage() {
   const hoursByProject = new Map(
     timeTotals.map((entry) => [entry.projectId, Number(entry._sum.hours ?? 0)])
   );
+
+  // Per-person hours per project — this is the data we need to compute
+  // an accurate cost. Using an averaged work-plan rate hides "junior did
+  // most of the work but we charged senior rate" — multiply each person's
+  // actual hours by their actual billing rate instead.
+  const perUserTotals = await prisma.timeEntry.groupBy({
+    by: ["projectId", "userId"],
+    where: { organizationId: currentUser.organizationId, projectId: { not: null } },
+    _sum: { hours: true },
+  });
+
+  // Resolve user names + billing rates for the per-person rows.
+  const userIds = Array.from(new Set(perUserTotals.map((r) => r.userId)));
+  const usersForRates = userIds.length
+    ? await prisma.user.findMany({
+        where: { id: { in: userIds } },
+        select: { id: true, fullName: true, billingRate: true },
+      })
+    : [];
+  const userMap = new Map(
+    usersForRates.map((u) => [u.id, { name: u.fullName, rate: Number(u.billingRate ?? 0) }])
+  );
+
+  // Build per-project { person → { hours, rate, cost } } breakdowns.
+  type Breakdown = { userId: string; name: string; hours: number; rate: number; cost: number };
+  const breakdownsByProject = new Map<string, Breakdown[]>();
+  for (const row of perUserTotals) {
+    if (!row.projectId) continue;
+    const existing = breakdownsByProject.get(row.projectId) ?? [];
+    const u = userMap.get(row.userId);
+    const hours = Number(row._sum.hours ?? 0);
+    const rate = u?.rate ?? 0;
+    existing.push({
+      userId: row.userId,
+      name: u?.name ?? "Unknown",
+      hours,
+      rate,
+      cost: hours * rate,
+    });
+    breakdownsByProject.set(row.projectId, existing);
+  }
 
   // Build project rows with profitability calculations
   const projectRows = projects.map((project) => {
@@ -57,20 +98,27 @@ export default async function ProfitabilityReportPage() {
     const burnRate = budgetedHours > 0 ? (hoursUsed / budgetedHours) * 100 : 0;
     const effectiveRate = hoursUsed > 0 ? budgetedFee / hoursUsed : 0;
 
-    // Estimated cost using work plan staff billing rates
-    // Collect all unique staff rates from the work plan across all phases
-    const workPlanRates: number[] = [];
-    for (const phase of project.phases) {
-      for (const wp of phase.workPlan) {
-        const rate = Number(wp.user.billingRate ?? 0);
-        if (rate > 0) workPlanRates.push(rate);
+    // True estimated cost: sum of (each person's hours × their billing rate).
+    // Falls back to the work plan average only if no time has been logged yet
+    // (so we can still show a forward-looking estimate).
+    const breakdown = breakdownsByProject.get(project.id) ?? [];
+    breakdown.sort((a, b) => b.hours - a.hours);
+    let estimatedCost = breakdown.reduce((s, b) => s + b.cost, 0);
+    let costSource: "actual" | "planned" | "none" = breakdown.length > 0 ? "actual" : "none";
+    if (estimatedCost === 0) {
+      const planRates: number[] = [];
+      for (const phase of project.phases) {
+        for (const wp of phase.workPlan) {
+          const r = Number(wp.user.billingRate ?? 0);
+          if (r > 0) planRates.push(r);
+        }
+      }
+      if (planRates.length > 0) {
+        const avg = planRates.reduce((s, r) => s + r, 0) / planRates.length;
+        estimatedCost = avg * hoursUsed;
+        costSource = "planned";
       }
     }
-    const avgRate =
-      workPlanRates.length > 0
-        ? workPlanRates.reduce((s: number, r: number) => s + r, 0) / workPlanRates.length
-        : 0;
-    const estimatedCost = avgRate * hoursUsed;
     const estimatedProfit = budgetedFee - estimatedCost;
     const profitMargin = budgetedFee > 0 ? (estimatedProfit / budgetedFee) * 100 : 0;
 
@@ -87,7 +135,9 @@ export default async function ProfitabilityReportPage() {
       estimatedCost,
       estimatedProfit,
       profitMargin,
-      staffCount: workPlanRates.length,
+      breakdown,
+      costSource,
+      staffCount: breakdown.length,
     };
   });
 
@@ -173,13 +223,31 @@ export default async function ProfitabilityReportPage() {
             </thead>
             <tbody>
               {projectRows.map((project) => (
-                <tr key={project.id} className="border-b border-[#E8EDE9] last:border-0 hover:bg-[#F7F9F7]/50 transition-colors">
+                <tr key={project.id} className="border-b border-[#E8EDE9] last:border-0 hover:bg-[#F7F9F7]/50 transition-colors align-top">
                   <td className="px-4 sm:px-6 py-4">
                     <Link href={`/reports/project/${project.id}`} className="font-semibold text-[#1A2E22] hover:text-[#2D6A4F]">
                       {project.name}
                     </Link>
                     {project.projectNumber && (
                       <div className="text-xs text-[#A3BEA9] mt-0.5">{project.projectNumber}</div>
+                    )}
+                    {project.breakdown.length > 0 && (
+                      <details className="mt-2 group">
+                        <summary className="cursor-pointer text-[11px] font-medium text-[#6B8C74] hover:text-[#2D6A4F] select-none">
+                          Per-person breakdown ({project.breakdown.length})
+                        </summary>
+                        <div className="mt-2 rounded-lg bg-[#F7F9F7] border border-[#E2EBE4] p-2 space-y-1">
+                          {project.breakdown.map((b) => (
+                            <div key={b.userId} className="flex items-center justify-between gap-3 text-[11px]">
+                              <span className="text-[#1A2E22] truncate">{b.name}</span>
+                              <span className="text-[#A3BEA9] tabular-nums whitespace-nowrap">
+                                {b.hours.toFixed(1)}h × ${b.rate.toFixed(0)}/hr ={" "}
+                                <span className="font-semibold text-[#1A2E22]">${b.cost.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </details>
                     )}
                   </td>
                   <td className="px-4 sm:px-6 py-4">
@@ -267,7 +335,7 @@ export default async function ProfitabilityReportPage() {
       </div>
 
       <p className="mt-4 text-xs text-[#A3BEA9]">
-        Effective rate = budgeted fee ÷ hours used. Profit and margin are estimated based on work plan staff billing rates × hours used. Projects without a work plan show &quot;—&quot; for profit columns.
+        Effective rate = budgeted fee ÷ hours used. Cost = sum of each person&apos;s actual logged hours × their current billing rate. Per-person breakdown available for any project with logged time. Projects with no logged time fall back to the work plan&apos;s average rate; projects without a work plan show &quot;—&quot;.
       </p>
     </div>
   );
