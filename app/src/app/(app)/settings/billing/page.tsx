@@ -132,6 +132,51 @@ export default async function BillingPage({
         </div>
       )}
 
+      {/* Payment-issue banners. Surface clear, actionable copy whenever a
+          subscription is in a failure state so the customer can self-serve
+          before access lapses. */}
+      {org.subscriptionStatus === "PAST_DUE" && isOwnerOrAdmin && (
+        <div className="mb-6 bg-rose-50 border border-rose-300 rounded-xl p-5 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-rose-700 mt-0.5 flex-shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-rose-900">Your last payment failed</p>
+            <p className="text-xs text-rose-800 mt-1">
+              Update your payment method to keep using Phasewise. Your subscription will be canceled if the payment isn&apos;t resolved.
+            </p>
+            <div className="mt-3"><BillingActions /></div>
+          </div>
+        </div>
+      )}
+
+      {(org.subscriptionStatus === "INCOMPLETE" || org.subscriptionStatus === "UNPAID") && isOwnerOrAdmin && (
+        <div className="mb-6 bg-amber-50 border border-amber-300 rounded-xl p-5 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-amber-700 mt-0.5 flex-shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-amber-900">
+              {org.subscriptionStatus === "INCOMPLETE" ? "Subscription not yet active" : "Subscription unpaid"}
+            </p>
+            <p className="text-xs text-amber-800 mt-1">
+              {org.subscriptionStatus === "INCOMPLETE"
+                ? "Complete the initial payment to activate your plan."
+                : "An invoice is unpaid. Settle the balance to restore access."}
+            </p>
+            <div className="mt-3"><BillingActions /></div>
+          </div>
+        </div>
+      )}
+
+      {org.subscriptionStatus === "INCOMPLETE_EXPIRED" && isOwnerOrAdmin && (
+        <div className="mb-6 bg-rose-50 border border-rose-300 rounded-xl p-5 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-rose-700 mt-0.5 flex-shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-rose-900">Subscription setup expired</p>
+            <p className="text-xs text-rose-800 mt-1">
+              The initial payment wasn&apos;t completed in time. Pick a plan below to start over — no charge until your trial ends.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Current plan card */}
       <div className="bg-white border border-[#E2EBE4] rounded-2xl p-6 mb-8 shadow-[0_4px_24px_rgba(26,46,34,0.04)]">
         <div className="flex items-start justify-between flex-wrap gap-4">
