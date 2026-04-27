@@ -537,9 +537,42 @@ Ordered by my estimated value-per-effort. Revisit during the forensic audit.
 - **Automated year-end rollover** — apply the `rolloverCap` automatically when the calendar year changes.
 - **Forensic audit** — top-to-bottom value review once the queue slows down. Rate each feature on value delivered vs maintenance cost. Cut or sharpen anything that doesn't earn its keep.
 
-## Where We Left Off (2026-04-26 EOD)
+## Where We Left Off (2026-04-27)
 
-**Status: 🚨 CRITICAL MIDDLEWARE BUG FIXED + GOOGLE SEARCH CONSOLE LIVE + COMPREHENSIVE AUDIT COMPLETE.** Three big things today:
+**Status: 🟢 ALL 25 AUDIT ITEMS CLEARED — 3 Critical + 7 High + 15 Medium.** The full AUDIT-2026-04-26.md punch list is now in `git log`. Production build clean. TypeScript strict passes. Compliance bucket is now private. Every form input has an associated label. Stripe webhook is idempotent. Time entries can no longer be logged to projects the user isn't assigned to. STAFF/PM no longer see senior billing rates on projects they're not on. Profitability report uses actual per-person rates instead of averages.
+
+Schema additions (prisma db push'd to Supabase):
+- `ProcessedStripeEvent` — webhook idempotency
+- `BudgetAlert` — replaces description-marker dedup hack
+- `ComplianceStatus` + `PlantApprovalStatus` enums (replaced strings)
+
+Infra changes:
+- `compliance-docs` bucket flipped to private; signed URLs minted on render (1h TTL)
+- New `/api/user/password-changed` route fires Loops email after password reset (needs `LOOPS_TEMPLATE_PASSWORD_CHANGED` env var to actually send)
+- `/api/invitations/*` and `/api/waitlist` now rate-limited (5–20/min/IP, in-memory)
+- proxy.ts now rejects cross-origin mutations on `/api/*` (CSRF defense-in-depth)
+- `/privacy` and `/terms` moved out of `(app)/` route group → publicly accessible
+
+Pending env vars (optional — code degrades gracefully when missing):
+- `LOOPS_TEMPLATE_PASSWORD_CHANGED` — confirmation email after password reset
+- `LOOPS_TEMPLATE_INVITE` — automated invite email (already optional pre-audit)
+
+Skipped from audit (and why):
+- Med #20 was already enforced server-side at `src/app/api/time/route.ts:100-122` before the audit; no code change needed.
+- Audit recommendation to use ProjectAssignment as the sole signal for High #4/#9 was relaxed: we accept ProjectAssignment OR PhaseStaffPlan, and bypass for OWNER/ADMIN/SUPERVISOR (audit said only OWNER/ADMIN). PMs and SUPERVISORS need org-wide oversight in real LA firms.
+- Med #11 rate limiter is in-memory per Vercel function instance, not global. Sufficient for beta; swap in `@upstash/ratelimit` if a determined attacker spreads load across instances.
+
+Recommended next session focus:
+1. Verify the Loops email templates render correctly for the new password-changed flow (create the template, set env var).
+2. Watch Search Console — top 3 priority articles should be indexed by 2026-04-28 / 04-29.
+3. Submit AlternativeTo / Capterra / G2 listings (copy-paste content ready in `directory-listings.md`).
+4. Add Vercel Analytics + Plausible before traffic accumulates from the autonomous content pipeline.
+
+---
+
+## Earlier session (2026-04-26 EOD)
+
+**Status: 🚨 CRITICAL MIDDLEWARE BUG FIXED + GOOGLE SEARCH CONSOLE LIVE + COMPREHENSIVE AUDIT COMPLETE.** Three big things:
 1. Discovered + fixed a catastrophic middleware bug blocking Googlebot from indexing all 11 SEO articles AND blocking Android from fetching the PWA manifest (same root cause).
 2. Set up Google Search Console for phasewise.io, submitted sitemap (15 URLs discovered), requested priority indexing for top 3 commercial-intent articles.
 3. Ran a triple-agent comprehensive audit + hands-on verification. **25 verified findings** documented at [`AUDIT-2026-04-26.md`](AUDIT-2026-04-26.md).
