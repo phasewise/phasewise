@@ -537,13 +537,40 @@ Ordered by my estimated value-per-effort. Revisit during the forensic audit.
 - **Automated year-end rollover** — apply the `rolloverCap` automatically when the calendar year changes.
 - **Forensic audit** — top-to-bottom value review once the queue slows down. Rate each feature on value delivered vs maintenance cost. Cut or sharpen anything that doesn't earn its keep.
 
-## Where We Left Off (2026-04-26)
+## Where We Left Off (2026-04-26 EOD)
 
-**Status: 🚨 CRITICAL MIDDLEWARE BUG FIXED + GOOGLE SEARCH CONSOLE LIVE.** Two huge wins today:
-1. Discovered + fixed a catastrophic middleware bug that was blocking Googlebot from indexing all 11 SEO articles AND blocking Android from fetching the PWA manifest. (Same root cause for both.)
-2. Set up Google Search Console for phasewise.io, submitted sitemap (15 URLs discovered), and requested priority indexing for the top 3 commercial-intent articles.
+**Status: 🚨 CRITICAL MIDDLEWARE BUG FIXED + GOOGLE SEARCH CONSOLE LIVE + COMPREHENSIVE AUDIT COMPLETE.** Three big things today:
+1. Discovered + fixed a catastrophic middleware bug blocking Googlebot from indexing all 11 SEO articles AND blocking Android from fetching the PWA manifest (same root cause).
+2. Set up Google Search Console for phasewise.io, submitted sitemap (15 URLs discovered), requested priority indexing for top 3 commercial-intent articles.
+3. Ran a triple-agent comprehensive audit + hands-on verification. **25 verified findings** documented at [`AUDIT-2026-04-26.md`](AUDIT-2026-04-26.md).
 
-The autonomous n8n SEO content pipeline that's been running every Friday is finally connected to Google's crawler. Articles can now be indexed.
+The autonomous n8n SEO content pipeline is now fully connected to Google's crawler. The growth machine is working. Audit found hardening tasks but no data-loss bugs or P0 security holes.
+
+### Comprehensive audit summary (2026-04-26)
+
+Full report: [`AUDIT-2026-04-26.md`](AUDIT-2026-04-26.md)
+
+**🚨 Critical (3) — fix this week:**
+1. `/privacy` and `/terms` pages return 307 to unauthenticated users (same bug pattern as today's middleware fix — they live inside `(app)/` whose layout redirects to /login). GDPR/CCPA compliance issue + breaks landing page footer links. Fix: move out of `(app)/` to public route.
+2. Deactivated users (`isActive: false`) still have full app access until session expires. `getCurrentUser()` doesn't check `isActive`. Fix: add the check, return null if deactivated.
+3. Form inputs not associated with labels (`htmlFor` / `id` missing). WCAG 2.1 Level A fail across ~12-15 forms. ~2hr fix.
+
+**🟠 High (7) — fix next sprint:**
+4. Time entries can be logged to projects user isn't assigned to (no `ProjectAssignment` check)
+5. Stripe webhook lacks idempotency (`event.id` dedup) — duplicate emails possible on Stripe retry
+6. Budget alert state stored in `Project.description` field (code itself flags as MVP). Need `BudgetAlert` table.
+7. Billing page doesn't handle PAST_DUE / INCOMPLETE / CANCELED Stripe states — silent revenue loss
+8. No pagination on list endpoints (compliance, invoices, submittals) — will hurt past ~500 records
+9. STAFF role can view all projects in their org (no project-level access control)
+10. Compliance docs in public Supabase bucket — need private + signed URLs
+
+**🟡 Medium (15) + 🟢 Low (8):** see audit doc — none urgent.
+
+**❌ Two audit false alarms (verified, ignore):**
+- ".env in repo" — actually properly gitignored, not in git
+- "No middleware.ts" — Next.js 16 renamed to proxy.ts which exists at `app/src/proxy.ts`
+
+**Overall assessment:** Codebase ~80% production-ready. TypeScript strict passes, build is clean, no TODO/FIXME debt. Recurring weakness is silent failures at boundaries (middleware vs layout, session vs DB state, webhook vs business logic, public vs private storage). Hardening these is the highest-leverage work.
 
 ### What shipped today (2026-04-26)
 
@@ -736,14 +763,32 @@ Each ~1,000+ words, targeting high-intent LA firm searches:
 
 ### Next session priorities (in order)
 
-1. **Check Search Console indexing progress** — visit https://search.google.com/search-console and look at the "Pages" report. By tomorrow you should see at least the 3 priority articles indexed (Monograph alternatives, LA PM software, billing rates). The other 8 should index within 1-2 weeks via the sitemap.
-2. **Add Vercel Analytics + Plausible** — quick setup (~15 min). Now that Google can index articles, you'll start getting visitors. Need analytics in place to see which articles convert before traffic accumulates.
-3. **Submit directory listings** — AlternativeTo should be unblocked from its weekend pause now. Then Capterra → G2. Each 15-30 min. Copy-paste ready in `directory-listings.md`.
-4. **Product Hunt launch prep** — Needs launch-day assets (gif demo, screenshots, first comment). One-time event, 1-5K visitors typical.
-5. **Social profile uploads + auto-posting pipeline** — v2 PNG logos to LinkedIn, X/Twitter, GitHub. Claim @phasewise on Instagram. Then extend the n8n SEO pipeline with social posting nodes so each new article auto-posts to socials when it ships.
-6. **USPTO trademark filing** — File before significant marketing push.
-7. **Cloudflare ops** — getphasewise.com → phasewise.io 301 redirect + remove duplicate google-site-verification TXT records (now there are likely 2-3 of them after today's auto-verification).
-8. **Optional: n8n error workflow** — alert on silent failures.
+**Audit critical fixes (do these first — same urgency as today's middleware bug):**
+1. **Move `/privacy` and `/terms` out of `(app)/`** — they currently 307-redirect to /login. Compliance issue, breaks landing page footer. Smallest fix is to move both `page.tsx` files directly under `app/src/app/privacy/page.tsx` and `app/src/app/terms/page.tsx` (no `(app)` group). ~30 min.
+2. **Add `isActive` check to `getCurrentUser()`** — single-line change in `app/src/lib/supabase/auth.ts` to return null if user is deactivated. Closes the access control gap where deactivated users keep working until their session expires. ~5 min.
+3. **Form label accessibility** — add `id` + `htmlFor` to all form inputs across ~12-15 client components. WCAG 2.1 Level A blocker. ~2 hrs.
+
+**Then the SEO/growth work:**
+4. **Check Search Console indexing progress** — visit https://search.google.com/search-console → "Pages" report. By tomorrow expect to see at least the 3 priority articles indexed.
+5. **Add Vercel Analytics + Plausible** — quick setup (~15 min). Need analytics in place before traffic accumulates.
+6. **Submit directory listings** — AlternativeTo unblocked from weekend pause now. Then Capterra → G2. Copy-paste ready in `directory-listings.md`.
+
+**Then audit High-priority fixes (next sprint):**
+7. Time entry assignment check (#4 in audit)
+8. Stripe webhook idempotency — `ProcessedStripeEvent` table (#5)
+9. `BudgetAlert` table to replace description-marker hack (#6)
+10. Billing page PAST_DUE / INCOMPLETE / CANCELED states (#7)
+11. Pagination on list endpoints (#8)
+12. STAFF project access control (#9)
+13. Private compliance bucket + signed URLs (#10)
+
+**Then growth/marketing operations:**
+14. Product Hunt launch prep — needs launch-day assets (gif demo, screenshots, first comment).
+15. Social profile uploads + auto-posting pipeline — v2 PNG logos + claim @phasewise on Instagram + extend n8n with social posting nodes.
+16. USPTO trademark filing — before significant marketing push.
+17. Cloudflare ops — getphasewise.com → phasewise.io 301 redirect + remove duplicate google-site-verification TXT records.
+
+**Then audit Medium items (15 items, gradual cleanup):** see `AUDIT-2026-04-26.md` items 11-25.
 
 ### Earlier today (2026-04-23 — morning session): Stripe live mode swap
 
@@ -862,6 +907,10 @@ After a strategy discussion this session, Kevin confirmed that his top prioritie
 - [x] Google Search Console — Domain property verified for phasewise.io via Cloudflare auto-auth ✅ 2026-04-26
 - [x] Sitemap submitted to Search Console (15 URLs discovered, status: Success) ✅ 2026-04-26
 - [x] Priority indexing requested for top 3 commercial-intent articles (Monograph alternatives, LA PM software, billing rates) ✅ 2026-04-26
+- [x] Comprehensive audit completed — 25 verified findings documented at `AUDIT-2026-04-26.md` ✅ 2026-04-26
+- [ ] **Audit critical #1:** Move /privacy and /terms out of `(app)/` route group (currently 307 redirect — same bug pattern as today's middleware fix)
+- [ ] **Audit critical #2:** Add `isActive` check to `getCurrentUser()` (deactivated users still have access)
+- [ ] **Audit critical #3:** Add `id`/`htmlFor` to all form inputs (WCAG 2.1 Level A blocker)
 - [ ] **Monitor indexing progress** in Search Console over next 1-2 weeks (Performance + Indexing reports)
 - [ ] Submit to AlternativeTo (text fields ready — was blocked by weekend pause; should be unblocked now)
 - [ ] Submit to Capterra + G2 (copy-paste ready in `directory-listings.md`)
