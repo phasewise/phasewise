@@ -33,6 +33,7 @@ export async function GET(request: Request) {
         assignedTo: { select: { fullName: true } },
       },
       orderBy: { createdAt: "desc" },
+      take: 500,
     });
 
     return NextResponse.json({ submittals });

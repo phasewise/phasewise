@@ -30,6 +30,7 @@ export async function GET(request: Request) {
         project: { select: { id: true, name: true } },
       },
       orderBy: [{ botanicalName: "asc" }],
+      take: 500,
     });
 
     return NextResponse.json({ plantEntries });

@@ -29,6 +29,7 @@ export async function GET() {
         billingRate: true,
       },
       orderBy: { fullName: "asc" },
+      take: 500,
     });
 
     return NextResponse.json({

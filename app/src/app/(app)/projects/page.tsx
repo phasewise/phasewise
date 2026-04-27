@@ -29,6 +29,7 @@ export default async function ProjectsPage() {
       phases: { orderBy: { sortOrder: "asc" } },
     },
     orderBy: { updatedAt: "desc" },
+    take: 500,
   });
 
   const timeTotals = await prisma.timeEntry.groupBy({

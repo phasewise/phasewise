@@ -33,6 +33,7 @@ export async function GET(request: Request) {
         project: { select: { id: true, name: true } },
       },
       orderBy: [{ category: "asc" }, { name: "asc" }],
+      take: 500,
     });
 
     return NextResponse.json({ complianceItems });

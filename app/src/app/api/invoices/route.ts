@@ -21,6 +21,7 @@ export async function GET() {
       lineItems: true,
     },
     orderBy: { issueDate: "desc" },
+    take: 500,
   });
 
   return NextResponse.json({ invoices });
