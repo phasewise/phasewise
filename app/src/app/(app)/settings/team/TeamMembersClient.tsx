@@ -279,6 +279,7 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
             <button
               type="button"
               onClick={() => setInviteBanner(null)}
+              aria-label="Dismiss invite banner"
               className="text-[#A3BEA9] hover:text-[#6B8C74] text-lg leading-none"
             >
               &times;
@@ -474,6 +475,7 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
                           <button
                             type="button"
                             onClick={() => { setEditingTitle(user.id); setEditTitleValue(user.title || ""); }}
+                            aria-label="Edit title"
                             className="opacity-0 group-hover/title:opacity-100 text-[#A3BEA9] hover:text-[#2D6A4F] transition-opacity"
                             title="Edit title"
                           >

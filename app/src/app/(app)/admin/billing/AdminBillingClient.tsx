@@ -407,7 +407,7 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between p-6 pb-0">
               <h2 className="font-serif text-xl text-[#1A2E22]">Update Payment</h2>
-              <button type="button" onClick={() => setEditingInvoice(null)} className="text-[#A3BEA9] hover:text-[#1A2E22] transition-colors"><X size={18} /></button>
+              <button type="button" onClick={() => setEditingInvoice(null)} aria-label="Close payment update modal" className="text-[#A3BEA9] hover:text-[#1A2E22] transition-colors"><X size={18} /></button>
             </div>
             <form onSubmit={handleUpdatePayment} className="p-6 space-y-4">
               <div className="bg-[#F7F9F7] rounded-xl p-4 space-y-1 text-sm">

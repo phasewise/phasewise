@@ -351,6 +351,7 @@ export default function TimeSheetClient({
                         <button
                           type="button"
                           onClick={() => removeRow(index)}
+                          aria-label="Remove row"
                           className="text-[#A3BEA9] hover:text-rose-500 transition-colors p-1"
                           title="Remove row"
                         >
