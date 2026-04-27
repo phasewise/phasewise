@@ -16,11 +16,12 @@ export async function generateMetadata({
   const post = getPostBySlug(slug);
   if (!post) return { title: "Post not found" };
 
-  const url = `https://phasewise.io/blog/${slug}`;
+  const base = (process.env.NEXT_PUBLIC_APP_URL ?? "https://phasewise.io").replace(/\/$/, "");
+  const url = `${base}/blog/${slug}`;
   return {
     title: post.title,
     description: post.description,
-    alternates: { canonical: `/blog/${slug}` },
+    alternates: { canonical: url },
     openGraph: {
       type: "article",
       url,
@@ -66,6 +67,8 @@ export default async function BlogPostPage({
   const post = getPostBySlug(slug);
   if (!post) notFound();
 
+  const base = (process.env.NEXT_PUBLIC_APP_URL ?? "https://phasewise.io").replace(/\/$/, "");
+
   // JSON-LD structured data for the article
   const articleJsonLd = {
     "@context": "https://schema.org",
@@ -73,18 +76,20 @@ export default async function BlogPostPage({
     "headline": post.title,
     "description": post.description,
     "datePublished": post.date,
-    "author": { "@type": "Organization", "name": "Phasewise" },
+    "author": post.author
+      ? { "@type": "Person", "name": post.author }
+      : { "@type": "Organization", "name": "Phasewise" },
     "publisher": {
       "@type": "Organization",
       "name": "Phasewise",
       "logo": {
         "@type": "ImageObject",
-        "url": "https://phasewise.io/icon-512",
+        "url": `${base}/icon1`,
       },
     },
     "mainEntityOfPage": {
       "@type": "WebPage",
-      "@id": `https://phasewise.io/blog/${slug}`,
+      "@id": `${base}/blog/${slug}`,
     },
     "keywords": post.tags?.join(", "),
   };

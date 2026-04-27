@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { getAllPosts } from "@/lib/blog";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const base = "https://phasewise.io";
+  const base = (process.env.NEXT_PUBLIC_APP_URL ?? "https://phasewise.io").replace(/\/$/, "");
   const now = new Date();
 
   const staticRoutes: MetadataRoute.Sitemap = [
