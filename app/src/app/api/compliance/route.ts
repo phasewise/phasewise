@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { ComplianceStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -20,7 +21,7 @@ async function deleteStoredDocument(path: string | null | undefined) {
 export const dynamic = "force-dynamic";
 
 const VALID_CATEGORIES = ["MWELO", "LEED", "SITES", "ADA", "PERMIT", "OTHER"];
-const VALID_STATUSES = ["NOT_STARTED", "IN_PROGRESS", "COMPLETE", "N_A"];
+const VALID_STATUSES = Object.values(ComplianceStatus);
 
 /**
  * GET /api/compliance?projectId=xxx
@@ -105,7 +106,7 @@ export async function POST(request: Request) {
       );
     }
 
-    if (status && !VALID_STATUSES.includes(status)) {
+    if (status && !VALID_STATUSES.includes(status as ComplianceStatus)) {
       return NextResponse.json(
         { error: `Invalid status. Must be one of: ${VALID_STATUSES.join(", ")}` },
         { status: 400 }
@@ -128,7 +129,7 @@ export async function POST(request: Request) {
         category,
         name,
         description: description || undefined,
-        status: status || "NOT_STARTED",
+        status: (status as ComplianceStatus) || ComplianceStatus.NOT_STARTED,
         dueDate: dueDate ? new Date(dueDate) : undefined,
         documentUrl: documentUrl || undefined,
         notes: notes || undefined,
@@ -180,7 +181,7 @@ export async function PATCH(request: Request) {
       );
     }
 
-    if (fields.status && !VALID_STATUSES.includes(fields.status)) {
+    if (fields.status && !VALID_STATUSES.includes(fields.status as ComplianceStatus)) {
       return NextResponse.json(
         { error: `Invalid status. Must be one of: ${VALID_STATUSES.join(", ")}` },
         { status: 400 }
