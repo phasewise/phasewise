@@ -83,6 +83,32 @@ export async function POST(request: Request) {
     if (phase.project.id !== projectId) {
       return NextResponse.json({ error: "Phase does not belong to selected project." }, { status: 400 });
     }
+
+    // Owners and admins can log time anywhere; everyone else needs an
+    // assignment — either at the project level (ProjectAssignment) or via the
+    // work plan (PhaseStaffPlan on any phase of the project).
+    if (currentUser.role !== "OWNER" && currentUser.role !== "ADMIN") {
+      const [projectAssignment, phaseAssignment] = await Promise.all([
+        prisma.projectAssignment.findUnique({
+          where: { projectId_userId: { projectId, userId: currentUser.id } },
+          select: { id: true },
+        }),
+        prisma.phaseStaffPlan.findFirst({
+          where: { userId: currentUser.id, phase: { projectId } },
+          select: { id: true },
+        }),
+      ]);
+
+      if (!projectAssignment && !phaseAssignment) {
+        return NextResponse.json(
+          {
+            error:
+              "You aren't assigned to this project. Ask a project manager to add you before logging time.",
+          },
+          { status: 403 }
+        );
+      }
+    }
   }
 
   // Guardrails on which weeks an employee can edit:
