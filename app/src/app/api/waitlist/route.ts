@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { upsertContact } from "@/lib/loops";
+import { rateLimit, clientIp } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -9,6 +10,15 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(request: Request) {
   try {
+    const ip = clientIp(request);
+    const { allowed } = rateLimit(`waitlist:${ip}`, 5, 60);
+    if (!allowed) {
+      return NextResponse.json(
+        { error: "Too many requests. Please try again in a minute." },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json().catch(() => ({}));
     const { email, firstName, firmName } = body as {
       email?: string;

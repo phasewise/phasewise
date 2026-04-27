@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { prisma } from "@/lib/prisma";
 import { createClient } from "@/lib/supabase/server";
+import { rateLimit, clientIp } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -10,11 +11,24 @@ export const dynamic = "force-dynamic";
  *
  * Public endpoint — verifies an invitation token and returns the org name,
  * role, and email so the invite page can render the acceptance form.
+ *
+ * Rate-limited to discourage probing for valid tokens. UUIDv4 has 122 bits
+ * of entropy so brute-forcing is mathematically infeasible, but the limit
+ * makes scripted scanning visible and capped per IP.
  */
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ token: string }> }
 ) {
+  const ip = clientIp(request);
+  const { allowed } = rateLimit(`invitations:get:${ip}`, 20, 60);
+  if (!allowed) {
+    return NextResponse.json(
+      { error: "Too many requests. Try again in a minute." },
+      { status: 429 }
+    );
+  }
+
   const { token } = await params;
 
   const invitation = await prisma.invitation.findUnique({
@@ -55,6 +69,15 @@ export async function POST(
   { params }: { params: Promise<{ token: string }> }
 ) {
   try {
+    const ip = clientIp(request);
+    const { allowed } = rateLimit(`invitations:post:${ip}`, 5, 60);
+    if (!allowed) {
+      return NextResponse.json(
+        { error: "Too many requests. Try again in a minute." },
+        { status: 429 }
+      );
+    }
+
     const { token } = await params;
 
     const body = await request.json();
