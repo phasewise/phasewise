@@ -38,6 +38,26 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
     include: { user: { select: { id: true, fullName: true, billingRate: true } } },
   });
 
+  // Detail-page access mirrors the list-page filter: oversight roles see
+  // every project; PM/STAFF only see ones they're assigned to (either via
+  // ProjectAssignment or a PhaseStaffPlan on any phase). Without this, a
+  // junior could deep-link to /projects/<id> and view senior billing
+  // rates and budgets.
+  const seesAllProjects =
+    currentUser.role === "OWNER" ||
+    currentUser.role === "ADMIN" ||
+    currentUser.role === "SUPERVISOR";
+
+  if (!seesAllProjects) {
+    const isAssigned = assignments.some((a) => a.userId === currentUser.id);
+    const hasWorkPlanRow = project.phases.some((ph) =>
+      ph.workPlan.some((row) => row.userId === currentUser.id)
+    );
+    if (!isAssigned && !hasWorkPlanRow) {
+      notFound();
+    }
+  }
+
   const tasks = await prisma.projectTask.findMany({
     where: { projectId: project.id },
     include: { assignedTo: true },

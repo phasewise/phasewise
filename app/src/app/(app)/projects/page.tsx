@@ -23,8 +23,32 @@ export default async function ProjectsPage() {
     );
   }
 
+  // Project visibility:
+  //  - OWNER/ADMIN/SUPERVISOR see every project in the org (oversight roles)
+  //  - PM/STAFF only see projects where they have a ProjectAssignment OR
+  //    a PhaseStaffPlan on at least one phase. This prevents a junior
+  //    designer from browsing billing rates and fees on senior projects.
+  const seesAllProjects =
+    currentUser.role === "OWNER" ||
+    currentUser.role === "ADMIN" ||
+    currentUser.role === "SUPERVISOR";
+
   const projects = await prisma.project.findMany({
-    where: { organizationId: currentUser.organizationId },
+    where: {
+      organizationId: currentUser.organizationId,
+      ...(seesAllProjects
+        ? {}
+        : {
+            OR: [
+              { assignments: { some: { userId: currentUser.id } } },
+              {
+                phases: {
+                  some: { workPlan: { some: { userId: currentUser.id } } },
+                },
+              },
+            ],
+          }),
+    },
     include: {
       phases: { orderBy: { sortOrder: "asc" } },
     },
