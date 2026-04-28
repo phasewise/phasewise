@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import { Outfit, DM_Serif_Display } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 const outfit = Outfit({
@@ -96,6 +98,11 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
+// Plausible is opt-in via env var so we don't load a no-op script on every
+// page until the domain is registered. Set NEXT_PUBLIC_PLAUSIBLE_DOMAIN
+// to the apex domain (e.g. "phasewise.io") to enable.
+const PLAUSIBLE_DOMAIN = process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN;
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -105,6 +112,14 @@ export default function RootLayout({
     <html lang="en" className={`${outfit.variable} ${dmSerifDisplay.variable} h-full`}>
       <body className="min-h-full bg-white font-sans antialiased text-[#1A2E22] overflow-x-hidden">
         {children}
+        <Analytics />
+        {PLAUSIBLE_DOMAIN && (
+          <Script
+            src="https://plausible.io/js/script.js"
+            data-domain={PLAUSIBLE_DOMAIN}
+            strategy="afterInteractive"
+          />
+        )}
       </body>
     </html>
   );
