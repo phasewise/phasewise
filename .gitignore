@@ -1,0 +1,9 @@
+# Private working files — must never end up in the public GitHub repo.
+# These contain prospect lists with personal contact info, draft emails
+# with details about specific recipients, etc. Adding to .gitignore at
+# the repo root so they're invisible to git regardless of subdirectory.
+
+PROSPECTS.md
+PROSPECTS-*.md
+private/
+*.private.md
