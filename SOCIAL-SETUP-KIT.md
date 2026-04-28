@@ -25,7 +25,7 @@ Profile pic source: `brand_v2/phasewise-logomark.svg` (export to PNG at the plat
 
 ## Long-form (LinkedIn About / Instagram bio overflow)
 
-Phasewise replaces the patchwork of QuickBooks + Monday + spreadsheets that most landscape architecture firms cobble together. Built by a Senior Landscape Architect at Caltrans for principals, project managers, and staff who'd rather be designing than chasing approvals.
+Phasewise replaces the project-management + time-tracking + budget-spreadsheet patchwork that most landscape architecture firms cobble together (Monograph, BQE, Harvest + Asana, or pure spreadsheets). It pairs alongside your accounting (QuickBooks, Xero, etc.) — doesn't replace it. Built by a Senior Landscape Architect at Caltrans for principals, project managers, and staff who'd rather be designing than chasing approvals.
 
 What's inside:
 • Project phases (PreD → SD → DD → CD → CA → PostC) with auto-billing-from-staff-rates
@@ -104,7 +104,7 @@ One subscription instead of three. $99/mo Starter • $199/mo Professional • $
 >
 > Phasewise is project management designed for the way LA firms actually work — phases instead of generic "tasks", real billing rates and net multipliers instead of spreadsheets, MWELO calculators that cite the actual regulation, submittal logs with automatic reminders, and per-person profitability so you can see when junior staff are subsidizing senior fees.
 >
-> One subscription replaces QuickBooks Plus + Monday + Harvest. Starts at $99/mo. 14-day free trial. No credit card to start.
+> One subscription instead of three (Monograph + Harvest + spreadsheets). Sits alongside your accounting (QuickBooks/Xero) rather than replacing it. Starts at $99/mo. 14-day free trial. No credit card to start.
 >
 > If you run a firm and want a 15-minute walkthrough — DM me. Honestly more interested in your feedback than your money right now.
 >
@@ -128,7 +128,7 @@ One subscription instead of three. $99/mo Starter • $199/mo Professional • $
 >
 > Built by a Senior Landscape Architect at Caltrans (yes, really).
 >
-> Replaces the QuickBooks + Monday + spreadsheets stack. $99/mo Starter, 14-day free trial, no card to start.
+> Replaces the Monday + Harvest + spreadsheets stack. $99/mo Starter, 14-day free trial, no card to start.
 >
 > Tap the link in bio.
 >

@@ -71,7 +71,7 @@ Vary subject lines aggressively — same body with 5 different subjects performs
 >
 > https://phasewise.io/blog/mwelo-water-budget-calculator-guide
 >
-> If you'd ever want to see how Phasewise replaces the QuickBooks + spreadsheet stack for $99–349/mo, the trial is 14 days and doesn't require a card: phasewise.io/signup.
+> If you'd ever want to see how Phasewise handles project management, time tracking, and job profitability in one tool for $99–349/mo, the trial is 14 days and doesn't require a card: phasewise.io/signup.
 >
 > If not, no follow-up — just felt like sharing.
 >
@@ -87,7 +87,7 @@ Vary subject lines aggressively — same body with 5 different subjects performs
 
 > Hi {{firstName or firmName-team}},
 >
-> Phasewise (https://phasewise.io) is project management software designed specifically for landscape architecture firms. It replaces the QuickBooks + Monday + Harvest stack with one tool — phases native to LA work, MWELO calculator, per-person profitability, submittal logs, plant schedules.
+> Phasewise (https://phasewise.io) is project management software designed specifically for landscape architecture firms. It replaces the Monday + Harvest + spreadsheets patchwork with one tool — phases native to LA work, MWELO calculator, per-person profitability, submittal logs, plant schedules. (Sits alongside your QuickBooks for accounting; doesn't replace it.)
 >
 > We're cold-emailing ~40 California firms in your size range to ask: would you try it free for 14 days and tell us what's broken?
 >

@@ -58,7 +58,7 @@ Skip for today, but do later: GetApp, Software Advice, SaaSHub, Product Hunt (se
 > Phasewise is project management software built specifically for landscape architecture firms. Unlike generic PM tools, Phasewise ships with the 7 standard LA phases (SD, DD, CD, CA, and more), a built-in MWELO water budget calculator, plant schedule manager with substitution tracking, submittal and RFI log with automatic overdue reminders, and industry-standard billing rates pre-populated by role. The work plan auto-calculates project fee estimates from staff assignments. Replaces your PM tool, time tracker, and budget spreadsheets with one subscription. Starts at $99/month for solo practices, with 14-day free trials on all plans.
 
 ### 200-word description
-> Phasewise is the project management platform built specifically for landscape architecture firms. Most firms piece together three or four tools: a generic PM tool like Asana, a time tracker like Harvest, a spreadsheet for budgets, and QuickBooks for billing. Phasewise replaces all of those with a single platform designed for how LA firms actually operate.
+> Phasewise is the project management platform built specifically for landscape architecture firms. Most firms piece together three or four tools: a generic PM tool like Asana, a time tracker like Harvest, and a spreadsheet for budgets — alongside QuickBooks (or another accounting system) for bookkeeping and invoicing. Phasewise replaces the project-management, time-tracking, and budget-spreadsheet layer with a single platform designed for how LA firms actually operate, and pairs alongside your accounting system rather than trying to replace it.
 >
 > Every Phasewise project ships with the 7 standard landscape architecture phases pre-built — Pre-Design, Schematic Design, Design Development, Construction Documents, Bidding, Construction Administration, and Closeout. The work plan lets you assign staff to each phase with hours, automatically calculating fee estimates using industry-standard billing rates that are pre-populated for every LA role.
 >
@@ -137,7 +137,7 @@ Focus of this listing: getting Phasewise to appear when people search "Monograph
 - **Website:** https://phasewise.io
 - **Platform:** Web / Online
 - **License:** Commercial / SaaS subscription
-- **Suggested "alternative to":** Monograph, Harvest, Asana + QuickBooks combo, BQE Core
+- **Suggested "alternative to":** Monograph, BQE Core, Harvest, Asana
 - **Categories:** Business & Commerce → Project Management, Business & Commerce → Task Management
 - **Tags:** `project-management`, `time-tracking`, `budget-tracking`, `architecture`, `landscape-architecture`, `AEC`, `professional-services`
 - **Features to highlight:** Phase-based projects, MWELO calculator, Plant schedule manager, Submittal log, Budget alerts
