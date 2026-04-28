@@ -52,6 +52,8 @@ export async function handleAuth(request: NextRequest) {
     "/icon3",
     "/apple-icon",
     "/favicon.ico",
+    "/opengraph-image",
+    "/twitter-image",
   ]);
 
   // Path-prefix matches
