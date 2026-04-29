@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { Prisma, PhaseType, PhaseStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/supabase/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +13,35 @@ interface PhaseInput {
   budgetedHours?: string | number;
   sortOrder?: number;
   status?: string;
+}
+
+/**
+ * GET /api/projects
+ *
+ * Lightweight project list for picker UIs (e.g., the MWELO calculator's
+ * "Save to project" flow). Returns active projects only, sorted by name.
+ */
+export async function GET() {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) {
+    return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
+  }
+
+  const projects = await prisma.project.findMany({
+    where: {
+      organizationId: currentUser.organizationId,
+      status: { not: "ARCHIVED" },
+    },
+    select: {
+      id: true,
+      name: true,
+      projectNumber: true,
+    },
+    orderBy: { name: "asc" },
+    take: 500,
+  });
+
+  return NextResponse.json({ projects });
 }
 
 export async function POST(request: Request) {

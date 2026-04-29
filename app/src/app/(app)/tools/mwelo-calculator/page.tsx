@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, Calculator, Download, Droplets, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Calculator, Check, Download, Droplets, FolderPlus, Plus, Trash2, X } from "lucide-react";
+
+type ProjectOption = { id: string; name: string; projectNumber: string | null };
 
 // MWELO Constants
 // Reference evapotranspiration (ETo) by California region (inches/year)
@@ -55,6 +57,16 @@ export default function MWELOCalculatorPage() {
   const [calculated, setCalculated] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
 
+  // "Save to project" flow state
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [projects, setProjects] = useState<ProjectOption[]>([]);
+  const [projectsLoading, setProjectsLoading] = useState(false);
+  const [saveProjectId, setSaveProjectId] = useState("");
+  const [saveItemName, setSaveItemName] = useState("");
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [savedItemId, setSavedItemId] = useState<string | null>(null);
+
   const eto = ETO_REGIONS[region] ?? 54.5;
 
   function addZone() {
@@ -102,6 +114,112 @@ export default function MWELOCalculatorPage() {
   function handlePrint() {
     window.print();
   }
+
+  async function openSaveModal() {
+    setShowSaveModal(true);
+    setSaveError(null);
+    setSavedItemId(null);
+    setSaveItemName(
+      projectName ? `MWELO Water Budget — ${projectName}` : "MWELO Water Budget Calculation"
+    );
+    if (projects.length === 0) {
+      setProjectsLoading(true);
+      try {
+        const res = await fetch("/api/projects");
+        const data = await res.json();
+        setProjects(data.projects ?? []);
+        if (data.projects?.length === 1) setSaveProjectId(data.projects[0].id);
+      } catch {
+        setSaveError("Failed to load projects.");
+      } finally {
+        setProjectsLoading(false);
+      }
+    }
+  }
+
+  async function handleSaveToProject() {
+    if (!saveProjectId) {
+      setSaveError("Please select a project.");
+      return;
+    }
+    if (!saveItemName.trim()) {
+      setSaveError("Please name this compliance item.");
+      return;
+    }
+    setSaving(true);
+    setSaveError(null);
+
+    const calculationPayload = {
+      version: 1,
+      savedAt: new Date().toISOString(),
+      inputs: {
+        projectName,
+        region,
+        eto,
+        specialLandscapeArea: sla,
+        hydrozones: hydrozones.map((z) => ({
+          name: z.name,
+          areaSqFt: Number(z.areaSqFt) || 0,
+          plantFactor: z.plantFactor,
+          irrigationEfficiency: z.irrigationEfficiency,
+        })),
+      },
+      outputs: {
+        totalLandscapeArea,
+        mawa: Math.round(mawa),
+        etwu: Math.round(totalETWU),
+        passes,
+        complianceRatio: mawa > 0 ? totalETWU / mawa : 0,
+        hydrozoneResults: hydrozoneResults.map((z) => ({
+          name: z.name,
+          area: z.area,
+          pf: z.pf,
+          ie: z.ie,
+          etwu: Math.round(z.etwu),
+        })),
+      },
+    };
+
+    try {
+      const res = await fetch("/api/compliance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          projectId: saveProjectId,
+          category: "MWELO",
+          name: saveItemName.trim(),
+          description: `MAWA: ${Math.round(mawa).toLocaleString()} gal/yr · ETWU: ${Math.round(totalETWU).toLocaleString()} gal/yr · ${passes ? "Compliant" : "Non-compliant"}`,
+          status: passes ? "COMPLETE" : "IN_PROGRESS",
+          mweloCalculation: calculationPayload,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setSaveError(data.error || "Failed to save calculation.");
+        setSaving(false);
+        return;
+      }
+      setSavedItemId(data.item?.id ?? null);
+      setSaving(false);
+    } catch {
+      setSaveError("Network error. Please try again.");
+      setSaving(false);
+    }
+  }
+
+  function closeSaveModal() {
+    setShowSaveModal(false);
+    setSaveError(null);
+    setSavedItemId(null);
+    setSaveProjectId("");
+  }
+
+  // Auto-clear save state when inputs change so the "Saved" indicator
+  // doesn't lie if the user re-runs the calculator with different numbers.
+  useEffect(() => {
+    if (savedItemId) setSavedItemId(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [region, specialLandscapeArea, hydrozones, projectName]);
 
   return (
     <div className="p-6 lg:p-10 max-w-4xl">
@@ -255,13 +373,22 @@ export default function MWELOCalculatorPage() {
                 <h2 className="font-serif text-xl text-[#1A2E22]">MWELO Water Budget Report</h2>
                 {projectName && <p className="text-sm text-[#6B8C74] mt-0.5">{projectName}</p>}
               </div>
-              <button
-                type="button"
-                onClick={handlePrint}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-[#F0FAF4] text-[#2D6A4F] border border-[#52B788]/30 hover:bg-[#2D6A4F] hover:text-white transition-all"
-              >
-                <Download size={14} /> Print / Save PDF
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={openSaveModal}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-[#2D6A4F] text-white hover:bg-[#40916C] transition-all"
+                >
+                  {savedItemId ? <><Check size={14} /> Saved to compliance</> : <><FolderPlus size={14} /> Save to project</>}
+                </button>
+                <button
+                  type="button"
+                  onClick={handlePrint}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-[#F0FAF4] text-[#2D6A4F] border border-[#52B788]/30 hover:bg-[#2D6A4F] hover:text-white transition-all"
+                >
+                  <Download size={14} /> Print / Save PDF
+                </button>
+              </div>
             </div>
 
             {/* Summary cards */}
@@ -367,6 +494,129 @@ export default function MWELOCalculatorPage() {
               </div>
               <div>{new Date().toLocaleDateString()}</div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Save to project modal */}
+      {showSaveModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 print:hidden" onClick={closeSaveModal}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-6 pb-0">
+              <h2 className="font-serif text-xl text-[#1A2E22]">Save to Compliance</h2>
+              <button type="button" onClick={closeSaveModal} aria-label="Close save modal" className="text-[#A3BEA9] hover:text-[#1A2E22] transition-colors"><X size={18} /></button>
+            </div>
+
+            {savedItemId ? (
+              <div className="p-6 space-y-4">
+                <div className="rounded-xl bg-[#F0FAF4] border border-[#52B788]/30 p-4 flex items-start gap-3">
+                  <Check className="w-5 h-5 text-[#2D6A4F] mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold text-[#1A2E22]">Saved successfully</p>
+                    <p className="text-xs text-[#6B8C74] mt-1">
+                      This calculation is now a MWELO compliance item on the selected project. View it in the Compliance section.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Link
+                    href="/compliance"
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-[#2D6A4F] text-white hover:bg-[#40916C] transition-colors"
+                  >
+                    Open Compliance
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={closeSaveModal}
+                    className="text-sm text-[#6B8C74] hover:text-[#1A2E22] transition-colors"
+                  >
+                    Stay here
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="p-6 space-y-4">
+                <p className="text-sm text-[#6B8C74]">
+                  Save this calculation as a MWELO compliance item on a specific project. The full inputs and outputs will be stored, and the project&apos;s compliance tracker will reflect the pass/fail status.
+                </p>
+
+                <div>
+                  <label htmlFor="mwelo-save-project" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Project</label>
+                  {projectsLoading ? (
+                    <div className="text-sm text-[#A3BEA9] py-2">Loading projects...</div>
+                  ) : projects.length === 0 ? (
+                    <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 text-xs text-amber-800">
+                      No active projects yet. <Link href="/projects/new" className="underline font-medium">Create one first</Link>, then come back to save this calculation.
+                    </div>
+                  ) : (
+                    <select
+                      id="mwelo-save-project"
+                      value={saveProjectId}
+                      onChange={(e) => setSaveProjectId(e.target.value)}
+                      className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]"
+                    >
+                      <option value="">— Pick a project —</option>
+                      {projects.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.projectNumber ? `${p.projectNumber} · ${p.name}` : p.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+
+                <div>
+                  <label htmlFor="mwelo-save-name" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Compliance item name</label>
+                  <input
+                    id="mwelo-save-name"
+                    type="text"
+                    value={saveItemName}
+                    onChange={(e) => setSaveItemName(e.target.value)}
+                    placeholder="MWELO Water Budget Calculation"
+                    className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]"
+                  />
+                </div>
+
+                <div className="rounded-xl bg-[#F7F9F7] border border-[#E2EBE4] p-3 text-xs space-y-1">
+                  <div className="flex justify-between">
+                    <span className="text-[#6B8C74]">MAWA</span>
+                    <span className="font-medium text-[#1A2E22]">{Math.round(mawa).toLocaleString()} gal/yr</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[#6B8C74]">ETWU</span>
+                    <span className={`font-medium ${passes ? "text-[#2D6A4F]" : "text-rose-700"}`}>{Math.round(totalETWU).toLocaleString()} gal/yr</span>
+                  </div>
+                  <div className="flex justify-between pt-1 border-t border-[#E2EBE4]">
+                    <span className="text-[#6B8C74]">Status</span>
+                    <span className={`font-semibold ${passes ? "text-[#2D6A4F]" : "text-rose-700"}`}>{passes ? "Compliant" : "Non-compliant"}</span>
+                  </div>
+                </div>
+
+                {saveError && (
+                  <div className="rounded-lg bg-rose-50 border border-rose-200 p-3 text-sm text-rose-700">
+                    {saveError}
+                  </div>
+                )}
+
+                <div className="flex items-center gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={handleSaveToProject}
+                    disabled={saving || !saveProjectId || projects.length === 0}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium bg-[#2D6A4F] text-white hover:bg-[#40916C] transition-colors disabled:opacity-60"
+                  >
+                    {saving ? "Saving..." : "Save to project"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={closeSaveModal}
+                    className="text-sm text-[#6B8C74] hover:text-[#1A2E22] transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

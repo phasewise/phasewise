@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { ComplianceStatus } from "@prisma/client";
+import { ComplianceStatus, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -81,6 +81,7 @@ export async function POST(request: Request) {
       dueDate,
       documentUrl,
       notes,
+      mweloCalculation,
     } = body as {
       projectId: string;
       category: string;
@@ -90,6 +91,7 @@ export async function POST(request: Request) {
       dueDate?: string;
       documentUrl?: string;
       notes?: string;
+      mweloCalculation?: unknown;
     };
 
     if (!projectId || !category || !name) {
@@ -133,6 +135,8 @@ export async function POST(request: Request) {
         dueDate: dueDate ? new Date(dueDate) : undefined,
         documentUrl: documentUrl || undefined,
         notes: notes || undefined,
+        mweloCalculation:
+          mweloCalculation !== undefined ? (mweloCalculation as Prisma.InputJsonValue) : undefined,
       },
       include: {
         project: { select: { id: true, name: true } },
@@ -168,6 +172,7 @@ export async function PATCH(request: Request) {
       dueDate?: string;
       documentUrl?: string;
       notes?: string;
+      mweloCalculation?: unknown;
     };
 
     if (!id) {
@@ -205,6 +210,12 @@ export async function PATCH(request: Request) {
     if (fields.dueDate !== undefined) data.dueDate = fields.dueDate ? new Date(fields.dueDate) : null;
     if (fields.documentUrl !== undefined) data.documentUrl = fields.documentUrl || null;
     if (fields.notes !== undefined) data.notes = fields.notes || null;
+    if (fields.mweloCalculation !== undefined) {
+      data.mweloCalculation =
+        fields.mweloCalculation === null
+          ? Prisma.JsonNull
+          : (fields.mweloCalculation as Prisma.InputJsonValue);
+    }
 
     const updated = await prisma.complianceItem.update({
       where: { id },
