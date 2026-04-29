@@ -152,7 +152,7 @@ export default function MWELOCalculatorPage() {
             </div>
             <div>
               <label htmlFor="mwelo-sla" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Special Landscape Area (sq ft)</label>
-              <input id="mwelo-sla" type="number" min="0" value={specialLandscapeArea} onChange={(e) => setSpecialLandscapeArea(e.target.value)} placeholder="0" className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+              <input id="mwelo-sla" type="text" inputMode="numeric" pattern="[0-9]*" value={specialLandscapeArea} onChange={(e) => setSpecialLandscapeArea(e.target.value.replace(/[^0-9]/g, ""))} placeholder="0" className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
               <p className="text-[10px] text-[#A3BEA9] mt-1">Edible gardens, areas using recycled water, etc.</p>
             </div>
           </div>
@@ -176,7 +176,7 @@ export default function MWELOCalculatorPage() {
                 </div>
                 <div>
                   {i === 0 && <label htmlFor={`mwelo-zone-area-${i}`} className="text-[10px] font-medium text-[#6B8C74] uppercase tracking-wider">Area (sf)</label>}
-                  <input id={`mwelo-zone-area-${i}`} aria-label="Zone area in square feet" type="number" min="0" value={zone.areaSqFt} onChange={(e) => updateZone(i, "areaSqFt", e.target.value)} placeholder="0" className="mt-1 w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3 py-2 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+                  <input id={`mwelo-zone-area-${i}`} aria-label="Zone area in square feet" type="text" inputMode="numeric" pattern="[0-9]*" value={zone.areaSqFt} onChange={(e) => updateZone(i, "areaSqFt", e.target.value.replace(/[^0-9]/g, ""))} placeholder="0" className="mt-1 w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3 py-2 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
                 </div>
                 <div>
                   {i === 0 && <label htmlFor={`mwelo-zone-plant-factor-${i}`} className="text-[10px] font-medium text-[#6B8C74] uppercase tracking-wider">Plant Factor</label>}
