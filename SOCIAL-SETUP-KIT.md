@@ -25,14 +25,14 @@ Profile pic source: `brand_v2/phasewise-logomark.svg` (export to PNG at the plat
 
 ## Long-form (LinkedIn About / Instagram bio overflow)
 
-Phasewise replaces the project-management + time-tracking + budget-spreadsheet patchwork that most landscape architecture firms cobble together (Monograph, BQE, Harvest + Asana, or pure spreadsheets). It pairs alongside your accounting (QuickBooks, Xero, etc.) — doesn't replace it. Built by a Senior Landscape Architect at Caltrans for principals, project managers, and staff who'd rather be designing than chasing approvals.
+Phasewise replaces the project-management + time-tracking + budget-spreadsheet patchwork that most landscape architecture firms cobble together (Monograph, BQE, Harvest + Asana, or pure spreadsheets). It pairs alongside your accounting (QuickBooks, Xero, etc.) — doesn't replace it. Built by landscape architects, for landscape architects — every feature came out of watching what firms actually do every day.
 
 What's inside:
 • Project phases (PreD → SD → DD → CD → CA → PostC) with auto-billing-from-staff-rates
 • Real-time budget alerts at 75% / 90% / 100% burn
 • Submittal & RFI log with overdue email reminders
 • MWELO water budget calculator (Title 23, CCR §§ 490–495)
-• Plant schedules, compliance tracker, client portal
+• Plant schedules, compliance tracker, per-person profitability reports
 • Time tracking, timesheets, approvals, leave + PTO
 • Stripe billing + branded PDF invoices
 
@@ -96,17 +96,15 @@ One subscription instead of three. $99/mo Starter • $199/mo Professional • $
 
 ### LinkedIn first post (long-form, 1200–1500 char)
 
-> After 18 months of building, Phasewise is live.
+> Phasewise is live.
 >
-> I'm a Senior Landscape Architect at Caltrans, and I've watched principals at every firm I've worked at lose hours to the same admin grind: chasing submittals, reconciling timesheets, debugging budget spreadsheets, billing, MWELO calcs, plant schedules, change orders.
+> Project management built specifically for landscape architecture firms — phases instead of generic "tasks", real billing rates and net multipliers instead of spreadsheets, MWELO calculators that cite the actual regulation, submittal logs with automatic reminders, and per-person profitability that surfaces when junior staff are subsidizing senior fees.
 >
-> So I built the tool I wish I'd had.
->
-> Phasewise is project management designed for the way LA firms actually work — phases instead of generic "tasks", real billing rates and net multipliers instead of spreadsheets, MWELO calculators that cite the actual regulation, submittal logs with automatic reminders, and per-person profitability so you can see when junior staff are subsidizing senior fees.
+> The same admin grind keeps showing up at LA firms: chasing submittals, reconciling timesheets, debugging budget spreadsheets, MWELO calcs, plant schedules, change orders. Phasewise is the tool we wish existed.
 >
 > One subscription instead of three (Monograph + Harvest + spreadsheets). Sits alongside your accounting (QuickBooks/Xero) rather than replacing it. Starts at $99/mo. 14-day free trial. No credit card to start.
 >
-> If you run a firm and want a 15-minute walkthrough — DM me. Honestly more interested in your feedback than your money right now.
+> If you run an LA firm and want a 15-minute walkthrough, drop a comment or DM us — genuinely more interested in feedback than money right now.
 >
 > phasewise.io
 >
@@ -126,7 +124,7 @@ One subscription instead of three. $99/mo Starter • $199/mo Professional • $
 >
 > One platform for the admin work landscape architecture firms actually do — project phases, budgets, time tracking, submittals, MWELO water budgets, plant schedules, compliance, profitability.
 >
-> Built by a Senior Landscape Architect at Caltrans (yes, really).
+> Built by landscape architects, for landscape architects.
 >
 > Replaces the Monday + Harvest + spreadsheets stack. $99/mo Starter, 14-day free trial, no card to start.
 >

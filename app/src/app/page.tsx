@@ -64,7 +64,7 @@ const solutions = [
 const faqs = [
   {
     q: "Can I cancel anytime?",
-    a: "Yes. Cancel from your account settings with one click. You'll keep access through the end of your current billing period, and your project data stays available if you decide to return.",
+    a: "Yes. Cancel from your account settings or via the Stripe customer portal. You'll keep access through the end of your current billing period, and your project data stays available if you decide to return.",
   },
   {
     q: "How long does setup take?",
@@ -76,7 +76,7 @@ const faqs = [
   },
   {
     q: "How is my data protected?",
-    a: "Your data is stored in encrypted Postgres databases with daily backups. We use industry-standard authentication (Supabase Auth) and TLS for all connections. Your firm's data is isolated from other tenants — nothing leaks across organizations.",
+    a: "Your data is stored in Postgres on Supabase with regular backups, TLS encryption for all connections, and authentication via Supabase Auth. Each firm's data is scoped to its own organization in our database.",
   },
   {
     q: "What happens to my data if I cancel?",
@@ -112,7 +112,7 @@ const features = [
   {
     icon: Leaf,
     title: "Plant Schedule Manager",
-    desc: "Live plant database with substitution tracking and client-approval workflows. Export directly to CAD-compatible format.",
+    desc: "Live plant database with substitution tracking and client-approval workflows. Export plant lists for contractor submittals.",
   },
   {
     icon: ShieldCheck,
@@ -145,7 +145,7 @@ const tiers = [
       "Up to 15 users",
       "Unlimited projects",
       "All modules included",
-      "Client portal",
+      "Advanced reporting",
       "Priority support",
     ],
     featured: true,
@@ -159,7 +159,7 @@ const tiers = [
       "Unlimited users",
       "Unlimited projects",
       "All modules included",
-      "Client portal",
+      "Advanced reporting",
       "Dedicated support",
     ],
     featured: false,
@@ -223,7 +223,7 @@ const structuredData = {
           "name": "Professional",
           "price": "199",
           "priceCurrency": "USD",
-          "description": "Growing firms. Up to 15 users, unlimited projects, client portal.",
+          "description": "Growing firms. Up to 15 users, unlimited projects, priority support.",
         },
         {
           "@type": "Offer",
@@ -238,10 +238,12 @@ const structuredData = {
       "@type": "Organization",
       "name": "Phasewise",
       "url": "https://phasewise.io",
-      "logo": "https://phasewise.io/icon-512",
+      "logo": "https://phasewise.io/icon1",
       "sameAs": [
         "https://github.com/phasewise",
         "https://linkedin.com/company/phasewise-io",
+        "https://twitter.com/phasewise",
+        "https://instagram.com/phasewise",
       ],
     },
     {

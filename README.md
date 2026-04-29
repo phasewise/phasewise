@@ -22,7 +22,6 @@ Phasewise is a vertical SaaS platform built specifically for landscape architect
 
 ## Key Numbers
 
-- ~8,500 LA firms in the US, 95% under 50 employees
+- Several thousand LA firms in the US (NAICS 541320), most under 50 employees
 - Zero purpose-built SaaS for LA firm operations
-- $11B industry growing 3-5% annually
 - 560 subscribers at $149/month = $83K/month ARR (goal)

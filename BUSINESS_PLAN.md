@@ -8,7 +8,7 @@
 
 Phasewise is a vertical SaaS platform purpose-built for landscape architecture firms. It replaces the fragmented tool stack of spreadsheets, email, and generic project management software with a single platform designed around how landscape architects actually work — from project phases and fee tracking to submittal logs, plant schedules, and construction administration.
 
-**The opportunity:** There are approximately 8,500 landscape architecture firms in the US generating $11B+ in annual revenue. 95% have fewer than 50 employees. There is **zero** purpose-built SaaS for LA firm operations. The closest competitor, Monograph, targets architecture firms and lacks landscape-specific features (plant schedules, irrigation, water budgets, MWELO compliance, CA-phase tools).
+**The opportunity:** There are several thousand landscape architecture firms in the US (NAICS 541320), the vast majority with fewer than 50 employees. There is **zero** purpose-built SaaS for LA firm operations. The closest competitor, Monograph, targets architecture firms and lacks landscape-specific features (plant schedules, irrigation, water budgets, MWELO compliance, CA-phase tools). Verify the latest IBISWorld / BLS figures before any investor or external use of specific firm-count or industry-revenue numbers.
 
 **Target:** Small-to-mid LA firms (5-50 employees) currently using QuickBooks + Excel + email + generic PM tools.
 

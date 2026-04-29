@@ -41,7 +41,7 @@ For firms that want a standalone plant database and don't want to commit to eith
 
 This is where most landscape architecture firms leave money on the table. Generic tools like **Asana** or **Monday.com** work fine for task tracking but don't understand how landscape architecture projects are structured—phases, fee allocations, consultant coordination, submittal logs. You end up customizing them endlessly and still can't pull a real project health report.
 
-**Monograph** was built for architecture and has been adopted by some landscape firms. It handles time tracking, phase budgets, and invoicing in one place. Pricing starts around $45/user/month. It's a solid tool, but it was built with architecture's phase structure in mind, not landscape architecture's. Firms doing large public projects with complex consultant coordination often find it undersized.
+**Monograph** was built for architecture and has been adopted by some landscape firms. It handles time tracking, phase budgets, and invoicing in one place. Pricing typically falls in the $50–200 per user per month range depending on tier and add-ons; verify current pricing on their site. It's a solid tool, but it was built with architecture's phase structure in mind, not landscape architecture's. Firms doing large public projects with complex consultant coordination often find it undersized.
 
 **Phasewise** is built specifically for landscape architecture firms. More on that below.
 

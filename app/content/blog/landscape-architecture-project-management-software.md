@@ -7,7 +7,7 @@ tags: ["software", "tools", "firm operations", "buyer's guide"]
 primaryKeyword: "landscape architecture project management software"
 ---
 
-Most "project management software for landscape architects" articles are generic PM tool roundups with "landscape architecture" sprinkled into the intro. This one isn't. After two decades running an LA firm and evaluating every tool that claimed to fit, the actual requirements turn out to be specific — and most generic PM tools fail them.
+Most "project management software for landscape architects" articles are generic PM tool roundups with "landscape architecture" sprinkled into the intro. This one isn't. After watching landscape architecture firms try every tool that claimed to fit, the actual requirements turn out to be specific — and most generic PM tools fail them.
 
 ## The real test: does it understand phases?
 

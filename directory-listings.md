@@ -89,7 +89,6 @@ Most directories have a "features" checklist or freeform list. Use this:
 - Overhead / admin time tracking (non-billable categories)
 - Leave & PTO tracking with firm-wide policy support
 - Project numbering with customizable prefix
-- Client portal (Professional and Studio tiers)
 - Multi-user with role-based permissions (Owner, Admin, Supervisor, PM, Staff)
 - Team invitations via email link
 - Budget alerts via email
@@ -109,14 +108,14 @@ Most directories have a "features" checklist or freeform list. Use this:
 - Up to 15 users
 - Unlimited projects
 - All modules included
-- Client portal
+- Advanced reporting
 - Priority support
 
 **Studio — $349/month**
 - Unlimited users
 - Unlimited projects
 - All modules included
-- Client portal
+- Advanced reporting
 - Dedicated support
 
 All plans include a 14-day free trial with no credit card required.
