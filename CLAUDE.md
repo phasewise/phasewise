@@ -537,6 +537,111 @@ Ordered by my estimated value-per-effort. Revisit during the forensic audit.
 - **Automated year-end rollover** — apply the `rolloverCap` automatically when the calendar year changes.
 - **Forensic audit** — top-to-bottom value review once the queue slows down. Rate each feature on value delivered vs maintenance cost. Cut or sharpen anything that doesn't earn its keep.
 
+## Where We Left Off (2026-04-28)
+
+**Status: 🟢 GROWTH MACHINE READY TO TURN ON — pending one Monday-morning deliverability test.** Pivoted from product-hardening (yesterday's audit cleanup) to customer-acquisition infrastructure. Spent today wiring analytics, social presence, email infrastructure, prospect research, and outreach drafts. Caught two rounds of marketing-copy honesty problems and ran comprehensive audits to fix them. Anonymous brand voice is now the canonical position across all public copy.
+
+### Major decisions made today
+
+- **Anonymous brand voice** is the canonical position. All public marketing copy, social bios, social posts, and outreach disclosures reference "Phasewise" / "the Phasewise team" / "landscape architects" — never the founder name and never Caltrans. The disclosure script in OUTREACH-DRAFTS for "who's behind this" gives credibility without naming founder or employer.
+- **LinkedIn deferred 1-2 weeks.** Personal account couldn't create the company page (Workspace's "not enough connections" anti-spam gate). Solution: add 5-10 LinkedIn connections naturally as outreach replies come in, then create the page.
+- **Instagram skipped for v1.** SMS verification was failing. LinkedIn + X cover ~95% of B2B SaaS conversion anyway. Revisit after first paying customer.
+- **Plausible is opt-in.** Set `NEXT_PUBLIC_PLAUSIBLE_DOMAIN=phasewise.io` in Vercel + sign up at plausible.io ($9/mo) to activate. Vercel Analytics ships unconditionally — gives page views, top pages, top referrers for free up to 2.5k events/mo.
+
+### What shipped today
+
+Commits in chronological order:
+
+1. `70d13d2` — Vercel Analytics + opt-in Plausible wired into root layout
+2. `18a4a8e` — Social links in landing footer + branded `opengraph-image.tsx` (1200×630 PNG generated at build time via next/og)
+3. `5f16de4` — `SOCIAL-SETUP-KIT.md` (handoff doc: bios, post templates, profile specs for LinkedIn/X/Instagram/GitHub)
+4. `0535b87` — `automation/n8n-social-posting-extension.md` (drop-in patch for n8n to auto-post each new article to LinkedIn + X + Instagram once social credentials are wired)
+5. `fd25c9e` — `OUTREACH-PLAYBOOK.md` rewrite as anonymous brand-led (no warm-intro Caltrans templates) + Tier A/B/C targeting based on firm-fit only
+6. `de70699` — `.gitignore` at repo root keeping `PROSPECTS.md`, `*.private.md`, and `private/` out of the public repo
+7. `04c363e` — Middleware regression fix: `/opengraph-image` and `/twitter-image` routes were 307-redirecting to `/login` (same bug class as the 2026-04-26 manifest/blog regression)
+8. `81aabf4` — QuickBooks honesty pass (round 1): Phasewise replaces the project-management slice but does NOT replace QuickBooks. Rewrote 11 lines across 4 files.
+9. `9963fc5` — Comprehensive honesty pass (round 2 — the bigger one): 13 issues fixed across 10 files. Breakdown below.
+
+### Email infrastructure (set up today)
+
+- **`hello@phasewise.io` alias** created on Workspace (free; admin-only Profile photo edit policy worked around)
+- **Gmail "Send mail as"** wired with display name `Phasewise Team`. Made `hello@` the default for new emails.
+- **Gmail profile picture** uploaded (Phasewise logomark on `#1A2E22`) — recipients see brand mark next to "Phasewise Team" in their inbox preview.
+- **DMARC record fixed** in Cloudflare DNS at `_dmarc.phasewise.io` → `v=DMARC1; p=none; rua=mailto:kevin@phasewise.io`. The 2026-04-15 Loops setup added DMARC for the `mail.phasewise.io` subdomain only; the apex was missing it. Without DMARC the test send hit spam in Gmail. After fix: DMARC propagation confirmed, ready to re-test.
+- **Pre-flight checklist** in `OUTREACH-DRAFTS.private.md` now covers: Gmail Send-mail-as, Hunter.io account, signature stripping, plain-text mode.
+
+### Outreach prep (state at EOD)
+
+- **22 firms researched** in `PROSPECTS.md` (gitignored): 4 user-named + 18 new candidates from agent-driven research across SF Bay, Sacramento, Central Valley, San Diego, LA. Tiered A/B/C by firm-fit.
+- **Top 5 picked**: Broussard Associates (Clovis), designlab 252 (Fresno), attention2 (San Diego), Atlas Lab (Sacramento), Mantle (Berkeley). 4 of 5 unblocked — verified `info@` or `studio@` addresses published on each firm's contact page; MX records all clean. Only attention2 needs Hunter.io.
+- **5 personalized cold-email drafts** ready in `OUTREACH-DRAFTS.private.md`. Each draft has: pre-flight checklist, exact subject + body ready to paste, anonymity disclosure script for designlab 252 (highest-risk firm given Caltrans overlap), staggered Mon-Thu send order with reasoning.
+- **Honest replacement framing** consistently applied: "Replaces Monograph + Harvest + spreadsheets — sits alongside your QuickBooks for accounting." NOT "replaces QuickBooks."
+
+### X (Twitter) launch — fully branded
+
+- @phasewise account fully branded: profile picture (Phasewise logomark), header (1500×500 brand cover), bio (160 char), location (California USA), website (phasewise.io)
+- Switched to **Professional account** (Software & Apps category, Brand type)
+- **Pinned tweet** posted: "Built by a landscape architect, for landscape architects. Phasewise: phases · budgets · time · submittals · MWELO · profit. One subscription instead of three. 14-day free trial → phasewise.io"
+- Branded OG card now renders correctly in link previews (after middleware fix)
+- X is on a "new account trust gate" — reach is throttled until Gmail-like algorithm builds confidence (typically 7-10 days of organic activity). Wait on n8n auto-posting until then to avoid tripping spam detection.
+
+### Honesty pass round 2 — what was caught
+
+The audit agent went through every public marketing surface against ground-truth (CLAUDE.md feature list, integration list, founder identity). Caught:
+
+🔴 **Critical (un-built features being claimed):**
+- "Client portal" listed as Pro/Studio feature in landing page, JSON-LD schema, in-app billing page, directory listings, AND social bio. **Not built.** Replaced with "Advanced reporting" (which IS built).
+- Plant Schedule "Export directly to CAD-compatible format." **No CAD export wired.** Replaced with "Export plant lists for contractor submittals."
+- "After two decades running an LA firm" pillar-article opener. **Founder is at Caltrans, has not run a firm.** Reframed.
+
+🔴 **Auto-generation guard rail (highest leverage single change):**
+The n8n weekly content prompt had no factual constraints. Could ship false customer counts, fake testimonials, made-up integrations, fabricated compliance every Friday. Added explicit non-negotiable section to `automation/article-generation-prompt.md` prohibiting:
+- Fabricated customer counts or scale claims
+- Integrations Phasewise doesn't have (QuickBooks, Xero, AutoCAD, Land F/X, SketchUp, Bluebeam, DocuSign, Slack, Teams)
+- Features that don't exist (AI, real-time collaboration, client portal, native mobile app, SSO, SOC2/HIPAA/GDPR)
+- Exact competitor pricing (use ranges)
+- Founder-name attribution
+
+🟠 **Anonymous brand voice (founder explicitly chose this):**
+- LinkedIn first post: "I'm a Senior Landscape Architect at Caltrans" → brand-led rewrite
+- Instagram first post: "Built by a Senior LA at Caltrans (yes, really)" → "Built by landscape architects, for landscape architects"
+- Bio long-form: dropped Caltrans
+- Disclosure script for "who's behind this": no founder name, no Caltrans
+
+🟠 **Soft / accuracy fixes:**
+- FAQ "cancel with one click" → "via Stripe customer portal" (multi-step actually)
+- FAQ "daily backups + nothing leaks" → realistic statement (backups are Supabase tier-dependent; isolation is application-layer not RLS)
+- Monograph "$45/user/mo" → "$50–200 per user per month range; verify"
+- "$11B industry" → "Several thousand LA firms (NAICS 541320)" (IBISWorld actuals are closer to $5-7B; the $11B figure was unsourced)
+- JSON-LD logo URL `/icon-512` (404) → `/icon1` (the actual 192px PNG)
+- JSON-LD `sameAs` added X + Instagram URLs
+- "Caltrans D-11 HQ" specific reference in attention2 cold email → "mix of public-sector and institutional work" (anonymity tell)
+
+### Tomorrow's first task
+
+**Run the deliverability re-test.** DMARC is now propagated. Send the Broussard draft from `Phasewise Team <hello@phasewise.io>` to `kgallo22@gmail.com` and confirm it lands in Primary (not Promotions, not Spam). If Primary → ship Broussard for real Monday morning. If Promotions → acceptable, ship anyway. If Spam → deeper deliverability investigation needed (sender warm-up sequence, possibly external sending service like Postmark).
+
+After deliverability is confirmed, the actual outreach play is:
+- Mon morning: Send Broussard cold email
+- Tue morning: Send Atlas Lab
+- Wed morning: Send attention2 (after Hunter.io lookup) OR substitute another Tier-A
+- Thu morning: Send designlab 252 (highest-risk firm — handle anonymity disclosure carefully if reply asks "who's behind this")
+- Next Mon: Send Mantle
+- 5 business days after each: send follow-up #1
+- 10 business days after follow-up #1: send breakup email
+
+Goal: 3 trial signups by end of week 4.
+
+### Outstanding from today (low-priority follow-ups)
+
+- LinkedIn page creation (need 5-10 personal connections first)
+- Instagram account claim (when SMS verification cooperates)
+- Hunter.io account creation (free 50 lookups/mo) — needed for attention2 + future prospects
+- Plausible signup (optional — Vercel Analytics is sufficient for now)
+- Wait 7-10 days on X account warmup before wiring n8n social-posting extension
+
+---
+
 ## Where We Left Off (2026-04-27)
 
 **Status: 🟢 ALL 25 AUDIT ITEMS CLEARED — 3 Critical + 7 High + 15 Medium.** The full AUDIT-2026-04-26.md punch list is now in `git log`. Production build clean. TypeScript strict passes. Compliance bucket is now private. Every form input has an associated label. Stripe webhook is idempotent. Time entries can no longer be logged to projects the user isn't assigned to. STAFF/PM no longer see senior billing rates on projects they're not on. Profitability report uses actual per-person rates instead of averages.
