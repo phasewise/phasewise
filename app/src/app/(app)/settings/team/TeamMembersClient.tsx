@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, UserMinus, UserPlus, Pencil, Link2, Check, Send } from "lucide-react";
+import { Plus, UserMinus, UserPlus, Pencil, Link2, Check, Send, X } from "lucide-react";
 
 type TeamUser = {
   id: string;
@@ -9,6 +9,10 @@ type TeamUser = {
   email: string;
   role: string;
   title?: string | null;
+  phone?: string | null;
+  billingRate?: number | null;
+  salary?: number | null;
+  costRate?: number | null;
   isActive?: boolean;
   photoUrl?: string | null;
   inviteToken?: string | null;
@@ -85,8 +89,15 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
   const [saving, setSaving] = useState(false);
   const [actionId, setActionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [editingTitle, setEditingTitle] = useState<string | null>(null);
-  const [editTitleValue, setEditTitleValue] = useState("");
+  const [editingUser, setEditingUser] = useState<TeamUser | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editTitle, setEditTitle] = useState("");
+  const [editTitleCustom, setEditTitleCustom] = useState(false);
+  const [editRole, setEditRole] = useState("STAFF");
+  const [editPhone, setEditPhone] = useState("");
+  const [editBillingRate, setEditBillingRate] = useState("");
+  const [editSalary, setEditSalary] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [inviteBanner, setInviteBanner] = useState<{ name: string; url: string } | null>(null);
 
@@ -180,24 +191,92 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
     setShowForm(false);
   }
 
-  async function saveTitle(userId: string) {
+  function openEdit(user: TeamUser) {
+    setEditingUser(user);
+    setEditName(user.fullName);
+    setEditEmail(user.email);
+    setEditTitle(user.title || "");
+    setEditTitleCustom(user.title ? !LA_TITLES.some((t) => t.value === user.title) : false);
+    setEditRole(user.role);
+    setEditPhone(user.phone || "");
+    setEditBillingRate(user.billingRate != null ? String(user.billingRate) : "");
+    setEditSalary(user.salary != null ? String(user.salary) : "");
     setError(null);
-    setActionId(userId);
+  }
+
+  function closeEdit() {
+    setEditingUser(null);
+    setEditName("");
+    setEditEmail("");
+    setEditTitle("");
+    setEditTitleCustom(false);
+    setEditRole("STAFF");
+    setEditPhone("");
+    setEditBillingRate("");
+    setEditSalary("");
+  }
+
+  function handleEditTitleSelect(value: string) {
+    if (value === "__custom__") {
+      setEditTitleCustom(true);
+      setEditTitle("");
+      return;
+    }
+    setEditTitleCustom(false);
+    setEditTitle(value);
+    // Auto-set role from title (mirrors the add-member flow)
+    const match = LA_TITLES.find((t) => t.value === value);
+    if (match) setEditRole(match.role);
+  }
+
+  async function saveEdit() {
+    if (!editingUser) return;
+    setError(null);
+    setActionId(editingUser.id);
+
+    const body: Record<string, unknown> = {
+      userId: editingUser.id,
+      fullName: editName,
+      email: editEmail,
+      title: editTitle,
+      role: editRole,
+      phone: editPhone,
+    };
+    if (editBillingRate !== "") body.billingRate = editBillingRate;
+    if (editSalary !== "") body.salary = editSalary;
+
     const res = await fetch("/api/team/members", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId, title: editTitleValue }),
+      body: JSON.stringify(body),
     });
     const data = await res.json();
     setActionId(null);
+
     if (!res.ok) {
-      setError(data.error || "Failed to update title.");
+      setError(data.error || "Failed to update member.");
       return;
     }
+
+    const updated = data.user;
     setUsers((prev) =>
-      prev.map((u) => (u.id === userId ? { ...u, title: editTitleValue } : u))
+      prev.map((u) =>
+        u.id === editingUser.id
+          ? {
+              ...u,
+              fullName: updated.fullName,
+              email: updated.email,
+              title: updated.title,
+              role: updated.role,
+              phone: updated.phone,
+              billingRate: updated.billingRate != null ? Number(updated.billingRate) : null,
+              salary: updated.salary != null ? Number(updated.salary) : null,
+              costRate: updated.costRate != null ? Number(updated.costRate) : null,
+            }
+          : u
+      )
     );
-    setEditingTitle(null);
+    closeEdit();
   }
 
   async function toggleActive(userId: string, currentlyActive: boolean) {
@@ -428,62 +507,7 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
                     </div>
                   </td>
                   <td className="px-4 sm:px-6 py-4 text-[#3D5C48]">
-                    {editingTitle === user.id ? (
-                      <div className="flex items-center gap-2">
-                        <select
-                          value={LA_TITLES.some((t) => t.value === editTitleValue) ? editTitleValue : "__custom__"}
-                          onChange={(e) => {
-                            if (e.target.value === "__custom__") return;
-                            setEditTitleValue(e.target.value);
-                          }}
-                          className="bg-white border border-[#E2EBE4] rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-[#52B788]"
-                        >
-                          {LA_TITLES.map((t) => (
-                            <option key={t.value} value={t.value}>{t.value}</option>
-                          ))}
-                          <option value="__custom__">Custom...</option>
-                        </select>
-                        {!LA_TITLES.some((t) => t.value === editTitleValue) && (
-                          <input
-                            type="text"
-                            value={editTitleValue}
-                            onChange={(e) => setEditTitleValue(e.target.value)}
-                            className="bg-white border border-[#E2EBE4] rounded-lg px-2 py-1.5 text-xs w-32 focus:outline-none focus:border-[#52B788]"
-                            placeholder="Custom title"
-                          />
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => saveTitle(user.id)}
-                          disabled={actionId === user.id}
-                          className="text-xs text-[#2D6A4F] hover:text-[#40916C] font-medium disabled:opacity-50"
-                        >
-                          Save
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setEditingTitle(null)}
-                          className="text-xs text-[#A3BEA9] hover:text-[#6B8C74]"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 group/title">
-                        <span className="text-sm">{user.title || <span className="text-[#A3BEA9] italic">No title</span>}</span>
-                        {canManage && (
-                          <button
-                            type="button"
-                            onClick={() => { setEditingTitle(user.id); setEditTitleValue(user.title || ""); }}
-                            aria-label="Edit title"
-                            className="opacity-0 group-hover/title:opacity-100 text-[#A3BEA9] hover:text-[#2D6A4F] transition-opacity"
-                            title="Edit title"
-                          >
-                            <Pencil className="w-3 h-3" />
-                          </button>
-                        )}
-                      </div>
-                    )}
+                    <span className="text-sm">{user.title || <span className="text-[#A3BEA9] italic">No title</span>}</span>
                   </td>
                   <td className="px-4 sm:px-6 py-4">
                     <span className="text-xs font-medium px-2 py-1 rounded-full bg-[#F0FAF4] text-[#2D6A4F]">
@@ -492,6 +516,14 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
                   </td>
                   <td className="px-4 sm:px-6 py-4">
                     <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => openEdit(user)}
+                      className="inline-flex items-center gap-1 text-xs text-[#2D6A4F] hover:text-[#40916C] transition-colors"
+                      title="Edit member"
+                    >
+                      <Pencil className="w-3.5 h-3.5" /> Edit
+                    </button>
                     {user.inviteToken ? (
                       <button
                         type="button"
@@ -569,6 +601,171 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit member modal */}
+      {editingUser && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={closeEdit}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-6 pb-0">
+              <h2 className="font-serif text-xl text-[#1A2E22]">Edit Team Member</h2>
+              <button type="button" onClick={closeEdit} aria-label="Close edit modal" className="text-[#A3BEA9] hover:text-[#1A2E22] transition-colors"><X size={18} /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="team-edit-name" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Full name</label>
+                  <input
+                    id="team-edit-name"
+                    type="text"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    autoComplete="name"
+                    className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788] transition-colors"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="team-edit-email" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Email</label>
+                  <input
+                    id="team-edit-email"
+                    type="email"
+                    value={editEmail}
+                    onChange={(e) => setEditEmail(e.target.value)}
+                    autoComplete="email"
+                    className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788] transition-colors"
+                  />
+                </div>
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="team-edit-title" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Job Title</label>
+                  {editTitleCustom ? (
+                    <div className="flex gap-2">
+                      <input
+                        id="team-edit-title"
+                        type="text"
+                        value={editTitle}
+                        onChange={(e) => setEditTitle(e.target.value)}
+                        placeholder="Custom title"
+                        className="flex-1 bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788] transition-colors"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => { setEditTitleCustom(false); setEditTitle(""); }}
+                        className="text-xs text-[#A3BEA9] hover:text-[#6B8C74] px-2"
+                      >
+                        Pick from list
+                      </button>
+                    </div>
+                  ) : (
+                    <select
+                      id="team-edit-title"
+                      value={editTitle}
+                      onChange={(e) => handleEditTitleSelect(e.target.value)}
+                      className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788] transition-colors"
+                    >
+                      <option value="">— No title —</option>
+                      {LA_TITLES.map((t) => (
+                        <option key={t.value} value={t.value}>{t.value}</option>
+                      ))}
+                      <option value="__custom__">Custom title...</option>
+                    </select>
+                  )}
+                </div>
+                <div>
+                  <label htmlFor="team-edit-role" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Permission Level</label>
+                  <select
+                    id="team-edit-role"
+                    value={editRole}
+                    onChange={(e) => setEditRole(e.target.value)}
+                    disabled={editingUser.role === "OWNER"}
+                    className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788] transition-colors disabled:opacity-60"
+                  >
+                    {editingUser.role === "OWNER" && <option value="OWNER">Owner</option>}
+                    {ROLES.map((r) => (
+                      <option key={r.value} value={r.value}>{r.label}</option>
+                    ))}
+                  </select>
+                  {editingUser.role === "OWNER" && (
+                    <p className="text-[11px] text-[#A3BEA9] mt-1">Owner role cannot be changed via this form. Promote another user to Owner first.</p>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="team-edit-phone" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Phone</label>
+                <input
+                  id="team-edit-phone"
+                  type="tel"
+                  value={editPhone}
+                  onChange={(e) => setEditPhone(e.target.value)}
+                  autoComplete="tel"
+                  placeholder="(555) 123-4567"
+                  className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788] transition-colors"
+                />
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-4 pt-2 border-t border-[#E8EDE9]">
+                <div>
+                  <label htmlFor="team-edit-billing" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Billing rate ($/hr)</label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-[#A3BEA9]">$</span>
+                    <input
+                      id="team-edit-billing"
+                      type="text"
+                      inputMode="decimal"
+                      value={editBillingRate}
+                      onChange={(e) => setEditBillingRate(e.target.value.replace(/[^0-9.]/g, ""))}
+                      placeholder="0"
+                      className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg pl-7 pr-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788] transition-colors"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label htmlFor="team-edit-salary" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Annual salary</label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-[#A3BEA9]">$</span>
+                    <input
+                      id="team-edit-salary"
+                      type="text"
+                      inputMode="decimal"
+                      value={editSalary}
+                      onChange={(e) => setEditSalary(e.target.value.replace(/[^0-9.]/g, ""))}
+                      placeholder="0"
+                      className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg pl-7 pr-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788] transition-colors"
+                    />
+                  </div>
+                  <p className="text-[11px] text-[#A3BEA9] mt-1">Hourly cost auto-calculates as salary ÷ 2080.</p>
+                </div>
+              </div>
+
+              {error && (
+                <div className="bg-rose-50 border border-rose-200 rounded-lg p-3 text-sm text-rose-700">
+                  {error}
+                </div>
+              )}
+
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={saveEdit}
+                  disabled={actionId === editingUser.id || !editName.trim() || !editEmail.trim()}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium bg-[#2D6A4F] text-white hover:bg-[#40916C] transition-colors disabled:opacity-60"
+                >
+                  {actionId === editingUser.id ? "Saving..." : "Save changes"}
+                </button>
+                <button
+                  type="button"
+                  onClick={closeEdit}
+                  className="text-sm text-[#6B8C74] hover:text-[#1A2E22] transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
         </div>

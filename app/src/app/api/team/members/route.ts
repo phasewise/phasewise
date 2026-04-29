@@ -151,7 +151,7 @@ export async function POST(request: Request) {
  * Update an existing team member's info.
  * Only OWNER and ADMIN can edit team members.
  *
- * Body: { userId, fullName?, email?, isActive? }
+ * Body: { userId, fullName?, email?, title?, role?, phone?, billingRate?, salary?, isActive? }
  */
 export async function PATCH(request: Request) {
   try {
@@ -168,11 +168,15 @@ export async function PATCH(request: Request) {
     }
 
     const body = await request.json();
-    const { userId, fullName, email, title, isActive } = body as {
+    const { userId, fullName, email, title, role, phone, billingRate, salary, isActive } = body as {
       userId?: string;
       fullName?: string;
       email?: string;
       title?: string;
+      role?: string;
+      phone?: string;
+      billingRate?: string | number;
+      salary?: string | number;
       isActive?: boolean;
     };
 
@@ -188,6 +192,15 @@ export async function PATCH(request: Request) {
 
     if (!targetUser || targetUser.organizationId !== currentUser.organizationId) {
       return NextResponse.json({ error: "User not found." }, { status: 404 });
+    }
+
+    // Validate role if provided
+    const VALID_ROLES = ["OWNER", "ADMIN", "SUPERVISOR", "PM", "STAFF"] as const;
+    if (role !== undefined && !VALID_ROLES.includes(role as (typeof VALID_ROLES)[number])) {
+      return NextResponse.json(
+        { error: `Invalid role. Must be one of: ${VALID_ROLES.join(", ")}.` },
+        { status: 400 }
+      );
     }
 
     // Prevent deactivating the only OWNER
@@ -207,11 +220,58 @@ export async function PATCH(request: Request) {
       }
     }
 
+    // Prevent demoting the only OWNER away from OWNER
+    if (
+      role !== undefined &&
+      role !== "OWNER" &&
+      targetUser.role === "OWNER"
+    ) {
+      const ownerCount = await prisma.user.count({
+        where: {
+          organizationId: currentUser.organizationId,
+          role: "OWNER",
+          isActive: true,
+        },
+      });
+      if (ownerCount <= 1) {
+        return NextResponse.json(
+          { error: "Cannot demote the only owner. Promote another user to OWNER first." },
+          { status: 400 }
+        );
+      }
+    }
+
     const updateData: Record<string, unknown> = {};
     if (fullName !== undefined) updateData.fullName = fullName.trim();
     if (email !== undefined) updateData.email = email.toLowerCase().trim();
     if (title !== undefined) updateData.title = title.trim() || null;
+    if (role !== undefined) updateData.role = role as UserRole;
+    if (phone !== undefined) updateData.phone = phone.trim() || null;
     if (isActive !== undefined) updateData.isActive = isActive;
+
+    if (billingRate !== undefined) {
+      const rate = billingRate === "" || billingRate === null ? null : Number(billingRate);
+      if (rate !== null && (Number.isNaN(rate) || rate < 0)) {
+        return NextResponse.json(
+          { error: "Billing rate must be a non-negative number." },
+          { status: 400 }
+        );
+      }
+      updateData.billingRate = rate === null ? null : new Prisma.Decimal(rate);
+    }
+
+    if (salary !== undefined) {
+      const sal = salary === "" || salary === null ? null : Number(salary);
+      if (sal !== null && (Number.isNaN(sal) || sal < 0)) {
+        return NextResponse.json(
+          { error: "Salary must be a non-negative number." },
+          { status: 400 }
+        );
+      }
+      updateData.salary = sal === null ? null : new Prisma.Decimal(sal);
+      // Recompute hourly cost rate from salary (industry standard 2080 hours/year)
+      updateData.costRate = sal === null ? null : new Prisma.Decimal(salaryToHourlyRate(sal));
+    }
 
     const updated = await prisma.user.update({
       where: { id: userId },
@@ -221,6 +281,11 @@ export async function PATCH(request: Request) {
         fullName: true,
         email: true,
         role: true,
+        title: true,
+        phone: true,
+        billingRate: true,
+        salary: true,
+        costRate: true,
         isActive: true,
       },
     });
