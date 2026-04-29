@@ -213,9 +213,44 @@ export default function MWELOCalculatorPage() {
 
       {/* Results */}
       {calculated && totalLandscapeArea > 0 && (
-        <div ref={reportRef} className="mt-8 print:mt-0">
-          <div className="rounded-2xl border-2 border-[#E2EBE4] bg-white p-6 sm:p-8 shadow-sm print:border print:shadow-none">
-            <div className="flex items-center justify-between mb-6 print:mb-4">
+        <div ref={reportRef} className="print-report mt-8 print:mt-0">
+          <div className="rounded-2xl border-2 border-[#E2EBE4] bg-white p-6 sm:p-8 shadow-sm print:border-0 print:shadow-none print:p-0 print:rounded-none">
+            {/* Branded print-only header (acts as letterhead) */}
+            <div className="hidden print:flex items-center justify-between pb-3 mb-5 border-b-2" style={{ borderColor: "#2D6A4F" }}>
+              <div className="flex items-center gap-2">
+                <div className="flex flex-col gap-[2px] justify-center">
+                  <span className="block rounded-sm" style={{ width: 18, height: 4, background: "#52B788" }} />
+                  <span className="block rounded-sm" style={{ width: 14, height: 4, background: "#40916C" }} />
+                  <span className="block rounded-sm" style={{ width: 16, height: 4, background: "#2D6A4F" }} />
+                </div>
+                <span className="text-[18pt] font-semibold tracking-tight" style={{ color: "#1A2E22" }}>
+                  phase<span className="font-light" style={{ color: "#2D6A4F" }}>wise</span>
+                </span>
+              </div>
+              <div className="text-right">
+                <div className="text-[7pt] uppercase tracking-[0.18em] font-semibold" style={{ color: "#40916C" }}>MWELO Compliance Report</div>
+                <div className="text-[8pt]" style={{ color: "#6B8C74" }}>phasewise.io</div>
+              </div>
+            </div>
+
+            {/* Print-only project info row */}
+            <div className="hidden print:grid grid-cols-3 gap-4 pb-3 mb-5 border-b text-[9pt]" style={{ borderColor: "#E2EBE4" }}>
+              <div>
+                <div className="text-[7pt] uppercase tracking-wider mb-0.5" style={{ color: "#6B8C74" }}>Project</div>
+                <div className="font-semibold" style={{ color: "#1A2E22" }}>{projectName || "Untitled Project"}</div>
+              </div>
+              <div>
+                <div className="text-[7pt] uppercase tracking-wider mb-0.5" style={{ color: "#6B8C74" }}>Climate Region</div>
+                <div className="font-semibold" style={{ color: "#1A2E22" }}>{region}</div>
+              </div>
+              <div>
+                <div className="text-[7pt] uppercase tracking-wider mb-0.5" style={{ color: "#6B8C74" }}>Report Date</div>
+                <div className="font-semibold" style={{ color: "#1A2E22" }}>{new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</div>
+              </div>
+            </div>
+
+            {/* On-screen header (hidden on print since the branded header above replaces it) */}
+            <div className="flex items-center justify-between mb-6 print:hidden">
               <div>
                 <h2 className="font-serif text-xl text-[#1A2E22]">MWELO Water Budget Report</h2>
                 {projectName && <p className="text-sm text-[#6B8C74] mt-0.5">{projectName}</p>}
@@ -223,37 +258,37 @@ export default function MWELOCalculatorPage() {
               <button
                 type="button"
                 onClick={handlePrint}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-[#F0FAF4] text-[#2D6A4F] border border-[#52B788]/30 hover:bg-[#2D6A4F] hover:text-white transition-all print:hidden"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-[#F0FAF4] text-[#2D6A4F] border border-[#52B788]/30 hover:bg-[#2D6A4F] hover:text-white transition-all"
               >
                 <Download size={14} /> Print / Save PDF
               </button>
             </div>
 
             {/* Summary cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-              <div className="rounded-xl bg-[#F7F9F7] p-4 border border-[#E2EBE4]">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6 print:gap-2 print:mb-3">
+              <div className="rounded-xl bg-[#F7F9F7] p-4 border border-[#E2EBE4] print:p-2.5">
                 <div className="text-[10px] font-semibold uppercase tracking-wider text-[#6B8C74] mb-1">ETo</div>
                 <div className="text-lg font-semibold text-[#1A2E22]">{eto} in/yr</div>
                 <div className="text-[10px] text-[#A3BEA9]">{region}</div>
               </div>
-              <div className="rounded-xl bg-[#F7F9F7] p-4 border border-[#E2EBE4]">
+              <div className="rounded-xl bg-[#F7F9F7] p-4 border border-[#E2EBE4] print:p-2.5">
                 <div className="text-[10px] font-semibold uppercase tracking-wider text-[#6B8C74] mb-1">Total Area</div>
-                <div className="text-lg font-semibold text-[#1A2E22]">{totalLandscapeArea.toLocaleString()} sf</div>
+                <div className="text-lg font-semibold text-[#1A2E22] print:text-base">{totalLandscapeArea.toLocaleString()} sf</div>
               </div>
-              <div className="rounded-xl bg-blue-50 p-4 border border-blue-200/30">
+              <div className="rounded-xl bg-blue-50 p-4 border border-blue-200/30 print:p-2.5">
                 <div className="text-[10px] font-semibold uppercase tracking-wider text-blue-600 mb-1">MAWA</div>
-                <div className="text-lg font-semibold text-blue-800">{Math.round(mawa).toLocaleString()} gal/yr</div>
+                <div className="text-lg font-semibold text-blue-800 print:text-base">{Math.round(mawa).toLocaleString()} gal/yr</div>
                 <div className="text-[10px] text-blue-500">Maximum allowable</div>
               </div>
-              <div className={`rounded-xl p-4 border ${passes ? "bg-[#F0FAF4] border-[#52B788]/30" : "bg-rose-50 border-rose-200/30"}`}>
+              <div className={`rounded-xl p-4 border print:p-2.5 ${passes ? "bg-[#F0FAF4] border-[#52B788]/30" : "bg-rose-50 border-rose-200/30"}`}>
                 <div className={`text-[10px] font-semibold uppercase tracking-wider ${passes ? "text-[#2D6A4F]" : "text-rose-600"} mb-1`}>ETWU</div>
-                <div className={`text-lg font-semibold ${passes ? "text-[#2D6A4F]" : "text-rose-700"}`}>{Math.round(totalETWU).toLocaleString()} gal/yr</div>
+                <div className={`text-lg font-semibold print:text-base ${passes ? "text-[#2D6A4F]" : "text-rose-700"}`}>{Math.round(totalETWU).toLocaleString()} gal/yr</div>
                 <div className={`text-[10px] ${passes ? "text-[#52B788]" : "text-rose-500"}`}>{passes ? "PASSES" : "EXCEEDS MAWA"}</div>
               </div>
             </div>
 
             {/* Compliance result */}
-            <div className={`rounded-xl p-4 mb-6 ${passes ? "bg-[#F0FAF4] border border-[#52B788]/30" : "bg-rose-50 border border-rose-200"}`}>
+            <div className={`rounded-xl p-4 mb-6 print:p-3 print:mb-3 ${passes ? "bg-[#F0FAF4] border border-[#52B788]/30" : "bg-rose-50 border border-rose-200"}`}>
               <div className="flex items-center gap-2">
                 <Droplets className={`w-5 h-5 ${passes ? "text-[#2D6A4F]" : "text-rose-600"}`} />
                 <span className={`font-semibold ${passes ? "text-[#2D6A4F]" : "text-rose-700"}`}>
@@ -267,45 +302,45 @@ export default function MWELOCalculatorPage() {
             </div>
 
             {/* Hydrozone breakdown */}
-            <h3 className="text-sm font-semibold text-[#1A2E22] mb-3">Hydrozone Breakdown</h3>
-            <div className="rounded-xl border border-[#E2EBE4] overflow-hidden mb-6">
-              <table className="min-w-full text-left text-sm">
+            <h3 className="text-sm font-semibold text-[#1A2E22] mb-3 print:mb-2 print:text-[10pt]">Hydrozone Breakdown</h3>
+            <div className="rounded-xl border border-[#E2EBE4] overflow-hidden mb-6 print:mb-3 print-avoid-break">
+              <table className="min-w-full text-left text-sm print:text-[8.5pt]">
                 <thead className="bg-[#F7F9F7] border-b border-[#E2EBE4] text-[#6B8C74]">
                   <tr>
-                    <th className="px-4 py-2.5 font-medium">Zone</th>
-                    <th className="px-4 py-2.5 font-medium text-right">Area (sf)</th>
-                    <th className="px-4 py-2.5 font-medium text-right">PF</th>
-                    <th className="px-4 py-2.5 font-medium text-right">IE</th>
-                    <th className="px-4 py-2.5 font-medium text-right">ETWU (gal/yr)</th>
-                    <th className="px-4 py-2.5 font-medium text-right">% of Total</th>
+                    <th className="px-4 py-2.5 font-medium print:px-2 print:py-1.5">Zone</th>
+                    <th className="px-4 py-2.5 font-medium text-right print:px-2 print:py-1.5">Area (sf)</th>
+                    <th className="px-4 py-2.5 font-medium text-right print:px-2 print:py-1.5">PF</th>
+                    <th className="px-4 py-2.5 font-medium text-right print:px-2 print:py-1.5">IE</th>
+                    <th className="px-4 py-2.5 font-medium text-right print:px-2 print:py-1.5">ETWU (gal/yr)</th>
+                    <th className="px-4 py-2.5 font-medium text-right print:px-2 print:py-1.5">% of Total</th>
                   </tr>
                 </thead>
                 <tbody>
                   {hydrozoneResults.map((z, i) => (
                     <tr key={i} className="border-b border-[#E8EDE9] last:border-0">
-                      <td className="px-4 py-2.5 font-medium text-[#1A2E22]">{z.name}</td>
-                      <td className="px-4 py-2.5 text-right text-[#6B8C74]">{z.area.toLocaleString()}</td>
-                      <td className="px-4 py-2.5 text-right text-[#6B8C74]">{z.pf}</td>
-                      <td className="px-4 py-2.5 text-right text-[#6B8C74]">{z.ie}</td>
-                      <td className="px-4 py-2.5 text-right font-medium text-[#1A2E22]">{Math.round(z.etwu).toLocaleString()}</td>
-                      <td className="px-4 py-2.5 text-right text-[#6B8C74]">{totalETWU > 0 ? ((z.etwu / totalETWU) * 100).toFixed(0) : 0}%</td>
+                      <td className="px-4 py-2.5 font-medium text-[#1A2E22] print:px-2 print:py-1.5">{z.name}</td>
+                      <td className="px-4 py-2.5 text-right text-[#6B8C74] print:px-2 print:py-1.5">{z.area.toLocaleString()}</td>
+                      <td className="px-4 py-2.5 text-right text-[#6B8C74] print:px-2 print:py-1.5">{z.pf}</td>
+                      <td className="px-4 py-2.5 text-right text-[#6B8C74] print:px-2 print:py-1.5">{z.ie}</td>
+                      <td className="px-4 py-2.5 text-right font-medium text-[#1A2E22] print:px-2 print:py-1.5">{Math.round(z.etwu).toLocaleString()}</td>
+                      <td className="px-4 py-2.5 text-right text-[#6B8C74] print:px-2 print:py-1.5">{totalETWU > 0 ? ((z.etwu / totalETWU) * 100).toFixed(0) : 0}%</td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot className="bg-[#F7F9F7] border-t border-[#E2EBE4]">
                   <tr>
-                    <td className="px-4 py-2.5 font-semibold text-[#1A2E22]">Total</td>
-                    <td className="px-4 py-2.5 text-right font-semibold text-[#1A2E22]">{totalLandscapeArea.toLocaleString()}</td>
-                    <td className="px-4 py-2.5" colSpan={2} />
-                    <td className="px-4 py-2.5 text-right font-semibold text-[#1A2E22]">{Math.round(totalETWU).toLocaleString()}</td>
-                    <td className="px-4 py-2.5 text-right font-semibold text-[#1A2E22]">100%</td>
+                    <td className="px-4 py-2.5 font-semibold text-[#1A2E22] print:px-2 print:py-1.5">Total</td>
+                    <td className="px-4 py-2.5 text-right font-semibold text-[#1A2E22] print:px-2 print:py-1.5">{totalLandscapeArea.toLocaleString()}</td>
+                    <td className="px-4 py-2.5 print:px-2 print:py-1.5" colSpan={2} />
+                    <td className="px-4 py-2.5 text-right font-semibold text-[#1A2E22] print:px-2 print:py-1.5">{Math.round(totalETWU).toLocaleString()}</td>
+                    <td className="px-4 py-2.5 text-right font-semibold text-[#1A2E22] print:px-2 print:py-1.5">100%</td>
                   </tr>
                 </tfoot>
               </table>
             </div>
 
             {/* Formula reference */}
-            <div className="rounded-xl bg-[#F7F9F7] border border-[#E2EBE4] p-4 text-xs text-[#6B8C74] space-y-1">
+            <div className="rounded-xl bg-[#F7F9F7] border border-[#E2EBE4] p-4 text-xs text-[#6B8C74] space-y-1 print:p-3 print:text-[8pt]">
               <div className="font-semibold text-[#3D5C48] mb-1">Formulas (per MWELO, Title 23 CCR)</div>
               <div>MAWA = (ETo x ETAF x LA x 0.62) + (ETo x SLA x 0.62)</div>
               <div>ETWU = sum of [(ETo x PF x HA x 0.62) / IE] for each hydrozone</div>
@@ -316,9 +351,22 @@ export default function MWELOCalculatorPage() {
               </div>
             </div>
 
-            <p className="mt-4 text-[10px] text-[#A3BEA9]">
+            <p className="mt-4 text-[10px] text-[#A3BEA9] print:text-[8pt] print:mt-3">
               Generated by Phasewise MWELO Calculator on {new Date().toLocaleDateString()}. Computed per 23 CCR Div 2 Ch 2.7 §§ 490–495 (2015 MWELO update). For reference only — review by a licensed landscape architect required before submission.
             </p>
+
+            {/* Print-only branded footer (sign-off line) */}
+            <div className="hidden print:flex justify-between items-center mt-5 pt-3 border-t text-[8pt]" style={{ borderColor: "#E2EBE4", color: "#6B8C74" }}>
+              <div className="flex items-center gap-1.5">
+                <div className="flex flex-col gap-[1px] justify-center">
+                  <span className="block rounded-sm" style={{ width: 10, height: 2, background: "#52B788" }} />
+                  <span className="block rounded-sm" style={{ width: 8, height: 2, background: "#40916C" }} />
+                  <span className="block rounded-sm" style={{ width: 9, height: 2, background: "#2D6A4F" }} />
+                </div>
+                <span>phasewise.io · Project management for landscape architecture firms</span>
+              </div>
+              <div>{new Date().toLocaleDateString()}</div>
+            </div>
           </div>
         </div>
       )}

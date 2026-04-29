@@ -284,3 +284,65 @@
   border-radius: 10px;
   margin: 1.5rem 0;
 }
+
+/* ── Print styles ────────────────────────────────────────────────────
+   Used by the MWELO Water Budget Report (and reusable for any other
+   report we add). Hides app shell, sidebars, forms, and buttons —
+   shows only the .print-report element. Branded header inside
+   .print-report is what the recipient sees as "letterhead". */
+@media print {
+  @page {
+    size: letter portrait;
+    margin: 0.6in;
+  }
+
+  html, body {
+    background: white !important;
+    color: black !important;
+  }
+
+  /* Hide everything by default */
+  body * {
+    visibility: hidden !important;
+  }
+
+  /* Show only the print container and its descendants */
+  .print-report,
+  .print-report * {
+    visibility: visible !important;
+  }
+
+  .print-report {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Preserve brand colors (greens, banner backgrounds, etc.) */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Don't break tables / cards across pages */
+  table, .print-avoid-break {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  h1, h2, h3 {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  /* Strip on-screen-only flourishes — shadows, large rounded corners */
+  .print-report .shadow-sm,
+  .print-report .shadow-md,
+  .print-report .shadow-lg,
+  .print-report .shadow {
+    box-shadow: none !important;
+  }
+}
