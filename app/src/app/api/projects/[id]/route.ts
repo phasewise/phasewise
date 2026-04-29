@@ -99,6 +99,37 @@ export async function PATCH(
         contractFee === null || contractFee === "" ? null : new Prisma.Decimal(contractFee);
     }
 
+    // If clientName changed, re-resolve clientId so the project stays
+    // linked to a real Client row. Find existing case-insensitively or
+    // create a new one. If clientName is being cleared, unlink.
+    if (clientName !== undefined) {
+      const trimmed = clientName?.trim();
+      if (!trimmed) {
+        data.clientId = null;
+      } else {
+        const existing = await prisma.client.findFirst({
+          where: {
+            organizationId: currentUser.organizationId,
+            name: { equals: trimmed, mode: "insensitive" },
+          },
+          select: { id: true },
+        });
+        if (existing) {
+          data.clientId = existing.id;
+        } else {
+          const created = await prisma.client.create({
+            data: {
+              organizationId: currentUser.organizationId,
+              name: trimmed,
+              email: clientEmail?.trim() || null,
+            },
+            select: { id: true },
+          });
+          data.clientId = created.id;
+        }
+      }
+    }
+
     const updated = await prisma.project.update({
       where: { id },
       data,

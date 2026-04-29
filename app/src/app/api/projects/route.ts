@@ -68,6 +68,12 @@ export async function POST(request: Request) {
     // PW-N. Increment the counter inside a transaction and use the
     // pre-increment value for the project's number. The Prisma update
     // returns the post-increment value so we subtract 1 for ours.
+    //
+    // Inside the same transaction, upsert a Client row when a clientName
+    // is provided so the firm has a persistent client list and the project
+    // points at it via clientId. Existing Client (case-insensitive name
+    // match within the org) gets re-linked rather than duplicated; new
+    // names create a new Client and inherit the project's email if any.
     const project = await prisma.$transaction(async (tx) => {
       const org = await tx.organization.findUnique({
         where: { id: currentUser.organizationId },
@@ -76,6 +82,31 @@ export async function POST(request: Request) {
           projectNumberPrefix: true,
         },
       });
+
+      let resolvedClientId: string | undefined = undefined;
+      const trimmedClientName = clientName?.trim();
+      if (trimmedClientName) {
+        const existingClient = await tx.client.findFirst({
+          where: {
+            organizationId: currentUser.organizationId,
+            name: { equals: trimmedClientName, mode: "insensitive" },
+          },
+          select: { id: true },
+        });
+        if (existingClient) {
+          resolvedClientId = existingClient.id;
+        } else {
+          const newClient = await tx.client.create({
+            data: {
+              organizationId: currentUser.organizationId,
+              name: trimmedClientName,
+              email: clientEmail?.trim() || null,
+            },
+            select: { id: true },
+          });
+          resolvedClientId = newClient.id;
+        }
+      }
 
       let resolvedNumber = projectNumber || undefined;
       if (org?.autoNumberProjects && !projectNumber) {
@@ -113,6 +144,7 @@ export async function POST(request: Request) {
           createdById: currentUser.id,
           name,
           projectNumber: resolvedNumber,
+          clientId: resolvedClientId,
           clientName: clientName || undefined,
           clientEmail: clientEmail || undefined,
           status: status || "ACTIVE",
