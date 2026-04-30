@@ -7,8 +7,10 @@ export const dynamic = "force-dynamic";
 
 const allowedRoles = ["OWNER", "ADMIN", "PM", "SUPERVISOR"];
 
-export async function POST(request: Request, { params }: { params: Promise<{ projectId: string }> }) {
-  const { projectId } = await params;
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  // Destructured as `projectId` for body clarity — the URL slug must be
+  // `[id]` to match sibling project routes (Next.js single-slug-per-path).
+  const { id: projectId } = await params;
   const body = await request.json();
   const { name, description, dueDate, assignedToId } = body;
 
@@ -65,7 +67,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pro
   return NextResponse.json({ success: true, task });
 }
 
-export async function PATCH(request: Request, { params }: { params: Promise<{ projectId: string }> }) {
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   await params;
   const body = await request.json();
   const { taskId, status, assignedToId, name, description, dueDate } = body;
@@ -135,7 +137,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ pr
   return NextResponse.json({ success: true, task: updated });
 }
 
-export async function DELETE(request: Request, { params }: { params: Promise<{ projectId: string }> }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   await params;
   const { searchParams } = new URL(request.url);
   const taskId = searchParams.get("taskId");

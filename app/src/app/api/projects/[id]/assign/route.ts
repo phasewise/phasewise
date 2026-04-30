@@ -6,8 +6,10 @@ export const dynamic = "force-dynamic";
 
 const allowedRoles = ["OWNER", "ADMIN", "PM"];
 
-export async function POST(request: Request, { params }: { params: Promise<{ projectId: string }> }) {
-  const { projectId } = await params;
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  // Destructured as `projectId` for body clarity — the URL slug must be
+  // `[id]` to match sibling project routes (Next.js single-slug-per-path).
+  const { id: projectId } = await params;
   const body = await request.json();
   const { userId, action } = body;
 
