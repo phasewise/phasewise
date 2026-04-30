@@ -25,6 +25,12 @@ model Organization {
   projectNumberPrefix      String              @default("PW") @map("project_number_prefix")
   projectNumberNext        Int                 @default(1) @map("project_number_next")
   autoNumberProjects       Boolean             @default(true) @map("auto_number_projects")
+  // Invoice numbering — same pattern as project numbering. Counter is
+  // incremented inside a transaction on create so two simultaneous
+  // requests don't both produce INV-N.
+  invoiceNumberPrefix      String              @default("INV") @map("invoice_number_prefix")
+  invoiceNumberNext        Int                 @default(1) @map("invoice_number_next")
+  autoNumberInvoices       Boolean             @default(true) @map("auto_number_invoices")
   leavePolicy              Json?               @map("leave_policy")
   createdAt                DateTime            @default(now()) @map("created_at")
   updatedAt                DateTime            @updatedAt @map("updated_at")
@@ -402,18 +408,25 @@ model TimeEntry {
   hours           Decimal  @db.Decimal(5, 2)
   description     String?
   isBillable      Boolean  @default(true) @map("is_billable")
+  // Set when this entry is rolled into an invoice line item, so it
+  // doesn't get pulled into a future invoice and double-billed. Cleared
+  // when the invoice is deleted.
+  invoiceId       String?  @map("invoice_id") @db.Uuid
+  invoicedAt      DateTime? @map("invoiced_at")
   createdAt       DateTime @default(now()) @map("created_at")
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   user         User         @relation(fields: [userId], references: [id])
   project      Project?     @relation(fields: [projectId], references: [id], onDelete: Cascade)
   phase        ProjectPhase? @relation(fields: [phaseId], references: [id], onDelete: Cascade)
+  invoice      Invoice?     @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
 
   @@index([organizationId, date])
   @@index([projectId, phaseId])
   @@index([userId, date])
   @@index([userId, leaveType, date])
   @@index([userId, overheadCategory, date])
+  @@index([invoiceId])
   @@map("time_entries")
 }
 
@@ -474,6 +487,16 @@ model Invoice {
   total           Decimal       @db.Decimal(12, 2)
   paidAmount      Decimal       @default(0) @map("paid_amount") @db.Decimal(12, 2)
   paidDate        DateTime?     @map("paid_date") @db.Date
+  // Time period the invoice covers — drives the "For Professional
+  // Services from X to Y" letterhead line and determines which
+  // timesheet entries auto-populate the line items.
+  periodStart     DateTime?     @map("period_start") @db.Date
+  periodEnd       DateTime?     @map("period_end") @db.Date
+  // Payment metadata captured by Mark-as-Paid: check number, ACH
+  // reference, etc. paymentMethod is free text (Check / ACH / Wire / …).
+  paymentReference String?      @map("payment_reference")
+  paymentMethod    String?      @map("payment_method")
+  sentAt          DateTime?     @map("sent_at")
   notes           String?
   createdAt       DateTime      @default(now()) @map("created_at")
   updatedAt       DateTime      @updatedAt @map("updated_at")
@@ -481,6 +504,7 @@ model Invoice {
   organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   project      Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
   lineItems    InvoiceLineItem[]
+  timeEntries  TimeEntry[]
 
   @@index([organizationId, status])
   @@index([projectId])

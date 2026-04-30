@@ -13,6 +13,14 @@ type InvoicePdfInput = {
   status: string;
   issueDate: Date;
   dueDate: Date;
+  // Optional billing period — drives the "For Professional Services
+  // from X to Y" letterhead line. Falls through gracefully when null.
+  periodStart: Date | null;
+  periodEnd: Date | null;
+  // Phase labels covered by the line items, e.g. ["Schematic Design",
+  // "Construction Documents"]. Renders as a "Services include" sentence
+  // under the period statement.
+  phaseLabels: string[];
   subtotal: number;
   tax: number;
   total: number;
@@ -244,6 +252,39 @@ function InvoiceDocument({ data }: { data: InvoicePdfInput }) {
             <Text style={styles.metaValue}>{formatDate(data.dueDate)}</Text>
           </View>
         </View>
+
+        {/* Period statement — formal-language billing description that
+            firms include on professional services invoices. Only shown
+            when both dates are set. */}
+        {data.periodStart && data.periodEnd ? (
+          <View
+            style={{
+              marginBottom: 18,
+              padding: 12,
+              borderRadius: 4,
+              borderWidth: 1,
+              borderColor: BORDER,
+              backgroundColor: SURFACE,
+            }}
+          >
+            <Text style={{ fontSize: 11, color: INK_900, lineHeight: 1.5 }}>
+              For Professional Services completed from{" "}
+              <Text style={{ fontFamily: "Helvetica-Bold" }}>
+                {formatDate(data.periodStart)}
+              </Text>{" "}
+              to{" "}
+              <Text style={{ fontFamily: "Helvetica-Bold" }}>
+                {formatDate(data.periodEnd)}
+              </Text>
+              .
+            </Text>
+            {data.phaseLabels.length > 0 ? (
+              <Text style={{ fontSize: 10, color: INK_700, marginTop: 4, lineHeight: 1.5 }}>
+                Services include: {data.phaseLabels.join(", ")}.
+              </Text>
+            ) : null}
+          </View>
+        ) : null}
 
         <View style={styles.table}>
           <View style={styles.tableHeader}>

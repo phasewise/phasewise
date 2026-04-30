@@ -41,21 +41,36 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { projectId, invoiceNumber, issueDate, dueDate, notes, lineItems } = body as {
+  const {
+    projectId,
+    invoiceNumber,
+    issueDate,
+    dueDate,
+    periodStart,
+    periodEnd,
+    notes,
+    lineItems,
+  } = body as {
     projectId: string;
-    invoiceNumber: string;
+    // Optional — if omitted, server auto-generates from the org's counter.
+    invoiceNumber?: string;
     issueDate: string;
     dueDate: string;
+    periodStart?: string;
+    periodEnd?: string;
     notes?: string;
     lineItems: Array<{
       description: string;
       quantity: number;
       unitPrice: number;
+      // When provided, these TimeEntry IDs get tagged with the new
+      // invoice's id so they can't be billed again on a future invoice.
+      sourceEntryIds?: string[];
     }>;
   };
 
-  if (!projectId || !invoiceNumber || !issueDate || !dueDate) {
-    return NextResponse.json({ error: "projectId, invoiceNumber, issueDate, and dueDate are required." }, { status: 400 });
+  if (!projectId || !issueDate || !dueDate) {
+    return NextResponse.json({ error: "projectId, issueDate, and dueDate are required." }, { status: 400 });
   }
 
   // Verify project belongs to org
@@ -74,26 +89,99 @@ export async function POST(request: NextRequest) {
     amount: new Prisma.Decimal(item.quantity * item.unitPrice),
   }));
 
+  // Collect all source entry IDs across line items. We mark them as
+  // invoiced AFTER the invoice is created (need its id), but inside the
+  // same transaction so partial failure is impossible.
+  const sourceEntryIds = (lineItems ?? [])
+    .flatMap((li) => li.sourceEntryIds ?? [])
+    .filter(Boolean);
+
   const subtotal = items.reduce((sum, item) => sum + Number(item.amount), 0);
 
-  const invoice = await prisma.invoice.create({
-    data: {
-      organizationId: currentUser.organizationId,
-      projectId,
-      invoiceNumber,
-      issueDate: new Date(issueDate),
-      dueDate: new Date(dueDate),
-      subtotal: new Prisma.Decimal(subtotal),
-      total: new Prisma.Decimal(subtotal),
-      notes: notes || null,
-      lineItems: {
-        create: items,
+  const invoice = await prisma.$transaction(async (tx) => {
+    // Resolve invoice number — auto-generate when client didn't pass one
+    // OR matched the auto-suggested value, then increment the counter.
+    // Mirrors the project-numbering pattern in /api/projects/route.ts.
+    const org = await tx.organization.findUnique({
+      where: { id: currentUser.organizationId },
+      select: {
+        autoNumberInvoices: true,
+        invoiceNumberPrefix: true,
       },
-    },
-    include: {
-      project: { select: { name: true, projectNumber: true } },
-      lineItems: true,
-    },
+    });
+
+    let resolvedNumber = invoiceNumber || undefined;
+    if (org?.autoNumberInvoices && !invoiceNumber) {
+      const updated = await tx.organization.update({
+        where: { id: currentUser.organizationId },
+        data: { invoiceNumberNext: { increment: 1 } },
+        select: { invoiceNumberNext: true, invoiceNumberPrefix: true },
+      });
+      const used = updated.invoiceNumberNext - 1;
+      resolvedNumber = `${updated.invoiceNumberPrefix}-${String(used).padStart(3, "0")}`;
+    } else if (org?.autoNumberInvoices && invoiceNumber) {
+      // Client passed a value — only consume a counter slot if the value
+      // matches what the counter would have produced. Preserves the
+      // existing UX where the form pre-fills the auto-suggested number.
+      const updated = await tx.organization.update({
+        where: { id: currentUser.organizationId },
+        data: { invoiceNumberNext: { increment: 1 } },
+        select: { invoiceNumberNext: true, invoiceNumberPrefix: true },
+      });
+      const used = updated.invoiceNumberNext - 1;
+      const expected = `${updated.invoiceNumberPrefix}-${String(used).padStart(3, "0")}`;
+      if (invoiceNumber !== expected) {
+        await tx.organization.update({
+          where: { id: currentUser.organizationId },
+          data: { invoiceNumberNext: { decrement: 1 } },
+        });
+      }
+    }
+
+    if (!resolvedNumber) {
+      throw new Error("Invoice number is required.");
+    }
+
+    const created = await tx.invoice.create({
+      data: {
+        organizationId: currentUser.organizationId,
+        projectId,
+        invoiceNumber: resolvedNumber,
+        issueDate: new Date(issueDate),
+        dueDate: new Date(dueDate),
+        periodStart: periodStart ? new Date(periodStart) : null,
+        periodEnd: periodEnd ? new Date(periodEnd) : null,
+        subtotal: new Prisma.Decimal(subtotal),
+        total: new Prisma.Decimal(subtotal),
+        notes: notes || null,
+        lineItems: {
+          create: items,
+        },
+      },
+      include: {
+        project: { select: { name: true, projectNumber: true } },
+        lineItems: true,
+      },
+    });
+
+    // Tag the source time entries so they can't be re-invoiced. Restrict
+    // to the org + currently-uninvoiced state to avoid stomping on entries
+    // that another concurrent invoice grabbed first.
+    if (sourceEntryIds.length > 0) {
+      await tx.timeEntry.updateMany({
+        where: {
+          id: { in: sourceEntryIds },
+          organizationId: currentUser.organizationId,
+          invoiceId: null,
+        },
+        data: {
+          invoiceId: created.id,
+          invoicedAt: new Date(),
+        },
+      });
+    }
+
+    return created;
   });
 
   return NextResponse.json({ invoice }, { status: 201 });
@@ -113,11 +201,27 @@ export async function PATCH(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { id, status, paidAmount, paidDate, notes } = body as {
+  const {
+    id,
+    status,
+    paidAmount,
+    paidDate,
+    paymentReference,
+    paymentMethod,
+    sentAt,
+    periodStart,
+    periodEnd,
+    notes,
+  } = body as {
     id: string;
     status?: string;
     paidAmount?: number;
     paidDate?: string | null;
+    paymentReference?: string | null;
+    paymentMethod?: string | null;
+    sentAt?: string | null;
+    periodStart?: string | null;
+    periodEnd?: string | null;
     notes?: string | null;
   };
 
@@ -127,7 +231,7 @@ export async function PATCH(request: NextRequest) {
 
   const existing = await prisma.invoice.findUnique({
     where: { id },
-    select: { organizationId: true },
+    select: { organizationId: true, total: true },
   });
   if (!existing || existing.organizationId !== currentUser.organizationId) {
     return NextResponse.json({ error: "Invoice not found." }, { status: 404 });
@@ -135,8 +239,22 @@ export async function PATCH(request: NextRequest) {
 
   const data: Record<string, unknown> = {};
   if (status !== undefined) data.status = status as InvoiceStatus;
-  if (paidAmount !== undefined) data.paidAmount = new Prisma.Decimal(paidAmount);
+  if (paidAmount !== undefined) {
+    data.paidAmount = new Prisma.Decimal(paidAmount);
+    // Auto-promote status when payment is recorded so the user doesn't
+    // have to set it twice. PARTIALLY_PAID < total ; PAID >= total.
+    if (status === undefined) {
+      const total = Number(existing.total);
+      if (paidAmount >= total) data.status = "PAID" as InvoiceStatus;
+      else if (paidAmount > 0) data.status = "PARTIALLY_PAID" as InvoiceStatus;
+    }
+  }
   if (paidDate !== undefined) data.paidDate = paidDate ? new Date(paidDate) : null;
+  if (paymentReference !== undefined) data.paymentReference = paymentReference || null;
+  if (paymentMethod !== undefined) data.paymentMethod = paymentMethod || null;
+  if (sentAt !== undefined) data.sentAt = sentAt ? new Date(sentAt) : null;
+  if (periodStart !== undefined) data.periodStart = periodStart ? new Date(periodStart) : null;
+  if (periodEnd !== undefined) data.periodEnd = periodEnd ? new Date(periodEnd) : null;
   if (notes !== undefined) data.notes = notes;
 
   const updated = await prisma.invoice.update({
