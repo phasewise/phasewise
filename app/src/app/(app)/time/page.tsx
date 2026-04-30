@@ -84,10 +84,11 @@ export default async function TimePage({
   const isFutureWeek = weekStartDate.getTime() > todayWeekStart.getTime();
   const isPastWeek = weekStartDate.getTime() < todayWeekStart.getTime();
 
-  // Rule: an employee can only log time in future weeks if the current
-  // week's timesheet has been submitted (or approved). Admins viewing
-  // someone else's sheet bypass this rule (they're reviewing, not editing).
-  let futureWeekBlocked = false;
+  // Rule: a future week can be edited freely (so users can pre-fill
+  // upcoming vacation, planned travel, etc.), but cannot be SUBMITTED
+  // until the current week has been submitted. This flag gates the
+  // submit button; the time-entry cells stay editable.
+  let futureSubmitBlocked = false;
   if (isFutureWeek && !isViewingOther) {
     const currentWeekSheet = await prisma.weeklyTimesheet.findUnique({
       where: {
@@ -101,7 +102,7 @@ export default async function TimePage({
       !currentWeekSheet ||
       currentWeekSheet.status === "DRAFT"
     ) {
-      futureWeekBlocked = true;
+      futureSubmitBlocked = true;
     }
   }
 
@@ -244,6 +245,7 @@ export default async function TimePage({
               weekStart={format(weekStartDate, "yyyy-MM-dd")}
               status={timesheet?.status ?? "DRAFT"}
               canApprove={canViewOthers}
+              submitBlocked={futureSubmitBlocked}
             />
           )}
         </div>
@@ -288,11 +290,11 @@ export default async function TimePage({
         </div>
       </div>
 
-      {futureWeekBlocked && (
+      {futureSubmitBlocked && (
         <div className="mb-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          <span className="font-semibold">Submit the current week first.</span>{" "}
-          To keep time entry in order, you need to submit this week&rsquo;s timesheet
-          before logging hours in future weeks (e.g. a vacation you&rsquo;re planning).
+          <span className="font-semibold">Future week — editable, not submittable yet.</span>{" "}
+          You can enter hours here (e.g. a planned vacation), but this timesheet can&rsquo;t be
+          submitted until the current week&rsquo;s timesheet is submitted first.
         </div>
       )}
 
@@ -343,7 +345,6 @@ export default async function TimePage({
         previousWeekRows={previousWeekRows}
         readOnly={
           isViewingOther ||
-          futureWeekBlocked ||
           timesheet?.status === "APPROVED"
         }
       />

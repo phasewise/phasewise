@@ -10,9 +10,13 @@ type Props = {
   // APPROVED timesheets can only be reopened by approvers — for everyone
   // else it's a "ask your manager" situation.
   canApprove: boolean;
+  // True when this is a future week and the current week hasn't been
+  // submitted yet. Cells stay editable but the Submit button is gated;
+  // matches the server-side rule on /api/timesheets submit.
+  submitBlocked?: boolean;
 };
 
-export default function TimesheetSubmitClient({ weekStart, status, canApprove }: Props) {
+export default function TimesheetSubmitClient({ weekStart, status, canApprove, submitBlocked = false }: Props) {
   const router = useRouter();
   const [currentStatus, setCurrentStatus] = useState(status);
   const [saving, setSaving] = useState(false);
@@ -82,10 +86,23 @@ export default function TimesheetSubmitClient({ weekStart, status, canApprove }:
           <button
             type="button"
             onClick={() => postAction("submit")}
-            disabled={saving}
-            className="inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-60"
+            disabled={saving || submitBlocked}
+            title={
+              submitBlocked
+                ? "Submit the current week's timesheet first — future weeks can't be submitted ahead of the current one."
+                : undefined
+            }
+            className={`inline-flex items-center justify-center rounded-2xl px-5 py-3 text-sm font-semibold text-white transition disabled:opacity-60 ${
+              submitBlocked
+                ? "bg-slate-400 cursor-not-allowed"
+                : "bg-emerald-600 hover:bg-emerald-500"
+            }`}
           >
-            {saving ? "Submitting..." : "Submit timesheet"}
+            {saving
+              ? "Submitting..."
+              : submitBlocked
+              ? "Submit blocked — current week not submitted"
+              : "Submit timesheet"}
           </button>
         ) : null}
 

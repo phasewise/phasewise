@@ -112,12 +112,12 @@ export async function POST(request: Request) {
   }
 
   // Guardrails on which weeks an employee can edit:
-  //  - Approved week: no edits (status is the source of truth for "locked")
-  //  - Future week: only if the current week's timesheet has been submitted
+  //  - Approved week: no edits (status is the source of truth for "locked").
+  //  - Future weeks: editing is fine (e.g. pre-fill upcoming PTO/travel).
+  //    The "submit current week first" rule lives on /api/timesheets
+  //    submit, not here — we want users to be able to capture future
+  //    plans even if they haven't yet submitted the current week.
   const entryWeekStart = getWeekStart(parsedDate);
-  const todayWeekStart = getWeekStart(new Date());
-  const isFutureWeek = entryWeekStart.getTime() > todayWeekStart.getTime();
-
   const entryWeekSheet = await prisma.weeklyTimesheet.findUnique({
     where: {
       userId_weekStart: { userId: currentUser.id, weekStart: entryWeekStart },
@@ -128,23 +128,6 @@ export async function POST(request: Request) {
       { error: "This week's timesheet is approved and can't be edited." },
       { status: 403 }
     );
-  }
-
-  if (isFutureWeek) {
-    const currentWeekSheet = await prisma.weeklyTimesheet.findUnique({
-      where: {
-        userId_weekStart: { userId: currentUser.id, weekStart: todayWeekStart },
-      },
-    });
-    if (!currentWeekSheet || currentWeekSheet.status === "DRAFT") {
-      return NextResponse.json(
-        {
-          error:
-            "Submit the current week's timesheet before logging time in future weeks.",
-        },
-        { status: 403 }
-      );
-    }
   }
 
   const existingEntry = await prisma.timeEntry.findFirst({

@@ -39,6 +39,39 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid week start date." }, { status: 400 });
     }
 
+    // Sequencing rule: a future week can't be submitted until the
+    // current week has been submitted (or already approved). Editing
+    // future weeks is fine — only submission is gated. Mirrors the UI
+    // banner so server can't be bypassed by a curl post.
+    const todayWeekStart = (() => {
+      const d = new Date();
+      const day = d.getDay(); // 0 = Sunday
+      const monday = new Date(d);
+      const diff = (day + 6) % 7; // back up to Monday
+      monday.setDate(d.getDate() - diff);
+      monday.setHours(0, 0, 0, 0);
+      return monday;
+    })();
+    if (parsedWeekStart.getTime() > todayWeekStart.getTime()) {
+      const currentWeekSheet = await prisma.weeklyTimesheet.findUnique({
+        where: {
+          userId_weekStart: {
+            userId: currentUser.id,
+            weekStart: todayWeekStart,
+          },
+        },
+      });
+      if (!currentWeekSheet || currentWeekSheet.status === "DRAFT") {
+        return NextResponse.json(
+          {
+            error:
+              "Submit the current week's timesheet first — future weeks can't be submitted ahead of the current one.",
+          },
+          { status: 403 }
+        );
+      }
+    }
+
     const existing = await prisma.weeklyTimesheet.findUnique({
       where: {
         userId_weekStart: {
