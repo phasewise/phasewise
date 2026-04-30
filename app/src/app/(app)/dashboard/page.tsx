@@ -5,6 +5,20 @@ import { getCurrentUser } from "@/lib/supabase/auth";
 import { prisma } from "@/lib/prisma";
 import { getBudgetAlertLevel, ALERT_LABELS } from "@/lib/budget-alerts";
 
+// Display order for status sections — matches the Projects page so users
+// see the same hierarchy in both places.
+const SECTION_ORDER: Array<{
+  value: string;
+  label: string;
+  description: string;
+  defaultOpen: boolean;
+}> = [
+  { value: "ACTIVE", label: "Active", description: "Currently in progress.", defaultOpen: true },
+  { value: "ON_HOLD", label: "On hold", description: "Paused or awaiting input.", defaultOpen: true },
+  { value: "COMPLETED", label: "Completed", description: "Wrapped up; kept for reference.", defaultOpen: false },
+  { value: "ARCHIVED", label: "Archived", description: "No longer active or relevant.", defaultOpen: false },
+];
+
 function getCurrentPhase(phases: Array<{ phaseType: string; status: string }>) {
   const activePhase = phases.find((phase) => phase.status !== "COMPLETE");
   return activePhase ?? phases[phases.length - 1] ?? { phaseType: "PRE_DESIGN", status: "NOT_STARTED" };
@@ -189,108 +203,180 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-[#E2EBE4] bg-white shadow-sm overflow-hidden">
-        <div className="flex items-center justify-between border-b border-[#E2EBE4] px-6 py-5">
-          <div>
-            <h2 className="text-base font-semibold text-[#1A2E22]">Projects</h2>
-            <p className="text-sm text-[#6B8C74]">All active work for your organization.</p>
-          </div>
-          <Link href="/projects" className="text-sm font-semibold text-[#2D6A4F] hover:text-[#40916C] inline-flex items-center gap-1">
-            View all <ArrowUpRight className="h-4 w-4" />
+      {projects.length === 0 ? (
+        <div className="rounded-2xl border border-[#E2EBE4] bg-white shadow-sm px-6 py-12 text-center">
+          <FolderKanban className="w-10 h-10 text-[#A3BEA9] mx-auto mb-3" />
+          <h3 className="font-semibold text-[#1A2E22] mb-1">No projects yet</h3>
+          <p className="text-sm text-[#6B8C74] mb-3">
+            Create your first project to start tracking work, budgets, and timelines.
+          </p>
+          <Link href="/projects/new" className="text-sm font-medium text-[#2D6A4F] hover:text-[#40916C]">
+            Create a project &rarr;
           </Link>
         </div>
+      ) : (
+        <div className="space-y-4">
+          {SECTION_ORDER.map((section) => {
+            const sectionProjects = projects.filter((p) => p.status === section.value);
+            if (sectionProjects.length === 0) return null;
 
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-left text-sm text-[#3D5C48]">
-            <thead className="border-b border-[#E2EBE4] bg-[#F7F9F7] text-[#6B8C74]">
-              <tr>
-                <th className="px-6 py-4 font-medium">Project</th>
-                <th className="px-6 py-4 font-medium">Client</th>
-                <th className="px-6 py-4 font-medium">Phase</th>
-                <th className="px-6 py-4 font-medium">Health</th>
-                <th className="px-6 py-4 font-medium">Budget</th>
-                <th className="px-6 py-4 font-medium">Burn</th>
-              </tr>
-            </thead>
-            <tbody>
-              {projects.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center">
-                    <FolderKanban className="w-10 h-10 text-[#A3BEA9] mx-auto mb-3" />
-                    <h3 className="font-semibold text-[#1A2E22] mb-1">No projects yet</h3>
-                    <p className="text-sm text-[#6B8C74] mb-3">Create your first project to start tracking work, budgets, and timelines.</p>
-                    <Link href="/projects/new" className="text-sm font-medium text-[#2D6A4F] hover:text-[#40916C]">
-                      Create a project &rarr;
-                    </Link>
-                  </td>
-                </tr>
-              )}
-              {projects.map((project) => {
-                const currentPhase = getCurrentPhase(project.phases || []);
-                const budgetedFee = project.phases.reduce(
-                  (sum, phase) => sum + Number(phase.budgetedFee ?? 0),
-                  0
-                );
-                const budgetedHours = project.phases.reduce(
-                  (sum, phase) => sum + Number(phase.budgetedHours ?? 0),
-                  0
-                );
-                const hoursUsed = projectTimeMap.get(project.id) ?? 0;
-                const burnPercent = budgetedHours > 0 ? (hoursUsed / budgetedHours) * 100 : 0;
+            return (
+              // <details> gives native collapse without needing a client
+              // component. open={section.defaultOpen} sets the initial state.
+              <details
+                key={section.value}
+                open={section.defaultOpen}
+                className="rounded-2xl border border-[#E2EBE4] bg-white shadow-sm overflow-hidden group"
+              >
+                <summary className="flex items-center justify-between border-b border-[#E2EBE4] px-6 py-5 cursor-pointer list-none hover:bg-[#F7F9F7] transition-colors">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-slate-400 group-open:rotate-90 transition-transform">▶</span>
+                    <h2
+                      className={`text-base font-semibold ${
+                        section.value === "ACTIVE" || section.value === "ON_HOLD"
+                          ? "text-[#1A2E22]"
+                          : "text-[#3D5C48]"
+                      }`}
+                    >
+                      {section.label}
+                    </h2>
+                    <span className="text-xs text-[#6B8C74] px-2 py-0.5 rounded-full bg-[#F0FAF4]">
+                      {sectionProjects.length}
+                    </span>
+                    <span className="hidden sm:inline text-sm text-[#6B8C74] truncate">
+                      · {section.description}
+                    </span>
+                  </div>
+                  <Link
+                    href="/projects"
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-sm font-semibold text-[#2D6A4F] hover:text-[#40916C] inline-flex items-center gap-1"
+                  >
+                    View all <ArrowUpRight className="h-4 w-4" />
+                  </Link>
+                </summary>
 
-                return (
-                  <tr key={project.id} className="border-b border-[#E8EDE9] last:border-0 hover:bg-[#F7F9F7]/50 transition-colors">
-                    <td className="px-6 py-4">
-                      <Link href={`/projects/${project.id}`} className="font-semibold text-[#1A2E22] hover:text-[#2D6A4F]">
-                        {project.name}
-                      </Link>
-                      <div className="text-xs text-[#A3BEA9] mt-1">{project.projectNumber || "—"}</div>
-                    </td>
-                    <td className="px-6 py-4 text-[#6B8C74]">{project.clientName || "—"}</td>
-                    <td className="px-6 py-4">
-                      <span className="text-xs font-medium rounded-full bg-[#F0FAF4] text-[#2D6A4F] px-2 py-1">
-                        {PHASE_SHORT_LABELS[currentPhase.phaseType]}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      {(() => {
-                        const alertLevel = getBudgetAlertLevel(hoursUsed, budgetedHours);
-                        if (alertLevel) {
-                          const alert = ALERT_LABELS[alertLevel];
-                          return (
-                            <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full border ${alert.bgColor}`}>
-                              <AlertTriangle className="w-3 h-3" />
-                              {alertLevel === "OVER_100" ? "Over budget" : alertLevel === "CRITICAL_90" ? "At risk" : "Watch"}
-                            </span>
-                          );
-                        }
-                        return (
-                          <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full bg-[#F0FAF4] text-[#2D6A4F] border border-[#52B788]/20">
-                            <CheckCircle2 className="w-3 h-3" />
-                            On track
-                          </span>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-left text-sm text-[#3D5C48]">
+                    <thead className="border-b border-[#E2EBE4] bg-[#F7F9F7] text-[#6B8C74]">
+                      <tr>
+                        <th className="px-6 py-4 font-medium">Project</th>
+                        <th className="px-6 py-4 font-medium">Client</th>
+                        <th className="px-6 py-4 font-medium">Phase</th>
+                        <th className="px-6 py-4 font-medium">Health</th>
+                        <th className="px-6 py-4 font-medium">Budget</th>
+                        <th className="px-6 py-4 font-medium">Burn</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sectionProjects.map((project) => {
+                        const currentPhase = getCurrentPhase(project.phases || []);
+                        const budgetedFee = project.phases.reduce(
+                          (sum, phase) => sum + Number(phase.budgetedFee ?? 0),
+                          0
                         );
-                      })()}
-                    </td>
-                    <td className="px-6 py-4 text-[#1A2E22]">${budgetedFee.toLocaleString()}</td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-24 overflow-hidden rounded-full bg-[#E8EDE9] h-2">
-                          <div
-                            className={`h-2 rounded-full ${getBurnColor(burnPercent)}`}
-                            style={{ width: `${Math.min(burnPercent, 100)}%` }}
-                          />
-                        </div>
-                        <span className="text-xs font-semibold text-[#1A2E22]">{burnPercent.toFixed(0)}%</span>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                        const budgetedHours = project.phases.reduce(
+                          (sum, phase) => sum + Number(phase.budgetedHours ?? 0),
+                          0
+                        );
+                        const hoursUsed = projectTimeMap.get(project.id) ?? 0;
+                        const burnPercent =
+                          budgetedHours > 0 ? (hoursUsed / budgetedHours) * 100 : 0;
+                        const isHistorical =
+                          section.value === "COMPLETED" || section.value === "ARCHIVED";
+
+                        return (
+                          <tr
+                            key={project.id}
+                            className={`border-b border-[#E8EDE9] last:border-0 hover:bg-[#F7F9F7]/50 transition-colors ${
+                              isHistorical ? "opacity-75" : ""
+                            }`}
+                          >
+                            <td className="px-6 py-4">
+                              <Link
+                                href={`/projects/${project.id}`}
+                                className="font-semibold text-[#1A2E22] hover:text-[#2D6A4F]"
+                              >
+                                {project.name}
+                              </Link>
+                              <div className="text-xs text-[#A3BEA9] mt-1">
+                                {project.projectNumber || "—"}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 text-[#6B8C74]">
+                              {project.clientName || "—"}
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className="text-xs font-medium rounded-full bg-[#F0FAF4] text-[#2D6A4F] px-2 py-1">
+                                {PHASE_SHORT_LABELS[currentPhase.phaseType]}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4">
+                              {section.value === "ACTIVE"
+                                ? (() => {
+                                    const alertLevel = getBudgetAlertLevel(hoursUsed, budgetedHours);
+                                    if (alertLevel) {
+                                      const alert = ALERT_LABELS[alertLevel];
+                                      return (
+                                        <span
+                                          className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full border ${alert.bgColor}`}
+                                        >
+                                          <AlertTriangle className="w-3 h-3" />
+                                          {alertLevel === "OVER_100"
+                                            ? "Over budget"
+                                            : alertLevel === "CRITICAL_90"
+                                            ? "At risk"
+                                            : "Watch"}
+                                        </span>
+                                      );
+                                    }
+                                    return (
+                                      <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full bg-[#F0FAF4] text-[#2D6A4F] border border-[#52B788]/20">
+                                        <CheckCircle2 className="w-3 h-3" />
+                                        On track
+                                      </span>
+                                    );
+                                  })()
+                                : (
+                                  // Health doesn't apply for non-active statuses;
+                                  // show the project status instead so users still
+                                  // see at-a-glance state.
+                                  <span
+                                    className={`text-xs font-semibold px-2 py-1 rounded-full ${
+                                      STATUS_COLORS[project.status] ?? "bg-slate-100 text-slate-600"
+                                    }`}
+                                  >
+                                    {project.status.replace("_", " ")}
+                                  </span>
+                                )}
+                            </td>
+                            <td className="px-6 py-4 text-[#1A2E22]">
+                              ${budgetedFee.toLocaleString()}
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-24 overflow-hidden rounded-full bg-[#E8EDE9] h-2">
+                                  <div
+                                    className={`h-2 rounded-full ${getBurnColor(burnPercent)}`}
+                                    style={{ width: `${Math.min(burnPercent, 100)}%` }}
+                                  />
+                                </div>
+                                <span className="text-xs font-semibold text-[#1A2E22]">
+                                  {burnPercent.toFixed(0)}%
+                                </span>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </details>
+            );
+          })}
         </div>
-      </div>
+      )}
     </div>
   );
 }

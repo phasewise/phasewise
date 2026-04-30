@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowUpRight, ChevronDown, ChevronRight, FolderPlus, Search, X } from "lucide-react";
+import { ChevronDown, ChevronRight, FolderPlus, Search, X } from "lucide-react";
 import { PHASE_SHORT_LABELS, STATUS_COLORS } from "@/lib/constants";
 
 type Phase = { phaseType: string; status: string; budgetedFee: number; budgetedHours: number };
@@ -37,14 +37,40 @@ function getCurrentPhase(phases: Phase[]) {
   return activePhase ?? phases[phases.length - 1] ?? { phaseType: "PRE_DESIGN", status: "NOT_STARTED" };
 }
 
+// Display order for status sections — matches what Kevin wanted:
+// Active first (current work), then On Hold, then Completed, then Archived.
+const SECTION_ORDER: Array<{
+  value: string;
+  label: string;
+  description: string;
+  defaultCollapsed: boolean;
+}> = [
+  { value: "ACTIVE", label: "Active", description: "Currently in progress.", defaultCollapsed: false },
+  { value: "ON_HOLD", label: "On hold", description: "Paused or awaiting input.", defaultCollapsed: false },
+  { value: "COMPLETED", label: "Completed", description: "Wrapped up; kept for reference.", defaultCollapsed: true },
+  { value: "ARCHIVED", label: "Archived", description: "No longer active or relevant.", defaultCollapsed: true },
+];
+
 export default function ProjectsClient({ projects: initialProjects }: Props) {
   const router = useRouter();
   const [projects, setProjects] = useState(initialProjects);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>(""); // "" = all non-archived
+  const [statusFilter, setStatusFilter] = useState<string>(""); // "" = all
   const [typeFilter, setTypeFilter] = useState<string>("");
-  const [showArchivedSection, setShowArchivedSection] = useState(false);
   const [savingStatusId, setSavingStatusId] = useState<string | null>(null);
+
+  // Per-section collapse state. Defaults follow SECTION_ORDER so historical
+  // groups (Completed / Archived) are out of the way until you go look.
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>(() =>
+    SECTION_ORDER.reduce(
+      (acc, s) => ({ ...acc, [s.value]: s.defaultCollapsed }),
+      {} as Record<string, boolean>
+    )
+  );
+
+  function toggleSection(status: string) {
+    setCollapsed((prev) => ({ ...prev, [status]: !prev[status] }));
+  }
 
   // Distinct project types found across the org's projects, used to
   // populate the type filter dropdown without hard-coding a fixed enum.
@@ -94,12 +120,21 @@ export default function ProjectsClient({ projects: initialProjects }: Props) {
     return true;
   };
 
-  const filteredActive = projects.filter(
-    (p) => p.status !== "ARCHIVED" && filterMatches(p)
-  );
-  const filteredArchived = projects.filter(
-    (p) => p.status === "ARCHIVED" && filterMatches(p)
-  );
+  // Build one bucket per known status, filtered by search + type. The
+  // status filter is applied as a section-visibility gate (selecting
+  // ACTIVE hides every other section) rather than per-row, which keeps
+  // the section UX intact.
+  const sections = SECTION_ORDER.map((section) => {
+    const matches = projects.filter(
+      (p) => p.status === section.value && filterMatches(p)
+    );
+    const visible = !statusFilter || statusFilter === section.value;
+    return { ...section, projects: matches, visible };
+  });
+
+  const totalVisible = sections
+    .filter((s) => s.visible)
+    .reduce((sum, s) => sum + s.projects.length, 0);
 
   // Stats are computed off the *active* (non-archived) set only — archived
   // work shouldn't move the firm-wide health needle.
@@ -244,135 +279,118 @@ export default function ProjectsClient({ projects: initialProjects }: Props) {
         </div>
       </div>
 
-      {/* Active projects table */}
-      <div className="rounded-3xl border border-slate-200 bg-white shadow-sm overflow-hidden mb-6">
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5">
-          <div>
-            <h2 className="text-base font-semibold text-slate-900">
-              {filtersActive ? "Filtered projects" : "Projects"}
-            </h2>
-            <p className="text-sm text-slate-500">
-              {filteredActive.length} {filteredActive.length === 1 ? "project" : "projects"}
-              {filtersActive ? " match" : " in your organization"}.
+      {/* Empty-state when nothing matches filters or org has no projects. */}
+      {totalVisible === 0 && (
+        <div className="rounded-3xl border border-slate-200 bg-white shadow-sm overflow-hidden mb-6">
+          <div className="px-6 py-12 text-center">
+            <FolderPlus className="w-10 h-10 text-[#A3BEA9] mx-auto mb-3" />
+            <h3 className="font-semibold text-slate-900 mb-1">
+              {filtersActive ? "No matches" : "No projects yet"}
+            </h3>
+            <p className="text-sm text-slate-500 mb-3">
+              {filtersActive
+                ? "Try clearing filters or adjusting the search."
+                : "Get started by creating your first project."}
             </p>
+            {filtersActive ? (
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="text-sm font-semibold text-emerald-600 hover:text-emerald-700"
+              >
+                Clear filters
+              </button>
+            ) : (
+              <Link
+                href="/projects/new"
+                className="text-sm font-semibold text-emerald-600 hover:text-emerald-700"
+              >
+                Create a project &rarr;
+              </Link>
+            )}
           </div>
-          <Link href="/projects" className="text-sm font-semibold text-emerald-600 hover:text-emerald-700 inline-flex items-center gap-1">
-            View all <ArrowUpRight className="h-4 w-4" />
-          </Link>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-left text-sm text-slate-700">
-            <thead className="border-b border-slate-200 bg-slate-50 text-slate-500">
-              <tr>
-                <th className="px-6 py-4 font-medium">Project</th>
-                <th className="px-6 py-4 font-medium">Client</th>
-                <th className="px-6 py-4 font-medium">Type</th>
-                <th className="px-6 py-4 font-medium">City</th>
-                <th className="px-6 py-4 font-medium">Phase</th>
-                <th className="px-6 py-4 font-medium">Status</th>
-                <th className="px-6 py-4 font-medium">Budget</th>
-                <th className="px-6 py-4 font-medium">Burn</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredActive.length === 0 && (
-                <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center">
-                    <FolderPlus className="w-10 h-10 text-[#A3BEA9] mx-auto mb-3" />
-                    <h3 className="font-semibold text-slate-900 mb-1">
-                      {filtersActive ? "No matches" : "No projects yet"}
-                    </h3>
-                    <p className="text-sm text-slate-500 mb-3">
-                      {filtersActive
-                        ? "Try clearing filters or adjusting the search."
-                        : "Get started by creating your first project."}
-                    </p>
-                    {filtersActive ? (
-                      <button
-                        type="button"
-                        onClick={clearFilters}
-                        className="text-sm font-semibold text-emerald-600 hover:text-emerald-700"
-                      >
-                        Clear filters
-                      </button>
-                    ) : (
-                      <Link href="/projects/new" className="text-sm font-semibold text-emerald-600 hover:text-emerald-700">
-                        Create a project &rarr;
-                      </Link>
-                    )}
-                  </td>
-                </tr>
-              )}
-              {filteredActive.map((project) => (
-                <ProjectRow
-                  key={project.id}
-                  project={project}
-                  saving={savingStatusId === project.id}
-                  onStatusChange={handleStatusChange}
-                />
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Archived projects (collapsible) */}
-      {filteredArchived.length > 0 && (
-        <div className="rounded-3xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-          <button
-            type="button"
-            onClick={() => setShowArchivedSection((v) => !v)}
-            className="w-full flex items-center justify-between border-b border-slate-100 px-6 py-4 text-left hover:bg-slate-50 transition-colors"
-          >
-            <div className="flex items-center gap-2">
-              {showArchivedSection ? (
-                <ChevronDown className="w-4 h-4 text-slate-500" />
-              ) : (
-                <ChevronRight className="w-4 h-4 text-slate-500" />
-              )}
-              <h2 className="text-base font-semibold text-slate-700">
-                Archived projects
-              </h2>
-              <span className="text-xs text-slate-500 px-2 py-0.5 rounded-full bg-slate-100">
-                {filteredArchived.length}
-              </span>
-            </div>
-            <span className="text-xs text-slate-500">
-              {showArchivedSection ? "Hide" : "Show"}
-            </span>
-          </button>
-
-          {showArchivedSection && (
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-left text-sm text-slate-600">
-                <thead className="border-b border-slate-200 bg-slate-50 text-slate-500">
-                  <tr>
-                    <th className="px-6 py-4 font-medium">Project</th>
-                    <th className="px-6 py-4 font-medium">Client</th>
-                    <th className="px-6 py-4 font-medium">Type</th>
-                    <th className="px-6 py-4 font-medium">City</th>
-                    <th className="px-6 py-4 font-medium">Phase</th>
-                    <th className="px-6 py-4 font-medium">Status</th>
-                    <th className="px-6 py-4 font-medium">Budget</th>
-                    <th className="px-6 py-4 font-medium">Burn</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredArchived.map((project) => (
-                    <ProjectRow
-                      key={project.id}
-                      project={project}
-                      saving={savingStatusId === project.id}
-                      onStatusChange={handleStatusChange}
-                    />
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
         </div>
       )}
+
+      {/* One collapsible section per status, in the order Kevin asked for:
+          Active → On Hold → Completed → Archived. Sections with zero
+          matches are hidden so the page stays compact. */}
+      <div className="space-y-4">
+        {sections.map((section) => {
+          if (!section.visible) return null;
+          if (section.projects.length === 0) return null;
+          const isCollapsed = collapsed[section.value];
+          return (
+            <div
+              key={section.value}
+              className="rounded-3xl border border-slate-200 bg-white shadow-sm overflow-hidden"
+            >
+              <button
+                type="button"
+                onClick={() => toggleSection(section.value)}
+                className="w-full flex items-center justify-between border-b border-slate-100 px-6 py-4 text-left hover:bg-slate-50 transition-colors"
+                aria-expanded={!isCollapsed}
+                aria-controls={`projects-section-${section.value}`}
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  {isCollapsed ? (
+                    <ChevronRight className="w-4 h-4 text-slate-500 flex-shrink-0" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 text-slate-500 flex-shrink-0" />
+                  )}
+                  <h2
+                    className={`text-base font-semibold ${
+                      section.value === "ACTIVE" || section.value === "ON_HOLD"
+                        ? "text-slate-900"
+                        : "text-slate-700"
+                    }`}
+                  >
+                    {section.label}
+                  </h2>
+                  <span className="text-xs text-slate-500 px-2 py-0.5 rounded-full bg-slate-100">
+                    {section.projects.length}
+                  </span>
+                  <span className="hidden sm:inline text-xs text-slate-500 truncate">
+                    · {section.description}
+                  </span>
+                </div>
+                <span className="text-xs text-slate-500">
+                  {isCollapsed ? "Show" : "Hide"}
+                </span>
+              </button>
+
+              {!isCollapsed && (
+                <div className="overflow-x-auto" id={`projects-section-${section.value}`}>
+                  <table className="min-w-full text-left text-sm text-slate-700">
+                    <thead className="border-b border-slate-200 bg-slate-50 text-slate-500">
+                      <tr>
+                        <th className="px-6 py-4 font-medium">Project</th>
+                        <th className="px-6 py-4 font-medium">Client</th>
+                        <th className="px-6 py-4 font-medium">Type</th>
+                        <th className="px-6 py-4 font-medium">City</th>
+                        <th className="px-6 py-4 font-medium">Phase</th>
+                        <th className="px-6 py-4 font-medium">Status</th>
+                        <th className="px-6 py-4 font-medium">Budget</th>
+                        <th className="px-6 py-4 font-medium">Burn</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {section.projects.map((project) => (
+                        <ProjectRow
+                          key={project.id}
+                          project={project}
+                          saving={savingStatusId === project.id}
+                          onStatusChange={handleStatusChange}
+                        />
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
