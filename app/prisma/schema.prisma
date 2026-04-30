@@ -132,6 +132,11 @@ model Project {
   targetCompletion DateTime?     @map("target_completion") @db.Date
   contractFee      Decimal?      @map("contract_fee") @db.Decimal(12, 2)
   description      String?
+  // Free-text city/locality and project type so firms can use whatever
+  // taxonomy they want (residential / commercial / public / entry
+  // monument / features / parks / etc.). Used by list-view filters.
+  city             String?
+  projectType      String?       @map("project_type")
   createdById      String        @map("created_by_id") @db.Uuid
   createdAt        DateTime      @default(now()) @map("created_at")
   updatedAt        DateTime      @updatedAt @map("updated_at")
@@ -329,6 +334,10 @@ model ComplianceItem {
   // Shape: { region, specialLandscapeArea, hydrozones[], mawa, etwu, passes }
   // Only used when category = "MWELO"; null for other categories.
   mweloCalculation   Json?            @map("mwelo_calculation")
+  // Soft-archive timestamp. Archived items stay in the DB (preserves
+  // audit history for older calc revisions) but are hidden from default
+  // list views. Use the `?archived=1` filter to see them again.
+  archivedAt         DateTime?        @map("archived_at")
   createdAt          DateTime         @default(now()) @map("created_at")
   updatedAt          DateTime         @updatedAt @map("updated_at")
 

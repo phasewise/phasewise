@@ -41,6 +41,7 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const id = url.searchParams.get("id");
     const projectId = url.searchParams.get("projectId");
+    const includeArchived = url.searchParams.get("includeArchived") === "1";
 
     if (id) {
       const item = await prisma.complianceItem.findUnique({
@@ -57,6 +58,7 @@ export async function GET(request: Request) {
       organizationId: currentUser.organizationId,
     };
     if (projectId) where.projectId = projectId;
+    if (!includeArchived) where.archivedAt = null;
 
     const complianceItems = await prisma.complianceItem.findMany({
       where,
@@ -188,6 +190,9 @@ export async function PATCH(request: Request) {
       documentUrl?: string;
       notes?: string;
       mweloCalculation?: unknown;
+      // archive: true to soft-archive, false to restore. Translated into
+      // archivedAt timestamp server-side so client doesn't have to format dates.
+      archive?: boolean;
     };
 
     if (!id) {
@@ -230,6 +235,9 @@ export async function PATCH(request: Request) {
         fields.mweloCalculation === null
           ? Prisma.JsonNull
           : (fields.mweloCalculation as Prisma.InputJsonValue);
+    }
+    if (fields.archive !== undefined) {
+      data.archivedAt = fields.archive ? new Date() : null;
     }
 
     const updated = await prisma.complianceItem.update({

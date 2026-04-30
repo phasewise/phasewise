@@ -7,7 +7,13 @@ import ComplianceClient from "./ComplianceClient";
 
 export const dynamic = "force-dynamic";
 
-export default async function CompliancePage() {
+export default async function CompliancePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ archived?: string }>;
+}) {
+  const { archived } = await searchParams;
+  const showArchived = archived === "1";
   const currentUser = await getCurrentUser();
 
   if (!currentUser) {
@@ -22,7 +28,11 @@ export default async function CompliancePage() {
   }
 
   const complianceItems = await prisma.complianceItem.findMany({
-    where: { organizationId: currentUser.organizationId },
+    where: {
+      organizationId: currentUser.organizationId,
+      // Hide archived rows from the default view; ?archived=1 reveals them.
+      ...(showArchived ? {} : { archivedAt: null }),
+    },
     include: { project: { select: { name: true } } },
     orderBy: { createdAt: "desc" },
   });
@@ -71,6 +81,7 @@ export default async function CompliancePage() {
         notes: item.notes,
         projectId: item.projectId,
         projectName: item.project.name,
+        archivedAt: item.archivedAt?.toISOString() ?? null,
         mweloSummary,
       };
     })
@@ -88,7 +99,7 @@ export default async function CompliancePage() {
           MWELO Calculator
         </Link>
       </div>
-      <ComplianceClient items={itemsForClient} projects={projects} />
+      <ComplianceClient items={itemsForClient} projects={projects} showArchived={showArchived} />
     </div>
   );
 }

@@ -39,6 +39,8 @@ export default function NewProjectPage() {
   const [targetCompletion, setTargetCompletion] = useState("");
   const [status, setStatus] = useState("ACTIVE");
   const [contractFee, setContractFee] = useState("");
+  const [city, setCity] = useState("");
+  const [projectType, setProjectType] = useState("");
   const [phases, setPhases] = useState<PhaseRow[]>(defaultPhases);
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -65,6 +67,8 @@ export default function NewProjectPage() {
         startDate,
         targetCompletion,
         contractFee,
+        city,
+        projectType,
         phases,
       }),
     });
@@ -232,6 +236,44 @@ export default function NewProjectPage() {
                 <p className="mt-1 text-xs text-slate-500">
                   The fee you&rsquo;ve agreed to bill the client. Your Work Plan estimate will be compared against this as a ceiling.
                 </p>
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label htmlFor="pnew-city" className="text-sm font-medium text-slate-700">
+                  City <span className="text-slate-400 font-normal">(optional)</span>
+                </label>
+                <input
+                  id="pnew-city"
+                  value={city}
+                  onChange={(event) => setCity(event.target.value)}
+                  placeholder="e.g., Fresno"
+                  autoComplete="address-level2"
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none focus:border-emerald-500"
+                />
+              </div>
+              <div>
+                <label htmlFor="pnew-project-type" className="text-sm font-medium text-slate-700">
+                  Project type <span className="text-slate-400 font-normal">(optional)</span>
+                </label>
+                <input
+                  id="pnew-project-type"
+                  list="pnew-project-type-suggestions"
+                  value={projectType}
+                  onChange={(event) => setProjectType(event.target.value)}
+                  placeholder="Residential / Commercial / Public / …"
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none focus:border-emerald-500"
+                />
+                <datalist id="pnew-project-type-suggestions">
+                  <option value="Residential" />
+                  <option value="Commercial" />
+                  <option value="Public" />
+                  <option value="Entry Monument" />
+                  <option value="Mixed Use" />
+                  <option value="Park" />
+                  <option value="Streetscape" />
+                </datalist>
               </div>
             </div>
 

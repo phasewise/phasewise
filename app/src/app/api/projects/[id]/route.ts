@@ -79,6 +79,8 @@ export async function PATCH(
       targetCompletion,
       contractFee,
       description,
+      city,
+      projectType,
     } = body;
 
     const data: Record<string, unknown> = {};
@@ -88,6 +90,8 @@ export async function PATCH(
     if (clientEmail !== undefined) data.clientEmail = clientEmail || null;
     if (status !== undefined) data.status = status;
     if (description !== undefined) data.description = description || null;
+    if (city !== undefined) data.city = city?.trim() || null;
+    if (projectType !== undefined) data.projectType = projectType?.trim() || null;
     if (startDate !== undefined) {
       data.startDate = startDate ? new Date(startDate) : null;
     }

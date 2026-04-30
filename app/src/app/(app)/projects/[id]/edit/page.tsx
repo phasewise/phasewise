@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
-import { ArrowLeft, Plus, Save, Trash2 } from "lucide-react";
+import { AlertCircle, ArrowLeft, Plus, Save, Trash2 } from "lucide-react";
 import { PHASE_LABELS, PHASE_ORDER } from "@/lib/constants";
 import WorkPlanEditor from "./WorkPlanEditor";
 
@@ -37,12 +37,20 @@ export default function EditProjectPage() {
   const [targetCompletion, setTargetCompletion] = useState("");
   const [contractFee, setContractFee] = useState("");
   const [description, setDescription] = useState("");
+  const [city, setCity] = useState("");
+  const [projectType, setProjectType] = useState("");
 
   // Phase fields
   const [phases, setPhases] = useState<PhaseRow[]>([]);
 
   // Team members for work plan
   const [teamMembers, setTeamMembers] = useState<Array<{ id: string; fullName: string; billingRate: number }>>([]);
+
+  // True when WorkPlanEditor has unsaved edits. We use this to warn the
+  // user (and require an explicit confirm) on Save all changes — work
+  // plan saves to its own endpoint, so a top-level submit silently drops
+  // any in-flight work-plan edits if not committed first.
+  const [workPlanDirty, setWorkPlanDirty] = useState(false);
 
   useEffect(() => {
     // Fetch team members for the work plan editor
@@ -69,6 +77,8 @@ export default function EditProjectPage() {
         setTargetCompletion(p.targetCompletion ? p.targetCompletion.split("T")[0] : "");
         setContractFee(p.contractFee ? String(p.contractFee) : "");
         setDescription(p.description || "");
+        setCity(p.city || "");
+        setProjectType(p.projectType || "");
         setPhases(
           (p.phases || []).map((phase: { id: string; phaseType: string; customName?: string | null; status: string; budgetedFee: string | number | null; budgetedHours: string | number | null; sortOrder: number }) => ({
             id: phase.id,
@@ -138,6 +148,20 @@ export default function EditProjectPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    // Block top-level submit when the Work Plan has unsaved edits.
+    // The work plan saves through its own endpoint; if the user clicks
+    // "Save all changes" without saving the work plan first, those
+    // edits are silently lost.
+    if (workPlanDirty) {
+      const proceed = confirm(
+        "Your Work Plan has unsaved changes that will be LOST if you continue.\n\n" +
+        "Click Cancel, then click 'Save Work Plan' first to keep those edits.\n\n" +
+        "Continue anyway and discard Work Plan changes?"
+      );
+      if (!proceed) return;
+    }
+
     setError("");
     setSaving(true);
     setSuccess(false);
@@ -156,6 +180,8 @@ export default function EditProjectPage() {
         targetCompletion: targetCompletion || null,
         contractFee: contractFee === "" ? null : contractFee,
         description,
+        city,
+        projectType,
       }),
     });
 
@@ -293,6 +319,42 @@ export default function EditProjectPage() {
                   onChange={(e) => setTargetCompletion(e.target.value)}
                   className="mt-2 w-full rounded-lg border border-[#E2EBE4] bg-[#F7F9F7] px-4 py-3 text-sm text-[#1A2E22] outline-none focus:border-[#52B788] focus:bg-white"
                 />
+              </div>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label htmlFor="pedit-city" className="text-sm font-medium text-[#3D5C48]">City</label>
+                <input
+                  id="pedit-city"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  placeholder="e.g., Fresno"
+                  autoComplete="address-level2"
+                  className="mt-2 w-full rounded-lg border border-[#E2EBE4] bg-[#F7F9F7] px-4 py-3 text-sm text-[#1A2E22] outline-none focus:border-[#52B788] focus:bg-white"
+                />
+              </div>
+              <div>
+                <label htmlFor="pedit-project-type" className="text-sm font-medium text-[#3D5C48]">Project type</label>
+                <input
+                  id="pedit-project-type"
+                  list="pedit-project-type-suggestions"
+                  value={projectType}
+                  onChange={(e) => setProjectType(e.target.value)}
+                  placeholder="Residential / Commercial / Public / Entry monument / …"
+                  className="mt-2 w-full rounded-lg border border-[#E2EBE4] bg-[#F7F9F7] px-4 py-3 text-sm text-[#1A2E22] outline-none focus:border-[#52B788] focus:bg-white"
+                />
+                {/* Datalist gives a typeahead with the canonical taxonomy
+                    while still allowing free text — firms vary in what
+                    they call their work. */}
+                <datalist id="pedit-project-type-suggestions">
+                  <option value="Residential" />
+                  <option value="Commercial" />
+                  <option value="Public" />
+                  <option value="Entry Monument" />
+                  <option value="Mixed Use" />
+                  <option value="Park" />
+                  <option value="Streetscape" />
+                </datalist>
               </div>
             </div>
             <div>
@@ -464,16 +526,32 @@ export default function EditProjectPage() {
               }))}
             teamMembers={teamMembers}
             onSaved={refreshPhaseBudgets}
+            onDirtyChange={setWorkPlanDirty}
           />
         )}
 
         {error && <p className="text-sm text-[#B04030]">{error}</p>}
 
+        {workPlanDirty && (
+          <div className="rounded-xl bg-amber-50 border border-amber-300 p-3 text-sm text-amber-900 flex items-start gap-2">
+            <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+            <span>
+              Work Plan has unsaved edits. Click <strong>Save Work Plan</strong> in the section
+              above before <strong>Save all changes</strong>, or those edits will be lost.
+            </span>
+          </div>
+        )}
+
         <div className="flex items-center gap-3">
           <button
             type="submit"
             disabled={saving}
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-medium bg-[#2D6A4F] text-white hover:bg-[#40916C] hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(45,106,79,0.3)] transition-all disabled:opacity-60"
+            className={`inline-flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-medium transition-all disabled:opacity-60 ${
+              workPlanDirty
+                ? "bg-[#A3BEA9] text-white cursor-help hover:bg-[#6B8C74]"
+                : "bg-[#2D6A4F] text-white hover:bg-[#40916C] hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(45,106,79,0.3)]"
+            }`}
+            title={workPlanDirty ? "Save the Work Plan first to include those edits" : undefined}
           >
             <Save className="w-4 h-4" />
             {saving ? "Saving..." : success ? "Saved ✓" : "Save all changes"}

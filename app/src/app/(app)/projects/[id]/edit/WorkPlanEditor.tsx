@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Save, Trash2 } from "lucide-react";
+import { AlertCircle, Plus, Save, Trash2 } from "lucide-react";
 
 type StaffMember = {
   id: string;
@@ -32,14 +32,28 @@ type Props = {
   }>;
   teamMembers: StaffMember[];
   onSaved?: () => void;
+  onDirtyChange?: (dirty: boolean) => void;
 };
 
-export default function WorkPlanEditor({ projectId, phases, teamMembers, onSaved }: Props) {
+export default function WorkPlanEditor({ projectId, phases, teamMembers, onSaved, onDirtyChange }: Props) {
   const [plan, setPlan] = useState<PhaseWorkPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  // Tracks whether the user has made edits since the last save. The
+  // outer edit form reads this via onDirtyChange to warn the user before
+  // a top-level "Save all changes" if the work plan was never saved
+  // (which would lose those edits — the work plan saves separately).
+  const [dirty, setDirty] = useState(false);
+
+  function markDirty() {
+    if (!dirty) {
+      setDirty(true);
+      onDirtyChange?.(true);
+    }
+    if (success) setSuccess(false);
+  }
 
   // Load existing work plan
   useEffect(() => {
@@ -85,6 +99,7 @@ export default function WorkPlanEditor({ projectId, phases, teamMembers, onSaved
   }, [projectId, phases]);
 
   function addStaffToPhase(phaseIndex: number) {
+    markDirty();
     setPlan((prev) =>
       prev.map((p, i) =>
         i === phaseIndex
@@ -95,6 +110,7 @@ export default function WorkPlanEditor({ projectId, phases, teamMembers, onSaved
   }
 
   function removeStaffFromPhase(phaseIndex: number, staffIndex: number) {
+    markDirty();
     setPlan((prev) =>
       prev.map((p, i) =>
         i === phaseIndex
@@ -110,6 +126,7 @@ export default function WorkPlanEditor({ projectId, phases, teamMembers, onSaved
     field: "userId" | "plannedHours",
     value: string
   ) {
+    markDirty();
     setPlan((prev) =>
       prev.map((p, i) =>
         i === phaseIndex
@@ -170,6 +187,8 @@ export default function WorkPlanEditor({ projectId, phases, teamMembers, onSaved
     }
 
     setSuccess(true);
+    setDirty(false);
+    onDirtyChange?.(false);
     setTimeout(() => setSuccess(false), 2000);
     onSaved?.();
   }
@@ -178,23 +197,53 @@ export default function WorkPlanEditor({ projectId, phases, teamMembers, onSaved
     return <p className="text-sm text-[#6B8C74]">Loading work plan...</p>;
   }
 
+  // Save button label/style logic — same in every spot we render one.
+  const saveLabel = saving
+    ? "Saving Work Plan..."
+    : success
+    ? "Work Plan saved ✓"
+    : dirty
+    ? "Save Work Plan *"
+    : "Save Work Plan";
+  const saveButtonClass = `inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 ${
+    dirty
+      ? "bg-amber-500 text-white hover:bg-amber-600 ring-2 ring-amber-200"
+      : "bg-[#2D6A4F] text-white hover:bg-[#40916C]"
+  }`;
+
   return (
     <div className="rounded-2xl border border-[#E2EBE4] bg-white p-6 sm:p-8 shadow-[0_4px_24px_rgba(26,46,34,0.04)]">
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-lg font-semibold text-[#1A2E22]">Work Plan</h2>
-          <p className="text-sm text-[#6B8C74]">Assign staff to each phase with planned hours.</p>
+          <p className="text-sm text-[#6B8C74]">
+            Assign staff to each phase with planned hours.
+            <span className="block mt-1 text-xs text-amber-700">
+              <AlertCircle className="inline w-3 h-3 mr-1 -mt-0.5" />
+              Click <strong>Save Work Plan</strong> here before <strong>Save all changes</strong> — work-plan edits save separately from project details.
+            </span>
+          </p>
         </div>
         <button
           type="button"
           onClick={saveWorkPlan}
           disabled={saving}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-[#2D6A4F] text-white hover:bg-[#40916C] transition-colors disabled:opacity-50"
+          className={saveButtonClass}
         >
           <Save className="w-4 h-4" />
-          {saving ? "Saving..." : success ? "Saved ✓" : "Save work plan"}
+          {saveLabel}
         </button>
       </div>
+
+      {dirty && (
+        <div className="mb-4 bg-amber-50 border border-amber-300 rounded-xl p-3 text-sm text-amber-900 flex items-start gap-2">
+          <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+          <span>
+            You have unsaved Work Plan changes. Click <strong>Save Work Plan</strong> to commit them
+            — otherwise <strong>Save all changes</strong> won&apos;t include the work plan edits.
+          </span>
+        </div>
+      )}
 
       {error && (
         <div className="mb-4 bg-rose-50 border border-rose-200 rounded-xl p-3 text-sm text-rose-700">
@@ -212,8 +261,24 @@ export default function WorkPlanEditor({ projectId, phases, teamMembers, onSaved
             <div key={phase.phaseId} className="rounded-xl border border-[#E8EDE9] bg-[#F7F9F7] p-4">
               <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
                 <h3 className="text-sm font-semibold text-[#1A2E22]">{phase.phaseName}</h3>
-                <div className="text-xs text-[#6B8C74]">
-                  Budget: {phase.budgetedHours}h · ${phase.budgetedFee.toLocaleString()}
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-[#6B8C74]">
+                    Budget: {phase.budgetedHours}h · ${phase.budgetedFee.toLocaleString()}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={saveWorkPlan}
+                    disabled={saving}
+                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors disabled:opacity-50 ${
+                      dirty
+                        ? "bg-amber-500 text-white hover:bg-amber-600"
+                        : "bg-white text-[#2D6A4F] border border-[#52B788]/30 hover:bg-[#F0FAF4]"
+                    }`}
+                    title="Save the entire Work Plan (all phases) to the database"
+                  >
+                    <Save className="w-3 h-3" />
+                    {saving ? "Saving..." : "Save Work Plan"}
+                  </button>
                 </div>
               </div>
 
@@ -306,6 +371,27 @@ export default function WorkPlanEditor({ projectId, phases, teamMembers, onSaved
           );
         })}
       </div>
+
+      {/* Bottom save — same action, but prominent so the user doesn't have
+          to scroll back up after a long edit session. */}
+      {plan.length > 0 && (
+        <div className="mt-6 pt-5 border-t border-[#E2EBE4] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <p className="text-xs text-[#6B8C74]">
+            {dirty
+              ? "Unsaved changes. Click below to save the Work Plan before continuing."
+              : "Work Plan is up to date."}
+          </p>
+          <button
+            type="button"
+            onClick={saveWorkPlan}
+            disabled={saving}
+            className={saveButtonClass}
+          >
+            <Save className="w-4 h-4" />
+            {saveLabel}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

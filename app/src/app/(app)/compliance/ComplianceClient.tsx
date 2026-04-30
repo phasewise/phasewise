@@ -2,7 +2,8 @@
 
 import { useState, useRef } from "react";
 import Link from "next/link";
-import { Calculator, Droplets, FileText, FileUp, Paperclip, Pencil, Plus, ShieldCheck, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Archive, ArchiveRestore, Calculator, Droplets, FileText, FileUp, Paperclip, Pencil, Plus, ShieldCheck, Trash2, X } from "lucide-react";
 
 type MweloSummary = {
   mawa: number;
@@ -24,6 +25,9 @@ type ComplianceItem = {
   notes: string | null;
   projectId: string;
   projectName: string;
+  // Soft-archive timestamp. Archived rows show with reduced opacity and an
+  // "Archived" badge; the row's archive button toggles to "Restore".
+  archivedAt: string | null;
   // Pre-extracted MAWA/ETWU/passes for MWELO rows. Null for everything else
   // and for MWELO items that pre-date the render-back feature (no JSON).
   mweloSummary: MweloSummary | null;
@@ -32,6 +36,7 @@ type ComplianceItem = {
 type Props = {
   items: ComplianceItem[];
   projects: Array<{ id: string; name: string }>;
+  showArchived: boolean;
 };
 
 const CATEGORIES = ["MWELO", "LEED", "SITES", "ADA", "PERMIT", "OTHER"];
@@ -59,7 +64,8 @@ const STATUSES = [
   { value: "N_A", label: "N/A" },
 ];
 
-export default function ComplianceClient({ items: initialItems, projects }: Props) {
+export default function ComplianceClient({ items: initialItems, projects, showArchived }: Props) {
+  const router = useRouter();
   const [items, setItems] = useState(initialItems);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -68,6 +74,49 @@ export default function ComplianceClient({ items: initialItems, projects }: Prop
   const [editingItem, setEditingItem] = useState<ComplianceItem | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // MWELO category items behave differently: clicking the row jumps to the
+  // calculator (where the calc + outputs + PDF live), and adding a new
+  // MWELO item is a "go to calculator" action rather than the inline form.
+  // Same for archive/delete — these need to round-trip server state.
+  function handleRowClick(item: ComplianceItem) {
+    if (item.category === "MWELO") {
+      router.push(`/tools/mwelo-calculator${item.mweloSummary ? `?itemId=${item.id}` : ""}`);
+      return;
+    }
+    openEdit(item);
+  }
+
+  async function handleArchiveToggle(item: ComplianceItem) {
+    const archive = !item.archivedAt;
+    const res = await fetch("/api/compliance", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: item.id, archive }),
+    });
+    if (!res.ok) {
+      const data = await res.json();
+      setError(data.error || "Failed to update archive state.");
+      return;
+    }
+    // Hard-refresh because the server filters archived from the default
+    // view; updating local state alone would leave the row visible
+    // until next refresh and out of sync with the URL `?archived=1` flag.
+    router.refresh();
+  }
+
+  async function handleDelete(item: ComplianceItem) {
+    if (!confirm(`Delete "${item.name}"? This permanently removes the compliance item${item.category === "MWELO" ? " and its MWELO calculation" : ""}.`)) {
+      return;
+    }
+    const res = await fetch(`/api/compliance?id=${item.id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const data = await res.json();
+      setError(data.error || "Failed to delete item.");
+      return;
+    }
+    setItems((prev) => prev.filter((i) => i.id !== item.id));
+  }
 
   const [formProjectId, setFormProjectId] = useState("");
   const [formCategory, setFormCategory] = useState("PERMIT");
@@ -240,6 +289,7 @@ export default function ComplianceClient({ items: initialItems, projects }: Prop
       notes: newItem.notes,
       projectId: newItem.projectId,
       projectName: project?.name ?? "",
+      archivedAt: null,
       // The inline create form doesn't capture a MWELO calc; calc-bearing
       // MWELO items are always created from the calculator page.
       mweloSummary: null,
@@ -275,18 +325,27 @@ export default function ComplianceClient({ items: initialItems, projects }: Prop
         <div>
           <h1 className="font-serif text-3xl text-[#1A2E22]">Compliance Tracker</h1>
           <p className="mt-1 text-sm text-[#6B8C74]">
-            {items.length} items · {completeCount} complete
+            {items.length} {showArchived ? "archived" : "active"} items · {completeCount} complete
             {overdueCount > 0 && <> · <span className="text-rose-600">{overdueCount} overdue</span></>}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setShowForm(!showForm)}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-[#2D6A4F] text-white hover:bg-[#40916C] transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Add item
-        </button>
+        <div className="flex items-center gap-2">
+          <Link
+            href={showArchived ? "/compliance" : "/compliance?archived=1"}
+            className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium text-[#3D5C48] border border-[#E2EBE4] hover:bg-[#F7F9F7] transition-colors"
+          >
+            {showArchived ? <ArchiveRestore className="w-4 h-4" /> : <Archive className="w-4 h-4" />}
+            {showArchived ? "Show active" : "Show archived"}
+          </Link>
+          <button
+            type="button"
+            onClick={() => setShowForm(!showForm)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-[#2D6A4F] text-white hover:bg-[#40916C] transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Add item
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -318,18 +377,46 @@ export default function ComplianceClient({ items: initialItems, projects }: Prop
               <input id="comp-due-date" type="date" value={formDueDate} onChange={(e) => setFormDueDate(e.target.value)} className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
             </div>
           </div>
-          <div className="mb-4">
-            <label htmlFor="comp-name" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Name *</label>
-            <input id="comp-name" value={formName} onChange={(e) => setFormName(e.target.value)} required placeholder="e.g., MWELO Water Budget Calculation" className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
-          </div>
-          <div className="mb-4">
-            <label htmlFor="comp-description" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Description</label>
-            <input id="comp-description" value={formDescription} onChange={(e) => setFormDescription(e.target.value)} placeholder="Details about this requirement" className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
-          </div>
+          {formCategory === "MWELO" ? (
+            // MWELO doesn't fit the simple name/description form — the calc
+            // itself produces those fields. Bounce the user into the
+            // calculator where the "Save to project" flow creates the item.
+            <div className="rounded-xl bg-blue-50 border border-blue-200/40 p-4 text-sm text-blue-900 mb-4 flex items-start gap-3">
+              <Droplets className="w-5 h-5 mt-0.5 flex-shrink-0 text-blue-700" />
+              <div>
+                <p className="font-semibold">MWELO items are created in the calculator.</p>
+                <p className="text-xs mt-1 text-blue-800">
+                  The MWELO Water Budget Calculator generates the calculation, summary, and PDF.
+                  When you save it, the compliance item is created and linked to the project automatically.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="mb-4">
+                <label htmlFor="comp-name" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Name *</label>
+                <input id="comp-name" value={formName} onChange={(e) => setFormName(e.target.value)} required placeholder="e.g., MWELO Water Budget Calculation" className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+              </div>
+              <div className="mb-4">
+                <label htmlFor="comp-description" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Description</label>
+                <input id="comp-description" value={formDescription} onChange={(e) => setFormDescription(e.target.value)} placeholder="Details about this requirement" className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+              </div>
+            </>
+          )}
           <div className="flex gap-3">
-            <button type="submit" disabled={saving} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-[#2D6A4F] text-white hover:bg-[#40916C] transition-colors disabled:opacity-50">
-              {saving ? "Adding..." : "Add item"}
-            </button>
+            {formCategory === "MWELO" ? (
+              <Link
+                href="/tools/mwelo-calculator"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-[#2D6A4F] text-white hover:bg-[#40916C] transition-colors"
+              >
+                <Calculator className="w-4 h-4" />
+                Open MWELO Calculator
+              </Link>
+            ) : (
+              <button type="submit" disabled={saving} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-[#2D6A4F] text-white hover:bg-[#40916C] transition-colors disabled:opacity-50">
+                {saving ? "Adding..." : "Add item"}
+              </button>
+            )}
             <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 rounded-lg text-sm text-[#6B8C74] hover:text-[#1A2E22]">Cancel</button>
           </div>
         </form>
@@ -346,13 +433,14 @@ export default function ComplianceClient({ items: initialItems, projects }: Prop
                 <th className="px-4 sm:px-6 py-3 font-medium">Project</th>
                 <th className="px-4 sm:px-6 py-3 font-medium">Due</th>
                 <th className="px-4 sm:px-6 py-3 font-medium">Status</th>
+                <th className="px-4 sm:px-6 py-3 font-medium text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
               {items.map((item) => {
                 const isOverdue = item.dueDate && item.status !== "COMPLETE" && item.status !== "N_A" && new Date(item.dueDate) < new Date();
                 return (
-                  <tr key={item.id} onClick={() => openEdit(item)} className="border-b border-[#E8EDE9] last:border-0 hover:bg-[#F7F9F7]/50 transition-colors cursor-pointer group">
+                  <tr key={item.id} onClick={() => handleRowClick(item)} className={`border-b border-[#E8EDE9] last:border-0 hover:bg-[#F7F9F7]/50 transition-colors cursor-pointer group ${item.archivedAt ? "opacity-60" : ""}`}>
                     <td className="px-4 sm:px-6 py-4">
                       <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${CATEGORY_COLORS[item.category] ?? ""}`}>
                         {item.category}
@@ -429,13 +517,40 @@ export default function ComplianceClient({ items: initialItems, projects }: Prop
                         {STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
                       </select>
                     </td>
+                    {/* Row actions — stopPropagation everywhere so the row's own
+                        click handler (which routes MWELO to the calculator) does
+                        not fire when the user is targeting an action button. */}
+                    <td className="px-4 sm:px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                      <div className="inline-flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleArchiveToggle(item)}
+                          aria-label={item.archivedAt ? "Restore item" : "Archive item"}
+                          title={item.archivedAt ? "Restore" : "Archive"}
+                          className="p-1.5 rounded-md text-[#6B8C74] hover:text-[#2D6A4F] hover:bg-[#F0FAF4] transition-colors"
+                        >
+                          {item.archivedAt ? <ArchiveRestore className="w-3.5 h-3.5" /> : <Archive className="w-3.5 h-3.5" />}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(item)}
+                          aria-label="Delete item"
+                          title="Delete"
+                          className="p-1.5 rounded-md text-[#A3BEA9] hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 );
               })}
               {items.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-10 text-center text-[#A3BEA9] text-sm">
-                    No compliance items yet. Click &quot;Add item&quot; to start tracking requirements.
+                  <td colSpan={6} className="px-6 py-10 text-center text-[#A3BEA9] text-sm">
+                    {showArchived
+                      ? "No archived items."
+                      : "No compliance items yet. Click \"Add item\" to start tracking requirements."}
                   </td>
                 </tr>
               )}
