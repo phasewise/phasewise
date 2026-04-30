@@ -47,6 +47,18 @@ export default async function CompliancePage() {
           .createSignedUrl(item.documentUrl, 60 * 60);
         signedUrl = signed?.signedUrl ?? null;
       }
+      // Pre-extract the MWELO summary numbers server-side so the row chip
+      // never has to read into the JSON shape on the client.
+      let mweloSummary: { mawa: number; etwu: number; passes: boolean } | null = null;
+      if (item.category === "MWELO" && item.mweloCalculation) {
+        const calc = item.mweloCalculation as { outputs?: { mawa?: unknown; etwu?: unknown; passes?: unknown } };
+        const mawa = Number(calc.outputs?.mawa ?? 0);
+        const etwu = Number(calc.outputs?.etwu ?? 0);
+        const passes = Boolean(calc.outputs?.passes);
+        if (mawa > 0 || etwu > 0) {
+          mweloSummary = { mawa, etwu, passes };
+        }
+      }
       return {
         id: item.id,
         category: item.category,
@@ -59,6 +71,7 @@ export default async function CompliancePage() {
         notes: item.notes,
         projectId: item.projectId,
         projectName: item.project.name,
+        mweloSummary,
       };
     })
   );

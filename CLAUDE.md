@@ -527,6 +527,17 @@ When staff are assigned to a phase:
 
 Ordered by my estimated value-per-effort. Revisit during the forensic audit.
 
+- **Invoice feature redesign** (proposed 2026-04-30) — current admin/billing invoice page is too thin. Spec from Kevin:
+  - Auto-populate line items from **approved** timesheet entries on the invoiced project (per-person, per-phase rollups, billable only).
+  - Surface a warning if the project has **un-approved** time entries in the invoice period — owner reviews + approves before invoicing so no billable hours are missed.
+  - Invoice "database" view — sortable list of every invoice firm-wide.
+  - Searchable + filterable by project, client, status (Draft / Sent / Paid / Overdue), date range.
+  - Clear paid / unpaid + sent / unsent toggles. Track: date sent, date payment received, check or payment reference number.
+  - Auto-numbered sequentially (PW-INV-0001 style — same pattern as project numbering, org-level prefix + counter, configurable in settings).
+  - One-click branded PDF generation (already have `@react-pdf/renderer` for invoices — extend with full letterhead, line items, totals, payment terms).
+  - Owner / admin verification step before any send action.
+  - "Send Invoice to Client" button → either (a) automated send via Loops with PDF attached, or (b) opens user's default mail client (`mailto:` with PDF attachment, `to` from project's linked Client, subject pre-filled with project name + invoice number, body pre-filled with payment instructions). Decision pending — automated send is more polished but mailto: is faster to ship and lets users keep email replies in their own thread.
+  - Significant work — schedule after current MWELO render-back ships and outreach reply playbook is in place.
 - **Dashboard v3** — add "This week's hours", "Pending approvals", "Upcoming deadlines", "Invoices outstanding" tiles.
 - **Timesheet CSV export** — per-user or per-project, for accountants and invoicing backup.
 - **Project search / filter** — flat list breaks at ~20 projects.
@@ -536,6 +547,71 @@ Ordered by my estimated value-per-effort. Revisit during the forensic audit.
 - **Pro-rata leave accrual** — accrues per pay period instead of annual front-loading. For firms that prefer it.
 - **Automated year-end rollover** — apply the `rolloverCap` automatically when the calendar year changes.
 - **Forensic audit** — top-to-bottom value review once the queue slows down. Rate each feature on value delivered vs maintenance cost. Cut or sharpen anything that doesn't earn its keep.
+
+## Where We Left Off (2026-04-29)
+
+**Status: 🟢 OUTREACH SENT + 3 PRODUCT FEATURES SHIPPED + G2 LISTING SUBMITTED.** Today was a heads-down execution day across three fronts: cold-email outreach actually went out, three meaningful product features shipped, and the G2 Digital Markets listing was submitted (will propagate to Capterra + Software Advice + GetApp on approval).
+
+### Outreach — first cold emails sent
+
+- **Deliverability test passed** — DMARC propagation confirmed. Test send from `Phasewise Team <hello@phasewise.io>` landed in Gmail Primary.
+- **Broussard Associates** (Clovis) — sent.
+- **Atlas Lab** (Sacramento) — sent to `kimberly@atlaslab.com` (Hunter.io lookup).
+- Follow-up #1 due 2026-05-06 for both. Tracking in `OUTREACH-DRAFTS.private.md`.
+- Remaining Tier-A drafts (attention2, designlab 252, Mantle) staggered for next week.
+
+### Product features shipped today
+
+Schema changes (db push'd to Supabase):
+- `Project.clientId` FK → `Client` (with `onDelete: SetNull`)
+- `Client.projects Project[]` back-relation
+- `ComplianceItem.mweloCalculation Json?`
+
+Feature 1 — **Team member edit modal**: Extended `PATCH /api/team/members` to accept phone, role, billingRate, salary. New full-feature edit modal in `TeamMembersClient.tsx` (replaces inline title-edit). Validates role transitions (can't demote sole OWNER). Auto-recomputes hourly cost from salary. Brand-styled to match Compliance/Plant edit modals.
+
+Feature 2 — **Auto-link Client to projects**: Project create + edit now upsert a `Client` row (case-insensitive name match within org) and store `clientId`. Existing project clients backfill on next edit. Closes the data leak bug Kevin spotted in screenshots — deleting a Client row no longer leaves orphan denormalized strings on projects.
+
+Feature 3 — **MWELO ↔ Compliance integration**: Standalone `/tools/mwelo-calculator` now has a "Save to project" button that picks an active project (via new `GET /api/projects` lightweight list endpoint) and creates a `ComplianceItem` (category=MWELO) with the full calculation stored as JSON. Inputs (project name, region, ETo, SLA, hydrozones) + outputs (totalLandscapeArea, MAWA, ETWU, pass/fail, complianceRatio, per-hydrozone results) all persisted under `mweloCalculation`.
+
+Polish:
+- **MWELO bug fix**: Number inputs (SLA + hydrozone area) weren't accepting keystrokes. Switched from `type="number"` to `type="text" inputMode="numeric" pattern="[0-9]*"` with onChange digit-filter. Cross-browser fix — `type=number` has known quirks in Safari/Firefox.
+- **MWELO print/PDF**: Added branded letterhead (phase-bars logomark + wordmark) + project info row + footer. `@page letter portrait, 0.6in margins`. `body * { visibility: hidden }` + `.print-report * { visibility: visible }` to isolate just the report. Color-preserving via `print-color-adjust: exact`.
+
+### G2 Digital Markets listing — submitted
+
+Submitted Phasewise to the unified G2 vendor portal (covers **Capterra + Software Advice + GetApp** in one submission). Status: Under review, 1-2 business days for approval.
+
+Listing details:
+- Category: Project Management
+- Industry: Architecture & Planning
+- Target market: "Landscape architecture firms, from solo practices to multi-disciplinary studios."
+- Company size: 1 / 2-10 / 11-50 / 51-200 (uncapped 200+ to avoid enterprise lead pollution)
+- Pricing: $99 / $199 / $349 USD with 14-day free trial (credit card required — accurate to Stripe Checkout flow)
+- Open API: No
+- Integrations: None (honest — no Slack/Teams/Zapier/QuickBooks/etc. wired)
+- Features (18 of 50, all defensible): Milestone Tracking, Time & Expense Tracking, Project Planning/Scheduling, Workflow Management, Task Management, Budget Management, Document Management, Reporting/Project Tracking, Multiple Projects, Resource Management, Alerts/Notifications, Access Controls/Permissions, Customizable Templates, User Management, Key Performance Indicators, Billing & Invoicing, Commenting/Notes, Traditional Methodologies
+- 5 screenshots: dashboard, project detail, MWELO calculator, profitability report, submittals log (saved at `brand_v2/exports/screenshots/`)
+
+Honesty pass applied throughout submission — explicitly **un**checked: Client Portal, Third-Party Integrations, API, Mobile App, Activity Dashboard, Gantt, Kanban, Risk Management, AI Copilot, Generative AI, Predictive Analytics, Remote Support. Better to be the obvious leader for 1-50 person LA firms than the worst option for enterprise.
+
+### Tomorrow's task
+
+**Compliance ↔ MWELO render-back**: Today's Feature 3 stores `ComplianceItem.mweloCalculation` as JSON, but the compliance list page doesn't surface it. Tomorrow:
+- Compliance row with stored calculation should show a summary chip (MAWA/ETWU/pass-fail) inline
+- Click "View calculation" → opens `/tools/mwelo-calculator?itemId=xxx` pre-loaded with stored inputs (read-only or re-editable)
+- "Print this report" action on the loaded calc → triggers existing branded letterhead PDF
+- File the PDF with the compliance item (Supabase Storage, `compliance-docs` bucket, signed URL on render)
+
+This closes the loop Kevin identified: "When the calculation is finished and connected to a project it should file the pdf with the item created, and be accessable in the project section for that specific project."
+
+### Outstanding follow-ups
+
+- **Friday 2026-05-01**: AlternativeTo submission (account age unblocks — they have a 7-day rule)
+- **2026-05-06**: Follow-up #1 due for Broussard + Atlas Lab cold emails
+- **G2 listing approval check**: 2026-04-30 or 2026-05-01 (notification by email)
+- **n8n auto-article check**: Friday 2026-05-01 morning — third autonomous article should ship at 7am UTC
+
+---
 
 ## Where We Left Off (2026-04-28)
 

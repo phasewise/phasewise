@@ -2,9 +2,26 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, Calculator, Check, Download, Droplets, FolderPlus, Plus, Trash2, X } from "lucide-react";
+import { ArrowLeft, Calculator, Check, Download, Droplets, FileText, FolderPlus, Plus, Trash2, X } from "lucide-react";
 
 type ProjectOption = { id: string; name: string; projectNumber: string | null };
+
+type SavedHydrozone = {
+  name: string;
+  areaSqFt: number;
+  plantFactor: string;
+  irrigationEfficiency: string;
+};
+
+type SavedMweloCalculation = {
+  version?: number;
+  inputs?: {
+    projectName?: string;
+    region?: string;
+    specialLandscapeArea?: number;
+    hydrozones?: SavedHydrozone[];
+  };
+};
 
 // MWELO Constants
 // Reference evapotranspiration (ETo) by California region (inches/year)
@@ -67,6 +84,64 @@ export default function MWELOCalculatorPage() {
   const [saving, setSaving] = useState(false);
   const [savedItemId, setSavedItemId] = useState<string | null>(null);
 
+  // Render-back: when arrived via /tools/mwelo-calculator?itemId=xxx the
+  // calc was already saved to a project. We track the loaded item id so the
+  // save button updates the existing ComplianceItem instead of creating a
+  // duplicate.
+  const [loadedItemId, setLoadedItemId] = useState<string | null>(null);
+  const [loadedProjectName, setLoadedProjectName] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  // Load saved calc from URL ?itemId= on mount. Using window.location to
+  // avoid Next.js useSearchParams + Suspense plumbing for what is a one-shot
+  // client-side prefill.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const itemId = params.get("itemId");
+    if (!itemId) return;
+
+    setLoading(true);
+    setLoadError(null);
+    fetch(`/api/compliance?id=${encodeURIComponent(itemId)}`)
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to load saved calculation.");
+        const item = data.item as {
+          id: string;
+          mweloCalculation: SavedMweloCalculation | null;
+          project: { id: string; name: string };
+        };
+        if (!item.mweloCalculation?.inputs) {
+          throw new Error("This compliance item has no saved MWELO calculation.");
+        }
+        const inputs = item.mweloCalculation.inputs;
+        if (inputs.projectName) setProjectName(inputs.projectName);
+        if (inputs.region && ETO_REGIONS[inputs.region]) setRegion(inputs.region);
+        if (typeof inputs.specialLandscapeArea === "number") {
+          setSpecialLandscapeArea(String(inputs.specialLandscapeArea));
+        }
+        if (Array.isArray(inputs.hydrozones) && inputs.hydrozones.length > 0) {
+          setHydrozones(
+            inputs.hydrozones.map((z) => ({
+              name: z.name ?? "Zone",
+              areaSqFt: String(z.areaSqFt ?? ""),
+              plantFactor: z.plantFactor ?? "Low (0.2)",
+              irrigationEfficiency: z.irrigationEfficiency ?? "Drip (0.90)",
+            }))
+          );
+        }
+        setLoadedItemId(item.id);
+        setLoadedProjectName(item.project?.name ?? null);
+        setCalculated(true);
+      })
+      .catch((err) => {
+        setLoadError(err instanceof Error ? err.message : "Failed to load saved calculation.");
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
   const eto = ETO_REGIONS[region] ?? 54.5;
 
   function addZone() {
@@ -122,6 +197,9 @@ export default function MWELOCalculatorPage() {
     setSaveItemName(
       projectName ? `MWELO Water Budget — ${projectName}` : "MWELO Water Budget Calculation"
     );
+    // When loaded from URL the project is already linked — skip the
+    // project-list fetch and render the modal in update mode.
+    if (loadedItemId) return;
     if (projects.length === 0) {
       setProjectsLoading(true);
       try {
@@ -138,7 +216,10 @@ export default function MWELOCalculatorPage() {
   }
 
   async function handleSaveToProject() {
-    if (!saveProjectId) {
+    // Update path: previously-loaded item gets PATCH'd in place. We keep
+    // the project linkage from the original item, so no project select.
+    const isUpdate = Boolean(loadedItemId);
+    if (!isUpdate && !saveProjectId) {
       setSaveError("Please select a project.");
       return;
     }
@@ -180,18 +261,31 @@ export default function MWELOCalculatorPage() {
       },
     };
 
+    const description = `MAWA: ${Math.round(mawa).toLocaleString()} gal/yr · ETWU: ${Math.round(totalETWU).toLocaleString()} gal/yr · ${passes ? "Compliant" : "Non-compliant"}`;
+    const status = passes ? "COMPLETE" : "IN_PROGRESS";
+
     try {
       const res = await fetch("/api/compliance", {
-        method: "POST",
+        method: isUpdate ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          projectId: saveProjectId,
-          category: "MWELO",
-          name: saveItemName.trim(),
-          description: `MAWA: ${Math.round(mawa).toLocaleString()} gal/yr · ETWU: ${Math.round(totalETWU).toLocaleString()} gal/yr · ${passes ? "Compliant" : "Non-compliant"}`,
-          status: passes ? "COMPLETE" : "IN_PROGRESS",
-          mweloCalculation: calculationPayload,
-        }),
+        body: JSON.stringify(
+          isUpdate
+            ? {
+                id: loadedItemId,
+                name: saveItemName.trim(),
+                description,
+                status,
+                mweloCalculation: calculationPayload,
+              }
+            : {
+                projectId: saveProjectId,
+                category: "MWELO",
+                name: saveItemName.trim(),
+                description,
+                status,
+                mweloCalculation: calculationPayload,
+              }
+        ),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -199,7 +293,11 @@ export default function MWELOCalculatorPage() {
         setSaving(false);
         return;
       }
-      setSavedItemId(data.item?.id ?? null);
+      const itemId = data.item?.id ?? loadedItemId;
+      setSavedItemId(itemId);
+      // After a fresh save, treat the calc as "loaded" so further edits
+      // continue to update the same item rather than creating duplicates.
+      if (itemId && !loadedItemId) setLoadedItemId(itemId);
       setSaving(false);
     } catch {
       setSaveError("Network error. Please try again.");
@@ -239,6 +337,36 @@ export default function MWELOCalculatorPage() {
           <p className="text-sm text-[#6B8C74]">Model Water Efficient Landscape Ordinance — California</p>
         </div>
       </div>
+
+      {loading && (
+        <div className="mt-1 mb-4 bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs text-blue-800">
+          Loading saved calculation…
+        </div>
+      )}
+
+      {loadError && (
+        <div className="mt-1 mb-4 bg-rose-50 border border-rose-200 rounded-xl p-3 text-sm text-rose-700">
+          {loadError}
+        </div>
+      )}
+
+      {loadedItemId && loadedProjectName && !loading && (
+        <div className="mt-1 mb-4 bg-[#F0FAF4] border border-[#52B788]/30 rounded-xl p-3 flex flex-wrap items-center gap-2 justify-between text-sm">
+          <div className="flex items-center gap-2">
+            <Droplets className="w-4 h-4 text-[#2D6A4F]" />
+            <span className="text-[#3D5C48]">
+              Editing saved calculation for{" "}
+              <span className="font-semibold text-[#1A2E22]">{loadedProjectName}</span>
+            </span>
+          </div>
+          <Link
+            href="/compliance"
+            className="text-xs text-[#2D6A4F] hover:text-[#40916C] hover:underline"
+          >
+            Back to Compliance
+          </Link>
+        </div>
+      )}
 
       <div className="mt-1 mb-8 bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 space-y-1">
         <p>
@@ -379,7 +507,13 @@ export default function MWELOCalculatorPage() {
                   onClick={openSaveModal}
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-[#2D6A4F] text-white hover:bg-[#40916C] transition-all"
                 >
-                  {savedItemId ? <><Check size={14} /> Saved to compliance</> : <><FolderPlus size={14} /> Save to project</>}
+                  {savedItemId ? (
+                    <><Check size={14} /> {loadedItemId ? "Updated" : "Saved to compliance"}</>
+                  ) : loadedItemId ? (
+                    <><FolderPlus size={14} /> Update saved calc</>
+                  ) : (
+                    <><FolderPlus size={14} /> Save to project</>
+                  )}
                 </button>
                 <button
                   type="button"
@@ -512,7 +646,7 @@ export default function MWELOCalculatorPage() {
                 <div className="rounded-xl bg-[#F0FAF4] border border-[#52B788]/30 p-4 flex items-start gap-3">
                   <Check className="w-5 h-5 text-[#2D6A4F] mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="text-sm font-semibold text-[#1A2E22]">Saved successfully</p>
+                    <p className="text-sm font-semibold text-[#1A2E22]">{loadedItemId ? "Updated successfully" : "Saved successfully"}</p>
                     <p className="text-xs text-[#6B8C74] mt-1">
                       This calculation is now a MWELO compliance item on the selected project. View it in the Compliance section.
                     </p>
@@ -525,6 +659,15 @@ export default function MWELOCalculatorPage() {
                   >
                     Open Compliance
                   </Link>
+                  <a
+                    href={`/api/compliance/${savedItemId}/mwelo-pdf`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-[#F0FAF4] text-[#2D6A4F] border border-[#52B788]/30 hover:bg-[#52B788] hover:text-white transition-colors"
+                  >
+                    <FileText className="w-4 h-4" />
+                    Download PDF
+                  </a>
                   <button
                     type="button"
                     onClick={closeSaveModal}
@@ -537,33 +680,42 @@ export default function MWELOCalculatorPage() {
             ) : (
               <div className="p-6 space-y-4">
                 <p className="text-sm text-[#6B8C74]">
-                  Save this calculation as a MWELO compliance item on a specific project. The full inputs and outputs will be stored, and the project&apos;s compliance tracker will reflect the pass/fail status.
+                  {loadedItemId
+                    ? "Update this saved MWELO compliance calculation. The new numbers replace the previous ones on the linked project."
+                    : "Save this calculation as a MWELO compliance item on a specific project. The full inputs and outputs will be stored, and the project's compliance tracker will reflect the pass/fail status."}
                 </p>
 
-                <div>
-                  <label htmlFor="mwelo-save-project" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Project</label>
-                  {projectsLoading ? (
-                    <div className="text-sm text-[#A3BEA9] py-2">Loading projects...</div>
-                  ) : projects.length === 0 ? (
-                    <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 text-xs text-amber-800">
-                      No active projects yet. <Link href="/projects/new" className="underline font-medium">Create one first</Link>, then come back to save this calculation.
-                    </div>
-                  ) : (
-                    <select
-                      id="mwelo-save-project"
-                      value={saveProjectId}
-                      onChange={(e) => setSaveProjectId(e.target.value)}
-                      className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]"
-                    >
-                      <option value="">— Pick a project —</option>
-                      {projects.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.projectNumber ? `${p.projectNumber} · ${p.name}` : p.name}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </div>
+                {loadedItemId ? (
+                  <div className="rounded-lg bg-[#F0FAF4] border border-[#52B788]/30 px-3.5 py-2.5 text-sm">
+                    <span className="text-[#6B8C74]">Linked project: </span>
+                    <span className="font-semibold text-[#1A2E22]">{loadedProjectName ?? "—"}</span>
+                  </div>
+                ) : (
+                  <div>
+                    <label htmlFor="mwelo-save-project" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Project</label>
+                    {projectsLoading ? (
+                      <div className="text-sm text-[#A3BEA9] py-2">Loading projects...</div>
+                    ) : projects.length === 0 ? (
+                      <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 text-xs text-amber-800">
+                        No active projects yet. <Link href="/projects/new" className="underline font-medium">Create one first</Link>, then come back to save this calculation.
+                      </div>
+                    ) : (
+                      <select
+                        id="mwelo-save-project"
+                        value={saveProjectId}
+                        onChange={(e) => setSaveProjectId(e.target.value)}
+                        className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]"
+                      >
+                        <option value="">— Pick a project —</option>
+                        {projects.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.projectNumber ? `${p.projectNumber} · ${p.name}` : p.name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                )}
 
                 <div>
                   <label htmlFor="mwelo-save-name" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Compliance item name</label>
@@ -602,10 +754,12 @@ export default function MWELOCalculatorPage() {
                   <button
                     type="button"
                     onClick={handleSaveToProject}
-                    disabled={saving || !saveProjectId || projects.length === 0}
+                    disabled={saving || (!loadedItemId && (!saveProjectId || projects.length === 0))}
                     className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium bg-[#2D6A4F] text-white hover:bg-[#40916C] transition-colors disabled:opacity-60"
                   >
-                    {saving ? "Saving..." : "Save to project"}
+                    {saving
+                      ? loadedItemId ? "Updating..." : "Saving..."
+                      : loadedItemId ? "Update saved calculation" : "Save to project"}
                   </button>
                   <button
                     type="button"

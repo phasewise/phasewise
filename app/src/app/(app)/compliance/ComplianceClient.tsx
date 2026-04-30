@@ -1,7 +1,14 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { FileUp, Paperclip, Pencil, Plus, ShieldCheck, X } from "lucide-react";
+import Link from "next/link";
+import { Calculator, Droplets, FileText, FileUp, Paperclip, Pencil, Plus, ShieldCheck, X } from "lucide-react";
+
+type MweloSummary = {
+  mawa: number;
+  etwu: number;
+  passes: boolean;
+};
 
 type ComplianceItem = {
   id: string;
@@ -17,6 +24,9 @@ type ComplianceItem = {
   notes: string | null;
   projectId: string;
   projectName: string;
+  // Pre-extracted MAWA/ETWU/passes for MWELO rows. Null for everything else
+  // and for MWELO items that pre-date the render-back feature (no JSON).
+  mweloSummary: MweloSummary | null;
 };
 
 type Props = {
@@ -230,6 +240,9 @@ export default function ComplianceClient({ items: initialItems, projects }: Prop
       notes: newItem.notes,
       projectId: newItem.projectId,
       projectName: project?.name ?? "",
+      // The inline create form doesn't capture a MWELO calc; calc-bearing
+      // MWELO items are always created from the calculator page.
+      mweloSummary: null,
     }, ...prev]);
 
     setFormName("");
@@ -347,12 +360,51 @@ export default function ComplianceClient({ items: initialItems, projects }: Prop
                     </td>
                     <td className="px-4 sm:px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <div>
+                        <div className="min-w-0">
                           <div className="font-medium text-[#1A2E22] flex items-center gap-1.5">
                             {item.name}
                             {item.documentUrl && <Paperclip className="w-3 h-3 text-[#52B788]" />}
                           </div>
-                          {item.description && <div className="text-xs text-[#A3BEA9] mt-0.5">{item.description}</div>}
+                          {item.mweloSummary ? (
+                            <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                              <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200/40 px-2 py-0.5 text-[10px] font-medium text-blue-700">
+                                <Droplets className="w-2.5 h-2.5" />
+                                MAWA {Math.round(item.mweloSummary.mawa).toLocaleString()}
+                              </span>
+                              <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium border ${
+                                item.mweloSummary.passes
+                                  ? "bg-[#F0FAF4] border-[#52B788]/30 text-[#2D6A4F]"
+                                  : "bg-rose-50 border-rose-200 text-rose-700"
+                              }`}>
+                                ETWU {Math.round(item.mweloSummary.etwu).toLocaleString()}
+                              </span>
+                              <span className={`text-[10px] font-semibold uppercase tracking-wide ${
+                                item.mweloSummary.passes ? "text-[#2D6A4F]" : "text-rose-700"
+                              }`}>
+                                {item.mweloSummary.passes ? "Compliant" : "Exceeds MAWA"}
+                              </span>
+                              <Link
+                                href={`/tools/mwelo-calculator?itemId=${item.id}`}
+                                onClick={(e) => e.stopPropagation()}
+                                className="inline-flex items-center gap-1 text-[10px] font-medium text-[#2D6A4F] hover:text-[#40916C] hover:underline"
+                              >
+                                <Calculator className="w-2.5 h-2.5" />
+                                View calc
+                              </Link>
+                              <a
+                                href={`/api/compliance/${item.id}/mwelo-pdf`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="inline-flex items-center gap-1 text-[10px] font-medium text-[#2D6A4F] hover:text-[#40916C] hover:underline"
+                              >
+                                <FileText className="w-2.5 h-2.5" />
+                                PDF
+                              </a>
+                            </div>
+                          ) : item.description ? (
+                            <div className="text-xs text-[#A3BEA9] mt-0.5">{item.description}</div>
+                          ) : null}
                         </div>
                         <Pencil className="w-3 h-3 text-[#A3BEA9] opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
                       </div>

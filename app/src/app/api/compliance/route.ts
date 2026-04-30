@@ -25,8 +25,11 @@ const VALID_STATUSES = Object.values(ComplianceStatus);
 
 /**
  * GET /api/compliance?projectId=xxx
+ * GET /api/compliance?id=xxx
  *
- * List all compliance items for the org, optionally filtered by project.
+ * Without `id`: list all compliance items for the org (optionally filtered
+ * by projectId). With `id`: return that single item including its full
+ * mweloCalculation JSON, so the calculator can re-load a saved calc.
  */
 export async function GET(request: Request) {
   try {
@@ -36,7 +39,19 @@ export async function GET(request: Request) {
     }
 
     const url = new URL(request.url);
+    const id = url.searchParams.get("id");
     const projectId = url.searchParams.get("projectId");
+
+    if (id) {
+      const item = await prisma.complianceItem.findUnique({
+        where: { id },
+        include: { project: { select: { id: true, name: true } } },
+      });
+      if (!item || item.organizationId !== currentUser.organizationId) {
+        return NextResponse.json({ error: "Compliance item not found." }, { status: 404 });
+      }
+      return NextResponse.json({ item });
+    }
 
     const where: Record<string, unknown> = {
       organizationId: currentUser.organizationId,

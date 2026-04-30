@@ -1,9 +1,26 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { Calculator, Droplets, FileText, ShieldCheck } from "lucide-react";
 import { getCurrentUser } from "@/lib/supabase/auth";
 import { prisma } from "@/lib/prisma";
 import { STATUS_COLORS, getPhaseDisplayName } from "@/lib/constants";
 import ProjectTasksClient from "./ProjectTasksClient";
+
+const COMPLIANCE_CATEGORY_COLORS: Record<string, string> = {
+  MWELO: "bg-blue-50 text-blue-700",
+  LEED: "bg-[#F0FAF4] text-[#2D6A4F]",
+  SITES: "bg-purple-50 text-purple-700",
+  ADA: "bg-amber-50 text-amber-700",
+  PERMIT: "bg-orange-50 text-orange-700",
+  OTHER: "bg-[#F7F9F7] text-[#6B8C74]",
+};
+
+const COMPLIANCE_STATUS_LABELS: Record<string, string> = {
+  NOT_STARTED: "Not started",
+  IN_PROGRESS: "In progress",
+  COMPLETE: "Complete",
+  N_A: "N/A",
+};
 
 export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -62,6 +79,37 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
     where: { projectId: project.id },
     include: { assignedTo: true },
     orderBy: { createdAt: "desc" },
+  });
+
+  const complianceItems = await prisma.complianceItem.findMany({
+    where: { projectId: project.id },
+    orderBy: [{ category: "asc" }, { name: "asc" }],
+  });
+
+  // Pre-extract MWELO summary numbers so the section renders without
+  // doing JSON gymnastics inline. Same shape as the compliance list page.
+  const complianceForView = complianceItems.map((item) => {
+    let mweloSummary: { mawa: number; etwu: number; passes: boolean } | null = null;
+    if (item.category === "MWELO" && item.mweloCalculation) {
+      const calc = item.mweloCalculation as {
+        outputs?: { mawa?: unknown; etwu?: unknown; passes?: unknown };
+      };
+      const mawa = Number(calc.outputs?.mawa ?? 0);
+      const etwu = Number(calc.outputs?.etwu ?? 0);
+      const passes = Boolean(calc.outputs?.passes);
+      if (mawa > 0 || etwu > 0) {
+        mweloSummary = { mawa, etwu, passes };
+      }
+    }
+    return {
+      id: item.id,
+      category: item.category,
+      name: item.name,
+      description: item.description,
+      status: item.status,
+      dueDate: item.dueDate,
+      mweloSummary,
+    };
   });
 
   const users = await prisma.user.findMany({
@@ -269,6 +317,159 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
                 );
               })}
             </div>
+          </div>
+
+          {/* Compliance section — surfaces MWELO calculations + permits/LEED/SITES/ADA
+              tracked against this project. MWELO rows show inline summary chips
+              with quick links to view the calc and the branded PDF. */}
+          <div className="rounded-3xl border border-[#E2EBE4] bg-white p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-[#2D6A4F]" />
+                <h2 className="text-lg font-semibold text-[#1A2E22]">Compliance</h2>
+              </div>
+              <Link
+                href="/compliance"
+                className="text-xs font-medium text-[#2D6A4F] hover:text-[#40916C] hover:underline"
+              >
+                Manage all →
+              </Link>
+            </div>
+
+            {complianceForView.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-[#E2EBE4] bg-[#F7F9F7] p-6 text-center">
+                <p className="text-sm text-[#6B8C74]">
+                  No compliance items tracked yet.
+                </p>
+                <div className="mt-3 flex items-center justify-center gap-3">
+                  <Link
+                    href="/compliance"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[#F0FAF4] text-[#2D6A4F] border border-[#52B788]/30 hover:bg-[#52B788] hover:text-white transition-colors"
+                  >
+                    <ShieldCheck className="w-3 h-3" />
+                    Add item
+                  </Link>
+                  <Link
+                    href="/tools/mwelo-calculator"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200/40 hover:bg-blue-100 transition-colors"
+                  >
+                    <Droplets className="w-3 h-3" />
+                    MWELO Calculator
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {complianceForView.map((item) => {
+                  const isOverdue =
+                    item.dueDate &&
+                    item.status !== "COMPLETE" &&
+                    item.status !== "N_A" &&
+                    new Date(item.dueDate) < new Date();
+                  return (
+                    <div
+                      key={item.id}
+                      className="rounded-2xl border border-[#E8EDE9] bg-[#F7F9F7] px-4 py-3"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span
+                              className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                                COMPLIANCE_CATEGORY_COLORS[item.category] ?? ""
+                              }`}
+                            >
+                              {item.category}
+                            </span>
+                            <span className="text-sm font-medium text-[#1A2E22]">
+                              {item.name}
+                            </span>
+                            <span className="text-[10px] uppercase tracking-wide text-[#6B8C74]">
+                              {COMPLIANCE_STATUS_LABELS[item.status] ?? item.status}
+                            </span>
+                            {isOverdue && item.dueDate && (
+                              <span className="text-[10px] font-semibold text-rose-600">
+                                Overdue · due{" "}
+                                {new Date(item.dueDate).toLocaleDateString()}
+                              </span>
+                            )}
+                          </div>
+
+                          {item.mweloSummary ? (
+                            <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                              <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200/40 px-2 py-0.5 text-[10px] font-medium text-blue-700">
+                                <Droplets className="w-2.5 h-2.5" />
+                                MAWA{" "}
+                                {Math.round(item.mweloSummary.mawa).toLocaleString()}
+                              </span>
+                              <span
+                                className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium border ${
+                                  item.mweloSummary.passes
+                                    ? "bg-[#F0FAF4] border-[#52B788]/30 text-[#2D6A4F]"
+                                    : "bg-rose-50 border-rose-200 text-rose-700"
+                                }`}
+                              >
+                                ETWU{" "}
+                                {Math.round(item.mweloSummary.etwu).toLocaleString()}
+                              </span>
+                              <span
+                                className={`text-[10px] font-semibold uppercase tracking-wide ${
+                                  item.mweloSummary.passes
+                                    ? "text-[#2D6A4F]"
+                                    : "text-rose-700"
+                                }`}
+                              >
+                                {item.mweloSummary.passes
+                                  ? "Compliant"
+                                  : "Exceeds MAWA"}
+                              </span>
+                            </div>
+                          ) : item.description ? (
+                            <p className="mt-1 text-xs text-[#6B8C74]">
+                              {item.description}
+                            </p>
+                          ) : null}
+                        </div>
+
+                        {/* Action links — visible only when there's something
+                            actionable. MWELO rows always get the calc + PDF
+                            shortcut; non-MWELO rows fall through to the
+                            compliance page for editing. */}
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {item.mweloSummary ? (
+                            <>
+                              <Link
+                                href={`/tools/mwelo-calculator?itemId=${item.id}`}
+                                className="inline-flex items-center gap-1 text-[11px] font-medium text-[#2D6A4F] hover:text-[#40916C] hover:underline"
+                              >
+                                <Calculator className="w-3 h-3" />
+                                View calc
+                              </Link>
+                              <a
+                                href={`/api/compliance/${item.id}/mwelo-pdf`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-[11px] font-medium text-[#2D6A4F] hover:text-[#40916C] hover:underline"
+                              >
+                                <FileText className="w-3 h-3" />
+                                PDF
+                              </a>
+                            </>
+                          ) : (
+                            <Link
+                              href="/compliance"
+                              className="text-[11px] text-[#6B8C74] hover:text-[#2D6A4F] hover:underline"
+                            >
+                              Edit
+                            </Link>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           <ProjectTasksClient
