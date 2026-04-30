@@ -158,6 +158,7 @@ model Project {
   plantEntries    PlantEntry[]
   complianceItems ComplianceItem[]
   invoices        Invoice[]
+  billingEvents   BillingEvent[]
   budgetAlerts    BudgetAlert[]
 
   @@map("projects")
@@ -522,6 +523,32 @@ model InvoiceLineItem {
   invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
   @@map("invoice_line_items")
+}
+
+// Recorded by the monthly auto-invoicing cron (and any future manual
+// "run billing for this period" action). Lets the project Billing
+// section show "Skipped Feb 2026 — no billable hours" so users know
+// nothing fell through the cracks.
+model BillingEvent {
+  id             String           @id @default(uuid()) @db.Uuid
+  organizationId String           @map("organization_id") @db.Uuid
+  projectId      String           @map("project_id") @db.Uuid
+  periodStart    DateTime         @map("period_start") @db.Date
+  periodEnd      DateTime         @map("period_end") @db.Date
+  kind           BillingEventKind
+  note           String?
+  createdAt      DateTime         @default(now()) @map("created_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  // One event per project per period — guarantees the cron is idempotent.
+  @@unique([projectId, periodStart, kind])
+  @@index([organizationId, periodStart])
+  @@map("billing_events")
+}
+
+enum BillingEventKind {
+  SKIPPED_NO_HOURS
 }
 
 enum InvoiceStatus {
