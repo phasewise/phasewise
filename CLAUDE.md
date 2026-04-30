@@ -473,6 +473,17 @@ Most meaningful first. Strikethrough = done.
 90. ~~**Overhead / admin time tracking**~~ ✅ 2026-04-17 — OverheadCategory enum (General Admin, Marketing, Training/PD, Meetings, Business Dev, IT/Equipment). "Add overhead / admin" button on timesheet. Non-billable. Category dropdown. Copy-from-previous-week support.
 91. ~~**New job titles: Drafter/Technician + Irrigation Designer**~~ ✅ 2026-04-17 — Added to billing-defaults.ts and TeamMembersClient title dropdown.
 92. ~~**Invite UX banner**~~ ✅ 2026-04-17 — Clear instruction banner after clicking "Send invite" with copyable link URL and dismiss button.
+93. ~~**Project relocation: OneDrive → C:\dev\phasewise**~~ ✅ 2026-04-30 — robocopy 52,552 files / 939MB / 0 failures, memory key migrated to `c--dev-phasewise`.
+94. ~~**Pre-existing slug conflict fix**~~ ✅ 2026-04-30 — `/api/projects/[projectId]` consolidated under `[id]` so Next.js 16 Turbopack dev server starts cleanly.
+95. ~~**MWELO render-back loop**~~ ✅ 2026-04-30 — Compliance row chips (MAWA/ETWU/pass-fail), `?itemId=` calc reload, branded `@react-pdf/renderer` PDF route `/api/compliance/:id/mwelo-pdf`, project detail Compliance section with summary chips.
+96. ~~**Compliance UX overhaul**~~ ✅ 2026-04-30 — MWELO row click → calculator (skips upload modal), Add-Item with MWELO category routes to calculator, per-row Archive + Delete actions, "Show archived" toggle, project page edit-in-place modal for non-MWELO items.
+97. ~~**Work Plan save UX clarity**~~ ✅ 2026-04-30 — Save Work Plan buttons per-phase + at bottom; amber dirty banner; gated "Save all changes" with confirm dialog if work-plan dirty.
+98. ~~**Projects list: search + filter + status grouping + status dropdown**~~ ✅ 2026-04-30 — Search by name/number/client/city/type; status + type filters; inline status dropdown per row; 4 collapsible status sections (Active/On Hold/Completed/Archived) in hierarchy order; new schema fields `Project.city` + `Project.projectType`.
+99. ~~**Dashboard projects grouped by status**~~ ✅ 2026-04-30 — Same 4-section hierarchy as Projects list using native `<details>`; Active/On Hold open by default.
+100. ~~**Timesheet reopen flow**~~ ✅ 2026-04-30 — `/api/timesheets` action `reopen` resets SUBMITTED/APPROVED → DRAFT. Owners recall their own SUBMITTED; approvers (OWNER/ADMIN/SUPERVISOR) can reopen any APPROVED week. UI: "Recall submission" + "Reopen for editing" buttons.
+101. ~~**Future-week timesheet editable, submit-gated**~~ ✅ 2026-04-30 — Future-week cells now editable so users can pre-fill upcoming PTO/travel. Submit button is gated until current week is submitted; server enforces same rule on `/api/timesheets` submit.
+102. ~~**Invoice overhaul (auto-#, period, timesheet pull, paid flow, status grouping)**~~ ✅ 2026-04-30 — Org-level invoice numbering (counter + prefix). New `Invoice.periodStart/periodEnd/paymentReference/paymentMethod/sentAt`. New `TimeEntry.invoiceId/invoicedAt` to prevent double-billing. New endpoints: `/api/invoices/next-number`, `/api/invoices/timesheet-preview`. PDF: "For Professional Services completed from X to Y" + phase summary. UI: auto-fill invoice #, "Pull from timesheets" button, Mark sent / Mark paid quick actions, payment method/reference fields, 6-section status grouping (Overdue → Sent → Partially paid → Draft → Paid → Voided).
+103. ~~**Monthly auto-invoicing cron + project billing visibility**~~ ✅ 2026-04-30 — `/api/cron/monthly-invoicing` fires `0 14 5 * *` on every non-archived project. Strict calendar month, skip-zero-hours, `BillingEvent.SKIPPED_NO_HOURS` recorded for visibility. New `lib/invoice-builder.ts` shared helper. Project detail Billing section (OWNER/ADMIN/PM only) shows chronological invoices + skipped months.
 
 ## Competitive Positioning
 
@@ -547,6 +558,46 @@ Ordered by my estimated value-per-effort. Revisit during the forensic audit.
 - **Pro-rata leave accrual** — accrues per pay period instead of annual front-loading. For firms that prefer it.
 - **Automated year-end rollover** — apply the `rolloverCap` automatically when the calendar year changes.
 - **Forensic audit** — top-to-bottom value review once the queue slows down. Rate each feature on value delivered vs maintenance cost. Cut or sharpen anything that doesn't earn its keep.
+
+## Where We Left Off (2026-04-30)
+
+**Status: 🟢 BIG PRODUCT DAY — 11 commits, ~5,500 LOC across compliance, projects, timesheets, and the entire invoicing stack.** Project relocated off OneDrive to `C:\dev\phasewise` to stop sync churn. Memory key migrated to `c--dev-phasewise`. Strategic-pivot memory updated to reflect that Phasewise is back in active build + sales mode (the 2026-04-17 pivot was reversed by 2026-04-23).
+
+### What shipped today (commits in order)
+
+1. `ee07dca` — **Feature 4: MWELO render-back + PDF + project surface.** Compliance row chips (MAWA/ETWU/pass-fail) + "View calc" + "PDF" links. Calculator reads `?itemId=` and pre-loads the saved JSON. Branded server-side PDF (`@react-pdf/renderer`, phase-bars logomark, formula reference). Project detail page now has a Compliance section with the same summary chips inline.
+2. `20adb18` — **Pre-existing slug fix.** `/api/projects/[projectId]` consolidated under `[id]` so Next.js 16 Turbopack dev server starts. Production build had been tolerating the conflict silently.
+3. `2a404fb` — **Feature 5: Compliance UX + Work Plan UX + Projects search/filter.** MWELO row → calculator routing, Add-Item MWELO callout, per-row Archive + Delete + show-archived toggle. Project compliance edit-in-place. Save Work Plan buttons per phase + bottom + amber dirty banner + gated Save-all-changes confirm dialog. Projects list search box (name/number/client/city/type), status + type filters, inline status dropdown per row. Schema: `Project.city` + `Project.projectType`. Compliance: `archivedAt`.
+4. `252099b` — **Timesheet reopen flow.** SUBMITTED → "Recall submission". APPROVED → "Reopen for editing" (approver-only, with confirm). Server-side `reopen` action on `/api/timesheets`.
+5. `1e4648a` — **Status-grouped projects.** 4 collapsible sections (Active → On Hold → Completed → Archived) on both the Projects list and the Dashboard. Hierarchy matches Kevin's preferred order. Sections with zero matches are hidden.
+6. `680af53` — **Future-week timesheet: editable, submit-gated.** Cells stay editable so users can pre-fill upcoming PTO/travel; Submit button + server-side submit are gated until the current week is in.
+7. `3732202` — **Feature 6: Invoice overhaul.** Org-level auto-numbering (`INV-001`-style, same pattern as projects). `Invoice.periodStart/periodEnd/paymentReference/paymentMethod/sentAt`. `TimeEntry.invoiceId/invoicedAt` (prevents double-billing). New endpoints `/api/invoices/next-number` and `/api/invoices/timesheet-preview` (groups approved billable un-invoiced hours by phase + person). PDF: "For Professional Services completed from X to Y" statement + "Services include: Schematic Design, Construction Documents." sentence derived from time-entry phases. UI: auto-fill invoice #, "Pull from timesheets" button, Mark sent / Mark paid quick actions, payment-method datalist + reference field, 6-section status grouping (Overdue → Sent → Partially paid → Draft → Paid → Voided).
+8. `b867a18` — **Feature 7: Monthly auto-invoicing cron + project billing visibility.** `/api/cron/monthly-invoicing` fires `0 14 5 * *` on every non-archived project. Strict calendar month (1st – last day of last month). Skip-zero-hours recorded as `BillingEvent.SKIPPED_NO_HOURS` so the trail is visible. Idempotent (re-fires safe). `lib/invoice-builder.ts` shared helper. Project detail Billing section (OWNER/ADMIN/PM only) shows chronological invoices + "Skipped <Month>" entries.
+
+### Schema deltas (`db push` already applied)
+
+- `Project`: `city String?` + `projectType String?` (free text, datalist suggestions on forms)
+- `ComplianceItem`: `archivedAt DateTime?` (soft archive)
+- `Organization`: `invoiceNumberPrefix String @default("INV")` + `invoiceNumberNext Int` + `autoNumberInvoices Boolean`
+- `Invoice`: `periodStart`, `periodEnd`, `paymentReference`, `paymentMethod`, `sentAt`
+- `TimeEntry`: `invoiceId String?` + `invoicedAt DateTime?` (back-relation to Invoice)
+- New `BillingEvent` table + `BillingEventKind` enum (currently just `SKIPPED_NO_HOURS`); `@@unique([projectId, periodStart, kind])` for cron idempotency
+
+### Memory updated
+
+- `strategic_pivot_2026_04_17.md` — now records both the 2026-04-17 pivot AND the 2026-04-23 reversal; current short-term goal (3 trial signups by 2026-05-27) and long-term goal ($83K MRR / 18-24 months) captured
+- `project_status.md` — refreshed to current infra state (Stripe LIVE, Loops 7 templates, Search Console, n8n autonomous content, all post-pivot reality)
+
+### Tomorrow's first task
+
+Decide where to spend energy:
+- Outreach reply prep (replies from Broussard / Atlas Lab expected within the week)
+- Directory submissions (AlternativeTo, Capterra, G2 individual — copy-paste in `directory-listings.md`)
+- Vercel Analytics + Plausible (must be live before content traffic accumulates)
+
+See **"Where We Left Off (2026-04-29)"** below for outreach context and the broader sales motion.
+
+---
 
 ## Where We Left Off (2026-04-29)
 
@@ -1122,21 +1173,45 @@ After a strategy discussion this session, Kevin confirmed that his top prioritie
 - [x] Sitemap submitted to Search Console (15 URLs discovered, status: Success) ✅ 2026-04-26
 - [x] Priority indexing requested for top 3 commercial-intent articles (Monograph alternatives, LA PM software, billing rates) ✅ 2026-04-26
 - [x] Comprehensive audit completed — 25 verified findings documented at `AUDIT-2026-04-26.md` ✅ 2026-04-26
-- [ ] **Audit critical #1:** Move /privacy and /terms out of `(app)/` route group (currently 307 redirect — same bug pattern as today's middleware fix)
-- [ ] **Audit critical #2:** Add `isActive` check to `getCurrentUser()` (deactivated users still have access)
-- [ ] **Audit critical #3:** Add `id`/`htmlFor` to all form inputs (WCAG 2.1 Level A blocker)
+- [x] **All 25 audit items cleared** ✅ 2026-04-27 (privacy/terms public, isActive check, form labels, time-entry assignment check, Stripe webhook idempotency, BudgetAlert table, billing PAST_DUE handling, pagination, project access control, private compliance bucket — see AUDIT-2026-04-26.md)
+- [x] **Project relocation off OneDrive** ✅ 2026-04-30 — robocopy to `C:\dev\phasewise`, memory key migrated
+- [x] **Pre-existing slug conflict fix** ✅ 2026-04-30 — dev server now starts cleanly
+- [x] **MWELO render-back loop + branded PDF route** ✅ 2026-04-30
+- [x] **Compliance UX overhaul (archive, delete, in-place edit, MWELO routing)** ✅ 2026-04-30
+- [x] **Work Plan save UX clarity (per-phase + bottom buttons + dirty banner)** ✅ 2026-04-30
+- [x] **Projects: search, type/status filters, inline status dropdown, status grouping** ✅ 2026-04-30
+- [x] **Dashboard projects grouped by status** ✅ 2026-04-30
+- [x] **Timesheet reopen flow (SUBMITTED + APPROVED)** ✅ 2026-04-30
+- [x] **Future-week timesheet editable, submit-gated** ✅ 2026-04-30
+- [x] **Invoice overhaul: auto-#, period dates, timesheet pull, paid flow, status grouping** ✅ 2026-04-30
+- [x] **Monthly auto-invoicing cron + project billing visibility** ✅ 2026-04-30
 - [ ] **Monitor indexing progress** in Search Console over next 1-2 weeks (Performance + Indexing reports)
-- [ ] Submit to AlternativeTo (text fields ready — was blocked by weekend pause; should be unblocked now)
-- [ ] Submit to Capterra + G2 (copy-paste ready in `directory-listings.md`)
+
+### Sales / outreach (highest revenue ROI)
+
+- [ ] **Outreach reply playbook** — write canned responses for "interested", "not now", "tell me more", "what makes you different from Monograph?" before first replies land. Replies from Broussard / Atlas Lab expected within the week
+- [ ] **Maintain weekly cold-outreach cadence** — 5 emails/day Mon-Thu (per `OUTREACH-PLAYBOOK.md`). Skip-2-weeks is the most common solo-founder failure mode
+- [ ] **Submit to AlternativeTo** (text fields ready in `directory-listings.md` — was blocked by weekend pause; should be unblocked now)
+- [ ] **Submit to Capterra + G2 individual listings** (copy-paste in `directory-listings.md`)
+- [ ] **Add Vercel Analytics + Plausible** before significant traffic accumulates from outreach + content
 - [ ] Later: more directories (GetApp, Software Advice, SaaSHub)
-- [ ] Add Vercel Analytics + Plausible (now that articles will start generating traffic)
-- [ ] Product Hunt launch
+- [ ] Product Hunt launch (one-time, needs prep + launch window)
+
+### Product polish that supports sales
+
+- [ ] **Audit log on timesheet reopen + post-approval edits** — required for any firm billing T&M. Add `TimesheetAuditLog` table; record actor, timestamp, prior status
+- [ ] **Reject-with-comment timesheet workflow** — approver rejects with a note, status flips back to DRAFT with rejection visible. Standard in Monograph / BQE / Deltek / Replicon
+- [ ] **Friday email reminder cron for unsubmitted timesheets** — extends the existing submittal-reminders cron pattern
+- [ ] **Weekly hour-target hint widget** — top of timesheet page: "32 / 40 hours logged this week" with soft amber warning under target on Friday. Used by Harvest / Toggl / Clockify
+
+### Brand + ops
+
+- [ ] **File USPTO trademark for "Phasewise"** — protect the name before significant marketing push (~$350)
 - [ ] Upload v2 PNG logos to LinkedIn, X/Twitter, GitHub profiles
-- [ ] Claim @phasewise on Instagram
-- [ ] **Auto-post blog articles to socials** — extend n8n pipeline with social posting nodes after each article ships. Blocked on social accounts being claimed + their API credentials configured in n8n.
-- [ ] File USPTO trademark for "Phasewise"
+- [ ] Claim @phasewise on Instagram (was blocked by SMS verification — try again)
 - [ ] Set up getphasewise.com redirect to phasewise.io in Cloudflare
 - [ ] Remove duplicate `google-site-verification` TXT record from Cloudflare
+- [ ] **Auto-post blog articles to socials** — extend n8n pipeline. Blocked on social accounts being claimed + API credentials in n8n
 - [ ] Create Loops INVITE template (optional — link sharing works without it)
 - [ ] Optional: n8n error notification workflow (alerts on silent failures)
 - [ ] Quality monitoring: read each Friday's auto-article for 4 weeks; if quality holds, ramp to 2/week cadence
