@@ -63,7 +63,12 @@ export async function handleAuth(request: NextRequest) {
     path.startsWith("/blog/") ||
     path.startsWith("/invite/") ||
     path.startsWith("/api/auth/") ||
-    path.startsWith("/api/invitations/");
+    path.startsWith("/api/invitations/") ||
+    // Sentry browser-error tunnel (configured as `tunnelRoute` in
+    // next.config.ts). Anonymous users on the landing page must be
+    // able to POST errors here — otherwise the tunnel just 307s to
+    // /login and we lose every client-side error from public pages.
+    path.startsWith("/monitoring");
 
   if (!user && !isPublicPath) {
     const url = request.nextUrl.clone();
