@@ -243,6 +243,7 @@ export default async function TimePage({
             <TimesheetSubmitClient
               weekStart={format(weekStartDate, "yyyy-MM-dd")}
               status={timesheet?.status ?? "DRAFT"}
+              canApprove={canViewOthers}
             />
           )}
         </div>

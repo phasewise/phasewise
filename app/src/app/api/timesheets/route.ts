@@ -102,5 +102,79 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, timesheet: approved });
   }
 
+  // Reopen a submitted or approved timesheet so the user can edit again.
+  // - Owners of the timesheet can recall their own SUBMITTED back to DRAFT.
+  // - Owners of the timesheet who also have approver role can reopen their
+  //   own APPROVED back to DRAFT (single-person firms hit this case).
+  // - Approvers (OWNER/ADMIN/SUPERVISOR) can reopen anyone's timesheet in
+  //   their org, regardless of status.
+  if (action === "reopen") {
+    if (!weekStart) {
+      return NextResponse.json({ error: "weekStart is required to reopen." }, { status: 400 });
+    }
+
+    const parsedWeekStart = new Date(weekStart);
+    if (Number.isNaN(parsedWeekStart.getTime())) {
+      return NextResponse.json({ error: "Invalid week start date." }, { status: 400 });
+    }
+
+    // Optional `userId` lets approvers reopen someone else's timesheet.
+    // Defaults to the requester's own.
+    const targetUserId = (body.userId as string | undefined) ?? currentUser.id;
+
+    if (targetUserId !== currentUser.id) {
+      // Approver acting on someone else's timesheet — verify role + same org.
+      if (!approverRoles.includes(currentUser.role)) {
+        return NextResponse.json({ error: "Insufficient permissions." }, { status: 403 });
+      }
+      const target = await prisma.user.findUnique({
+        where: { id: targetUserId },
+        select: { organizationId: true },
+      });
+      if (!target || target.organizationId !== currentUser.organizationId) {
+        return NextResponse.json({ error: "User not found." }, { status: 404 });
+      }
+    }
+
+    const timesheet = await prisma.weeklyTimesheet.findUnique({
+      where: {
+        userId_weekStart: {
+          userId: targetUserId,
+          weekStart: parsedWeekStart,
+        },
+      },
+    });
+
+    if (!timesheet) {
+      return NextResponse.json({ error: "Timesheet not found." }, { status: 404 });
+    }
+
+    // Reopening an APPROVED timesheet requires approver privilege even
+    // when acting on your own — it's an audit-trail concern. Single-person
+    // firms hit this branch but the user IS an approver, so they pass.
+    if (timesheet.status === "APPROVED" && !approverRoles.includes(currentUser.role)) {
+      return NextResponse.json(
+        { error: "Only approvers can reopen an approved timesheet. Ask your manager." },
+        { status: 403 }
+      );
+    }
+
+    if (timesheet.status === "DRAFT") {
+      return NextResponse.json({ error: "Timesheet is already a draft." }, { status: 400 });
+    }
+
+    const reopened = await prisma.weeklyTimesheet.update({
+      where: { id: timesheet.id },
+      data: {
+        status: "DRAFT",
+        submittedAt: null,
+        approvedById: null,
+        approvedAt: null,
+      },
+    });
+
+    return NextResponse.json({ success: true, timesheet: reopened });
+  }
+
   return NextResponse.json({ error: "Unsupported action." }, { status: 400 });
 }
