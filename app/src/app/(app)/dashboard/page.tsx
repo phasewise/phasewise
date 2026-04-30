@@ -216,6 +216,19 @@ export default async function DashboardPage() {
         </div>
       ) : (
         <div className="space-y-4">
+          {/* One "View all projects" link sits above the sections so it
+              doesn't have to live inside <summary> (which would conflict
+              with the native click-to-toggle behavior). */}
+          <div className="flex items-center justify-between px-1">
+            <h2 className="text-base font-semibold text-[#1A2E22]">Projects</h2>
+            <Link
+              href="/projects"
+              className="text-sm font-semibold text-[#2D6A4F] hover:text-[#40916C] inline-flex items-center gap-1"
+            >
+              View all <ArrowUpRight className="h-4 w-4" />
+            </Link>
+          </div>
+
           {SECTION_ORDER.map((section) => {
             const sectionProjects = projects.filter((p) => p.status === section.value);
             if (sectionProjects.length === 0) return null;
@@ -231,7 +244,7 @@ export default async function DashboardPage() {
                 <summary className="flex items-center justify-between border-b border-[#E2EBE4] px-6 py-5 cursor-pointer list-none hover:bg-[#F7F9F7] transition-colors">
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="text-slate-400 group-open:rotate-90 transition-transform">▶</span>
-                    <h2
+                    <h3
                       className={`text-base font-semibold ${
                         section.value === "ACTIVE" || section.value === "ON_HOLD"
                           ? "text-[#1A2E22]"
@@ -239,7 +252,7 @@ export default async function DashboardPage() {
                       }`}
                     >
                       {section.label}
-                    </h2>
+                    </h3>
                     <span className="text-xs text-[#6B8C74] px-2 py-0.5 rounded-full bg-[#F0FAF4]">
                       {sectionProjects.length}
                     </span>
@@ -247,13 +260,9 @@ export default async function DashboardPage() {
                       · {section.description}
                     </span>
                   </div>
-                  <Link
-                    href="/projects"
-                    onClick={(e) => e.stopPropagation()}
-                    className="text-sm font-semibold text-[#2D6A4F] hover:text-[#40916C] inline-flex items-center gap-1"
-                  >
-                    View all <ArrowUpRight className="h-4 w-4" />
-                  </Link>
+                  <span className="text-xs text-[#6B8C74]">
+                    Click to {section.defaultOpen ? "hide" : "show"}
+                  </span>
                 </summary>
 
                 <div className="overflow-x-auto">
