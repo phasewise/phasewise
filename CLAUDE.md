@@ -588,12 +588,38 @@ Ordered by my estimated value-per-effort. Revisit during the forensic audit.
 - `strategic_pivot_2026_04_17.md` — now records both the 2026-04-17 pivot AND the 2026-04-23 reversal; current short-term goal (3 trial signups by 2026-05-27) and long-term goal ($83K MRR / 18-24 months) captured
 - `project_status.md` — refreshed to current infra state (Stripe LIVE, Loops 7 templates, Search Console, n8n autonomous content, all post-pivot reality)
 
+### EOD update — Tier 0 risk-mitigation kicked off
+
+Strategy reframe after the dashboard crash: paused on scaling outreach until the product is hardened against real-user use. Started a "Tier 0" risk-mitigation pass to catch problems before paying customers do.
+
+**Tier 0 #1 — Sentry error monitoring: ✅ DONE.** Two more commits:
+- `7b1be37` — dashboard server-error fix (onClick on Link inside `<summary>` in a server component — exactly the failure mode Tier 0 is meant to catch)
+- `3090aae` — Sentry Next.js SDK via official wizard. Server + edge + client configs, instrumentation.ts, global-error.tsx, /sentry-example-page test route, .mcp.json for AI-tool Sentry queries
+- `170dfa9` — Sentry noise filters (denyUrls for browser extensions + ignoreErrors for ChunkLoadError + ResizeObserver loop quirks)
+
+Sentry setup details:
+- Account: kevin@phasewise.io / Phasewise org / project `javascript-nextjs`
+- Vercel integration installed → auto-syncs `SENTRY_AUTH_TOKEN`, `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_ORG`, `SENTRY_PROJECT` + log-drain URLs to Vercel env vars
+- GitHub source code integration linked to `phasewise/phasewise` repo (only-this-repo permissions, not all-org)
+- Sentry inbound filters enabled in the dashboard: browser extensions, web crawlers, ChunkLoadError, hydration errors, health checks
+- Tunnel route `/monitoring` added to middleware allowlist (otherwise public-page errors 307 to /login)
+- `sendDefaultPii: false` on all configs — opt-in to user context per-event via `Sentry.setUser({id})` rather than vacuuming everything (B2B billing tool, lots of sensitive data on screens)
+- Verified working end-to-end: backend + frontend test errors captured with readable stack traces + source maps + git release tracking
+
+Day-one Sentry catch: 5 events of `SyntaxError: Unexpected token '<'` on /login from HeadlessChrome bots running browser extensions. Filtered as noise — not a real bug.
+
+**Tier 0 #2 — End-to-end smoke test: in progress (steps 1-6/17 done as of EOD).** Fresh test account `kevin@gallodesigns.com` / "Gallo Designs" org. Verified working so far: signup, dashboard render with empty state + onboarding checklist, new project create with city + type fields, project detail page with empty Compliance + Billing sections, edit project flow, Work Plan save. Pickup at step 7 (timesheet entry → submit → recall → approve → reopen) tomorrow.
+
 ### Tomorrow's first task
 
-Decide where to spend energy:
-- Outreach reply prep (replies from Broussard / Atlas Lab expected within the week)
-- Directory submissions (AlternativeTo, Capterra, G2 individual — copy-paste in `directory-listings.md`)
-- Vercel Analytics + Plausible (must be live before content traffic accumulates)
+**Continue smoke test from step 7** (the timesheet-flow steps): log time, submit, recall, approve, reopen. Then steps 8-17 covering invoicing + MWELO + projects search/filter.
+
+After smoke test wraps and any bugs are fixed:
+- **Tier 0 #3** — in-app "report a problem" widget
+- **Tier 0 #4** — manual `curl` test of monthly-invoicing cron + submittal-reminder cron with `CRON_SECRET` to verify they don't crash on first real fire
+- **Tier 0 #5** — mobile timesheet entry test on iOS
+
+After Tier 0 is fully done, then back to the Sales tier (outreach replies, directory submissions, Vercel Analytics).
 
 See **"Where We Left Off (2026-04-29)"** below for outreach context and the broader sales motion.
 
@@ -1185,6 +1211,11 @@ After a strategy discussion this session, Kevin confirmed that his top prioritie
 - [x] **Future-week timesheet editable, submit-gated** ✅ 2026-04-30
 - [x] **Invoice overhaul: auto-#, period dates, timesheet pull, paid flow, status grouping** ✅ 2026-04-30
 - [x] **Monthly auto-invoicing cron + project billing visibility** ✅ 2026-04-30
+- [x] **Tier 0 #1: Sentry error monitoring** ✅ 2026-04-30 — SDK installed, Vercel integration, GitHub source-code integration, MCP config, inbound filters + SDK noise filters, tested end-to-end (frontend + backend + source maps). Day-one catch: SyntaxError noise from HeadlessChrome bots, filtered.
+- [ ] **Tier 0 #2: End-to-end smoke test** — in progress as of 2026-04-30 EOD (steps 1-6/17 done). Fresh test account `kevin@gallodesigns.com`. Pickup at step 7 (timesheet flow) tomorrow.
+- [ ] **Tier 0 #3: In-app "report a problem" widget** — small button on every page; one-click feedback to founder
+- [ ] **Tier 0 #4: Manual cron verification** — `curl` test `/api/cron/monthly-invoicing` + `/api/cron/submittal-reminders` with `CRON_SECRET` to verify no crash on first real fire
+- [ ] **Tier 0 #5: Mobile timesheet entry test** — POC_SCOPE explicitly says "time entry must work on phone"; need to actually verify iOS + Android render
 - [ ] **Monitor indexing progress** in Search Console over next 1-2 weeks (Performance + Indexing reports)
 
 ### Sales / outreach (highest revenue ROI)
