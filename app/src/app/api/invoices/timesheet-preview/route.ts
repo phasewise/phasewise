@@ -32,6 +32,12 @@ export async function GET(request: Request) {
   const projectId = url.searchParams.get("projectId");
   const from = url.searchParams.get("from");
   const to = url.searchParams.get("to");
+  // mode = "summary" (default) returns one line per phase with weighted
+  // average rate — used for fixed-fee billing where firms don't want
+  // to expose individual staff rates to clients.
+  // mode = "detailed" returns one line per (phase, person) — used for
+  // T&M billing where transparency is expected.
+  const mode = url.searchParams.get("mode") === "detailed" ? "detailed" : "summary";
 
   if (!projectId || !from || !to) {
     return NextResponse.json(
@@ -118,18 +124,16 @@ export async function GET(request: Request) {
     approvedWeekKeys.has(`${e.userId}|${weekStartOf(e.date).toISOString()}`)
   );
 
-  // Group entries by phase + user. Each group becomes one line item:
-  // "Schematic Design — Jane Doe (12.5 hrs)". Rate = user's billing rate.
-  const groups = new Map<
-    string,
-    {
-      phaseLabel: string;
-      userName: string;
-      hours: number;
-      rate: number;
-      sourceEntryIds: string[];
-    }
-  >();
+  // First pass: always group by (phase, user, rate) — this is the
+  // detailed-mode shape AND the source for summary-mode aggregation.
+  type DetailGroup = {
+    phaseLabel: string;
+    userName: string;
+    hours: number;
+    rate: number;
+    sourceEntryIds: string[];
+  };
+  const detailGroups = new Map<string, DetailGroup>();
 
   for (const e of billableEntries) {
     const phaseLabel = e.phase
@@ -139,12 +143,12 @@ export async function GET(request: Request) {
     const rate = Number(e.user.billingRate ?? 0);
     const key = `${e.phaseId ?? "none"}|${e.userId}|${rate}`;
 
-    const existing = groups.get(key);
+    const existing = detailGroups.get(key);
     if (existing) {
       existing.hours += Number(e.hours);
       existing.sourceEntryIds.push(e.id);
     } else {
-      groups.set(key, {
+      detailGroups.set(key, {
         phaseLabel,
         userName,
         hours: Number(e.hours),
@@ -154,17 +158,65 @@ export async function GET(request: Request) {
     }
   }
 
-  const lineItems = Array.from(groups.values()).map((g) => ({
-    description: `${g.phaseLabel} — ${g.userName}`,
-    quantity: Number(g.hours.toFixed(2)),
-    unitPrice: g.rate,
-    amount: Number((g.hours * g.rate).toFixed(2)),
-    sourceEntryIds: g.sourceEntryIds,
-  }));
+  let lineItems: Array<{
+    description: string;
+    quantity: number;
+    unitPrice: number;
+    amount: number;
+    sourceEntryIds: string[];
+  }>;
+
+  if (mode === "detailed") {
+    // One line per (phase, person) — staff name + rate visible.
+    lineItems = Array.from(detailGroups.values()).map((g) => ({
+      description: `${g.phaseLabel} — ${g.userName}`,
+      quantity: Number(g.hours.toFixed(2)),
+      unitPrice: g.rate,
+      amount: Number((g.hours * g.rate).toFixed(2)),
+      sourceEntryIds: g.sourceEntryIds,
+    }));
+  } else {
+    // Summary mode: collapse to one line per phase. Description hides
+    // staff names. Rate is weighted-average across the people who
+    // worked on the phase, which gives a consistent display value
+    // even though firms billing summary often don't show per-hour
+    // rate at all (the total is what matters).
+    type SummaryGroup = {
+      phaseLabel: string;
+      hours: number;
+      amount: number;
+      sourceEntryIds: string[];
+    };
+    const phaseGroups = new Map<string, SummaryGroup>();
+    for (const dg of detailGroups.values()) {
+      const existing = phaseGroups.get(dg.phaseLabel);
+      const subAmount = dg.hours * dg.rate;
+      if (existing) {
+        existing.hours += dg.hours;
+        existing.amount += subAmount;
+        existing.sourceEntryIds.push(...dg.sourceEntryIds);
+      } else {
+        phaseGroups.set(dg.phaseLabel, {
+          phaseLabel: dg.phaseLabel,
+          hours: dg.hours,
+          amount: subAmount,
+          sourceEntryIds: [...dg.sourceEntryIds],
+        });
+      }
+    }
+    lineItems = Array.from(phaseGroups.values()).map((g) => ({
+      description: `${g.phaseLabel} — Professional Services`,
+      quantity: Number(g.hours.toFixed(2)),
+      // Weighted-average rate so quantity × unitPrice = amount.
+      unitPrice: g.hours > 0 ? Number((g.amount / g.hours).toFixed(2)) : 0,
+      amount: Number(g.amount.toFixed(2)),
+      sourceEntryIds: g.sourceEntryIds,
+    }));
+  }
 
   // Distinct phase labels for the PDF "Services include..." sentence.
   const phases = Array.from(
-    new Set(Array.from(groups.values()).map((g) => g.phaseLabel))
+    new Set(Array.from(detailGroups.values()).map((g) => g.phaseLabel))
   );
 
   // Counts surface in the UI: "12 entries from 3 weeks (approved)" gives

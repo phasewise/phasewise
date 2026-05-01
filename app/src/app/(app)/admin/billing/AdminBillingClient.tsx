@@ -142,6 +142,11 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
   >([{ description: "", quantity: "1", unitPrice: "" }]);
   const [pulling, setPulling] = useState(false);
   const [pullSummary, setPullSummary] = useState<string | null>(null);
+  // Line-item granularity. Summary (default) hides staff names + rates
+  // and shows one line per phase — matches what most LA firms put on
+  // an invoice they send to a client. Detailed shows one line per
+  // (phase, person) for T&M billing where transparency matters.
+  const [lineItemMode, setLineItemMode] = useState<"summary" | "detailed">("summary");
 
   // Edit modal state
   const [editStatus, setEditStatus] = useState("");
@@ -201,7 +206,7 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
     setPulling(true);
     try {
       const res = await fetch(
-        `/api/invoices/timesheet-preview?projectId=${formProjectId}&from=${formPeriodStart}&to=${formPeriodEnd}`
+        `/api/invoices/timesheet-preview?projectId=${formProjectId}&from=${formPeriodStart}&to=${formPeriodEnd}&mode=${lineItemMode}`
       );
       const data = await res.json();
       if (!res.ok) {
@@ -609,7 +614,7 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
           </div>
 
           {/* Billing period — drives PDF letterhead + the timesheet pull */}
-          <div className="grid sm:grid-cols-[1fr_1fr_auto] gap-4 mb-4 items-end">
+          <div className="grid sm:grid-cols-[1fr_1fr_auto] gap-4 mb-3 items-end">
             <div>
               <label htmlFor="inv-period-start" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">
                 <Calendar className="inline w-3.5 h-3.5 mr-1 -mt-0.5" />
@@ -645,6 +650,42 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
               <Sparkles className="w-4 h-4" />
               {pulling ? "Pulling..." : "Pull from timesheets"}
             </button>
+          </div>
+
+          {/* Line-item mode toggle. Summary (default) is what most firms
+              send to clients; Detailed exposes individual rates for T&M
+              billing. Affects what the next "Pull from timesheets" run
+              produces — already-pulled rows are unchanged. */}
+          <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">
+            <span className="text-[#3D5C48] font-medium">Line item style:</span>
+            <label className="inline-flex items-center gap-1.5 cursor-pointer">
+              <input
+                type="radio"
+                name="line-item-mode"
+                value="summary"
+                checked={lineItemMode === "summary"}
+                onChange={() => setLineItemMode("summary")}
+                className="accent-[#2D6A4F]"
+              />
+              <span className="text-[#3D5C48]">
+                <strong>Summary</strong>
+                <span className="text-[#6B8C74]"> · one line per phase, no staff names</span>
+              </span>
+            </label>
+            <label className="inline-flex items-center gap-1.5 cursor-pointer">
+              <input
+                type="radio"
+                name="line-item-mode"
+                value="detailed"
+                checked={lineItemMode === "detailed"}
+                onChange={() => setLineItemMode("detailed")}
+                className="accent-[#2D6A4F]"
+              />
+              <span className="text-[#3D5C48]">
+                <strong>Detailed</strong>
+                <span className="text-[#6B8C74]"> · one line per phase + person, shows hourly rates</span>
+              </span>
+            </label>
           </div>
           {pullSummary && (
             <div className="mb-4 rounded-lg bg-blue-50 border border-blue-200/40 p-3 text-xs text-blue-900">
