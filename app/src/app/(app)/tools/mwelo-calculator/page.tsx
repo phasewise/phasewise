@@ -79,6 +79,30 @@ export default function MWELOCalculatorPage() {
   const [projects, setProjects] = useState<ProjectOption[]>([]);
   const [projectsLoading, setProjectsLoading] = useState(false);
   const [saveProjectId, setSaveProjectId] = useState("");
+  // Fetch the project list eagerly on mount so the "Project" picker at
+  // the top of the form is populated without waiting for the save modal
+  // open. Picking a project here pre-selects saveProjectId AND fills the
+  // project name onto the report — single field, both wired.
+  useEffect(() => {
+    setProjectsLoading(true);
+    fetch("/api/projects")
+      .then((r) => r.json())
+      .then((d) => setProjects(d.projects ?? []))
+      .catch(() => {})
+      .finally(() => setProjectsLoading(false));
+  }, []);
+
+  function handleSelectProject(projectId: string) {
+    setSaveProjectId(projectId);
+    if (!projectId) {
+      // "Other / Manual entry" — keep whatever they had typed.
+      return;
+    }
+    const proj = projects.find((p) => p.id === projectId);
+    if (proj) {
+      setProjectName(proj.name);
+    }
+  }
   const [saveItemName, setSaveItemName] = useState("");
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -387,8 +411,44 @@ export default function MWELOCalculatorPage() {
           <h2 className="text-sm font-semibold text-[#1A2E22] mb-4">Project Information</h2>
           <div className="grid sm:grid-cols-3 gap-4">
             <div>
-              <label htmlFor="mwelo-project-name" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Project Name</label>
-              <input id="mwelo-project-name" value={projectName} onChange={(e) => setProjectName(e.target.value)} placeholder="Meridian Park Renovation" className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+              <label htmlFor="mwelo-project-select" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Project</label>
+              <select
+                id="mwelo-project-select"
+                value={saveProjectId}
+                onChange={(e) => handleSelectProject(e.target.value)}
+                className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]"
+                disabled={projectsLoading || Boolean(loadedItemId)}
+              >
+                <option value="">
+                  {projectsLoading
+                    ? "Loading projects..."
+                    : projects.length === 0
+                    ? "No projects yet — type a name below"
+                    : "— Pick a project —"}
+                </option>
+                {projects.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.projectNumber ? `${p.projectNumber} · ${p.name}` : p.name}
+                  </option>
+                ))}
+              </select>
+              {/* Override / fallback name field — only relevant when no
+                  project is picked (e.g. running a quick what-if on a
+                  prospect that isn't in Phasewise yet). When linked to
+                  a real project, the dropdown above is the source of
+                  truth and this field reflects it read-only-ish. */}
+              <input
+                id="mwelo-project-name"
+                value={projectName}
+                onChange={(e) => setProjectName(e.target.value)}
+                placeholder="Or type a name (for quick what-if)"
+                className="mt-2 w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2 text-xs text-[#1A2E22] focus:outline-none focus:border-[#52B788]"
+              />
+              {saveProjectId && (
+                <p className="mt-1 text-[10px] text-[#52B788]">
+                  Linked. Saving the calc will attach to this project.
+                </p>
+              )}
             </div>
             <div>
               <label htmlFor="mwelo-region" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Climate Region *</label>
