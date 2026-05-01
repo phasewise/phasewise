@@ -79,10 +79,28 @@ export default async function TeamSettingsPage() {
   return (
     <div className="p-6 sm:p-8 max-w-5xl">
       <div className="mb-8">
-        <h1 className="font-serif text-3xl text-[#1A2E22]">Team</h1>
-        <p className="mt-2 text-sm text-[#6B8C74]">
-          Manage staff roles{canManageBilling ? ", billing rates, and salary information" : " and team assignments"}.
-        </p>
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+          <div>
+            <h1 className="font-serif text-3xl text-[#1A2E22]">Team</h1>
+            <p className="mt-2 text-sm text-[#6B8C74]">
+              Manage staff roles{canManageBilling ? ", billing rates, and salary information" : " and team assignments"}.
+            </p>
+          </div>
+          {canManageBilling && (
+            <a
+              href="/admin/leave"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-[#F0FAF4] text-[#2D6A4F] border border-[#52B788]/30 hover:bg-[#52B788] hover:text-white transition-colors self-start sm:self-auto"
+            >
+              Manage leave &amp; PTO standards →
+            </a>
+          )}
+        </div>
+        {canManageBilling && (
+          <p className="mt-3 text-xs text-[#A3BEA9]">
+            Set firm-wide defaults (vacation, sick, holiday) and per-employee overrides at{" "}
+            <a href="/admin/leave" className="text-[#2D6A4F] hover:underline">Admin → Leave &amp; PTO</a>.
+          </p>
+        )}
       </div>
 
       {/* Team members: add, view, deactivate */}
