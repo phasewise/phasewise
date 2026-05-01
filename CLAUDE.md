@@ -240,7 +240,12 @@ All variables are set in **Vercel project Settings → Environment Variables** A
 | `LOOPS_TEMPLATE_PAYMENT_FAILED` | ✅ | `cmo1ywidl0hbu0jxzj127ssvc` (branded 2026-04-16) |
 | `LOOPS_TEMPLATE_SUBMITTAL_REMINDER` | ✅ | `cmo1ywq5505dy0izn74icj1zy` (branded 2026-04-16) |
 | `LOOPS_TEMPLATE_BUDGET_ALERT` | ✅ | `cmo1ywy7r074g0iuqkp0yntnw` (branded 2026-04-16) |
-| `LOOPS_TEMPLATE_INVITE` | ⏳ pending | Loops > Transactional > Invite template (optional — link sharing works without it) |
+| `LOOPS_TEMPLATE_INVITE` | ✅ | `cmonelbq000qv0izk52er5uom` (created 2026-05-01) |
+| `LOOPS_TEMPLATE_INVOICE_SEND` | ✅ | `cmond6ahz02pu0i107sqfg8cz` (created 2026-05-01) |
+
+**Brand sender update — 2026-05-01:** all transactional templates migrated from `kgallo22@mail.phasewise.io` (personal-feeling) to `hello@mail.phasewise.io` (brand-aligned, matches Workspace alias). Reply-To changed from `kgallo22@gmail.com` to `hello@phasewise.io`. Maintains anonymity-of-brand for invoice + invite recipients. Loops has no global default-sender setting; each template was edited individually. Templates updated: Welcome, Trial Started (branded), Subscription Canceled (branded), Payment Failed (branded), Submittal Reminder (branded), Budget Alert (branded), Invite, Invoice Send.
+
+**Anonymity TODO flagged 2026-05-01:** Loops Settings → Domain → Company Address shows residential address. CAN-SPAM injects this into transactional email footers. Should swap for a PO Box (~$60-100/yr at USPS) or virtual mailbox (~$15-30/mo at iPostal1, Earth Class Mail, etc.) before scaling outreach.
 | `SUPABASE_SERVICE_ROLE_KEY` | ✅ | Supabase > Settings > API Keys > Legacy > service_role |
 
 ### Switching Stripe to Live Mode (when ready)
