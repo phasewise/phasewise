@@ -28,12 +28,23 @@ export const LOOPS_TEMPLATES = {
   BUDGET_ALERT: process.env.LOOPS_TEMPLATE_BUDGET_ALERT ?? "",
   INVITE: process.env.LOOPS_TEMPLATE_INVITE ?? "",
   PASSWORD_CHANGED: process.env.LOOPS_TEMPLATE_PASSWORD_CHANGED ?? "",
+  INVOICE_SEND: process.env.LOOPS_TEMPLATE_INVOICE_SEND ?? "",
 } as const;
+
+type LoopsAttachment = {
+  // Filename the recipient sees, e.g. "invoice-INV-001.pdf"
+  filename: string;
+  // MIME type, e.g. "application/pdf"
+  contentType: string;
+  // Base64-encoded file contents
+  data: string;
+};
 
 type SendOptions = {
   email: string;
   transactionalId: string;
   dataVariables?: Record<string, string | number>;
+  attachments?: LoopsAttachment[];
 };
 
 /**
@@ -47,6 +58,7 @@ export async function sendTransactional({
   email,
   transactionalId,
   dataVariables,
+  attachments,
 }: SendOptions): Promise<{ success: boolean; error?: string }> {
   if (!loops) {
     console.warn(`[loops] Skipping email to ${email} — LOOPS_API_KEY missing`);
@@ -62,6 +74,7 @@ export async function sendTransactional({
       email,
       transactionalId,
       ...(dataVariables && { dataVariables }),
+      ...(attachments && attachments.length > 0 && { attachments }),
       addToAudience: true,
     });
     return { success: result.success === true };

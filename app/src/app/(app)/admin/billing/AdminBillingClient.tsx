@@ -108,6 +108,9 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
+  // Tracks which invoice's Send button is in-flight, so we can disable
+  // it without disabling the whole row.
+  const [savingStatusId, setSavingStatusId] = useState<string | null>(null);
 
   // Per-section collapse state. Mirrors the Projects list pattern.
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>(() =>
@@ -366,6 +369,55 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
       return;
     }
     setInvoices((prev) => prev.filter((i) => i.id !== invoice.id));
+  }
+
+  // Send the invoice to the project's client via Loops (with PDF
+  // attached). Confirms the recipient first so a typo on the project
+  // doesn't accidentally email the wrong client. Server flips status
+  // to SENT and records sentAt on success.
+  async function sendInvoiceToClient(invoice: Invoice) {
+    setError(null);
+    // Use the project's clientEmail by default; user can adjust at the
+    // prompt. (For a richer UX we'd open a real modal; this is fine
+    // for v1 — fast to ship, gives the user the confirm step they need.)
+    const defaultEmail = ""; // we don't have it on the row payload yet
+    const promptedEmail = prompt(
+      `Send ${invoice.invoiceNumber} to the client?\n\nThe PDF will be attached. Enter the client email (or leave blank to use the project's client email):`,
+      defaultEmail
+    );
+    if (promptedEmail === null) return; // cancelled
+
+    const optionalMessage = prompt(
+      "Optional message to include in the email (leave blank to skip):",
+      ""
+    );
+
+    setSavingStatusId(invoice.id);
+    try {
+      const res = await fetch(`/api/invoices/${invoice.id}/send`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          toEmail: promptedEmail || undefined,
+          bodyMessage: optionalMessage || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Failed to send invoice.");
+        return;
+      }
+      setInvoices((prev) =>
+        prev.map((i) =>
+          i.id === invoice.id
+            ? { ...i, status: data.status, sentAt: data.sentAt }
+            : i
+        )
+      );
+      alert(`Invoice ${invoice.invoiceNumber} sent to ${data.recipient}.`);
+    } finally {
+      setSavingStatusId(null);
+    }
   }
 
   // One-click "Mark as Sent" — records sentAt + flips DRAFT to SENT.
@@ -922,14 +974,28 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
                               </td>
                               <td className="px-4 sm:px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
                                 <div className="inline-flex items-center gap-2">
+                                  {/* Send to client — emails the PDF via Loops and
+                                      flips status to SENT. Available for DRAFT and
+                                      SENT (resend). PAID/VOID hide it. */}
+                                  {(inv.status === "DRAFT" || inv.status === "SENT") && (
+                                    <button
+                                      type="button"
+                                      onClick={() => sendInvoiceToClient(inv)}
+                                      disabled={savingStatusId === inv.id}
+                                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 hover:text-emerald-800 hover:underline disabled:opacity-50"
+                                      title="Email PDF to client via Phasewise"
+                                    >
+                                      <Send className="w-3 h-3" />
+                                      {savingStatusId === inv.id ? "Sending..." : inv.status === "SENT" ? "Re-send" : "Send to client"}
+                                    </button>
+                                  )}
                                   {inv.status === "DRAFT" && (
                                     <button
                                       type="button"
                                       onClick={() => quickMarkAsSent(inv)}
                                       className="inline-flex items-center gap-1 text-[11px] font-medium text-blue-700 hover:text-blue-800 hover:underline"
-                                      title="Mark as sent"
+                                      title="Mark as sent without emailing — for invoices you handed off some other way"
                                     >
-                                      <Send className="w-3 h-3" />
                                       Mark sent
                                     </button>
                                   )}
