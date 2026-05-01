@@ -31,6 +31,10 @@ model Organization {
   invoiceNumberPrefix      String              @default("INV") @map("invoice_number_prefix")
   invoiceNumberNext        Int                 @default(1) @map("invoice_number_next")
   autoNumberInvoices       Boolean             @default(true) @map("auto_number_invoices")
+  // Format template with tokens: {prefix} {YY} {YYYY} {N} {N3} {N4} {N5}.
+  // Default `{prefix}-{N3}` preserves existing INV-001 behavior. Common
+  // alternative: `{prefix}-{YY}-{N4}` -> INV-26-0001.
+  invoiceNumberFormat      String              @default("{prefix}-{N3}") @map("invoice_number_format")
   leavePolicy              Json?               @map("leave_policy")
   createdAt                DateTime            @default(now()) @map("created_at")
   updatedAt                DateTime            @updatedAt @map("updated_at")

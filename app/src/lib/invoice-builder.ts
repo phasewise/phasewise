@@ -1,5 +1,6 @@
 import { Prisma, PrismaClient } from "@prisma/client";
 import { PHASE_LABELS } from "@/lib/constants";
+import { renderInvoiceNumber } from "@/lib/invoice-numbering";
 
 type Tx = Prisma.TransactionClient | PrismaClient;
 
@@ -181,7 +182,12 @@ export async function buildInvoiceFromTimesheet({
   const org = await tx.organization.update({
     where: { id: organizationId },
     data: { invoiceNumberNext: { increment: 1 } },
-    select: { invoiceNumberNext: true, invoiceNumberPrefix: true, autoNumberInvoices: true },
+    select: {
+      invoiceNumberNext: true,
+      invoiceNumberPrefix: true,
+      invoiceNumberFormat: true,
+      autoNumberInvoices: true,
+    },
   });
   if (!org.autoNumberInvoices) {
     // Auto-numbering is off — caller (the manual POST flow) should handle
@@ -195,7 +201,11 @@ export async function buildInvoiceFromTimesheet({
     throw new Error("Auto-numbering is disabled for this organization.");
   }
   const used = org.invoiceNumberNext - 1;
-  const invoiceNumber = `${org.invoiceNumberPrefix}-${String(used).padStart(3, "0")}`;
+  const invoiceNumber = renderInvoiceNumber(
+    org.invoiceNumberFormat,
+    org.invoiceNumberPrefix,
+    used
+  );
 
   const resolvedIssueDate = issueDate ?? new Date();
   const resolvedDueDate =

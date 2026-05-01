@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/supabase/auth";
+import { renderInvoiceNumber } from "@/lib/invoice-numbering";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,7 @@ export async function GET() {
       autoNumberInvoices: true,
       invoiceNumberPrefix: true,
       invoiceNumberNext: true,
+      invoiceNumberFormat: true,
     },
   });
 
@@ -31,6 +33,10 @@ export async function GET() {
     return NextResponse.json({ nextNumber: null });
   }
 
-  const nextNumber = `${org.invoiceNumberPrefix}-${String(org.invoiceNumberNext).padStart(3, "0")}`;
+  const nextNumber = renderInvoiceNumber(
+    org.invoiceNumberFormat,
+    org.invoiceNumberPrefix,
+    org.invoiceNumberNext
+  );
   return NextResponse.json({ nextNumber });
 }

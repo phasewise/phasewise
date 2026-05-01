@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { InvoiceStatus, Prisma } from "@prisma/client";
 import { getCurrentUser } from "@/lib/supabase/auth";
 import { prisma } from "@/lib/prisma";
+import { renderInvoiceNumber } from "@/lib/invoice-numbering";
 
 export const dynamic = "force-dynamic";
 
@@ -107,6 +108,7 @@ export async function POST(request: NextRequest) {
       select: {
         autoNumberInvoices: true,
         invoiceNumberPrefix: true,
+        invoiceNumberFormat: true,
       },
     });
 
@@ -115,10 +117,18 @@ export async function POST(request: NextRequest) {
       const updated = await tx.organization.update({
         where: { id: currentUser.organizationId },
         data: { invoiceNumberNext: { increment: 1 } },
-        select: { invoiceNumberNext: true, invoiceNumberPrefix: true },
+        select: {
+          invoiceNumberNext: true,
+          invoiceNumberPrefix: true,
+          invoiceNumberFormat: true,
+        },
       });
       const used = updated.invoiceNumberNext - 1;
-      resolvedNumber = `${updated.invoiceNumberPrefix}-${String(used).padStart(3, "0")}`;
+      resolvedNumber = renderInvoiceNumber(
+        updated.invoiceNumberFormat,
+        updated.invoiceNumberPrefix,
+        used
+      );
     } else if (org?.autoNumberInvoices && invoiceNumber) {
       // Client passed a value — only consume a counter slot if the value
       // matches what the counter would have produced. Preserves the
@@ -126,10 +136,18 @@ export async function POST(request: NextRequest) {
       const updated = await tx.organization.update({
         where: { id: currentUser.organizationId },
         data: { invoiceNumberNext: { increment: 1 } },
-        select: { invoiceNumberNext: true, invoiceNumberPrefix: true },
+        select: {
+          invoiceNumberNext: true,
+          invoiceNumberPrefix: true,
+          invoiceNumberFormat: true,
+        },
       });
       const used = updated.invoiceNumberNext - 1;
-      const expected = `${updated.invoiceNumberPrefix}-${String(used).padStart(3, "0")}`;
+      const expected = renderInvoiceNumber(
+        updated.invoiceNumberFormat,
+        updated.invoiceNumberPrefix,
+        used
+      );
       if (invoiceNumber !== expected) {
         await tx.organization.update({
           where: { id: currentUser.organizationId },

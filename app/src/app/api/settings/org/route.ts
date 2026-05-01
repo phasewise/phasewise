@@ -23,6 +23,10 @@ export async function GET() {
         projectNumberPrefix: true,
         projectNumberNext: true,
         autoNumberProjects: true,
+        invoiceNumberPrefix: true,
+        invoiceNumberNext: true,
+        autoNumberInvoices: true,
+        invoiceNumberFormat: true,
       },
     });
 
@@ -57,10 +61,22 @@ export async function PATCH(request: Request) {
     }
 
     const body = await request.json();
-    const { projectNumberPrefix, projectNumberNext, autoNumberProjects } = body as {
+    const {
+      projectNumberPrefix,
+      projectNumberNext,
+      autoNumberProjects,
+      invoiceNumberPrefix,
+      invoiceNumberNext,
+      autoNumberInvoices,
+      invoiceNumberFormat,
+    } = body as {
       projectNumberPrefix?: string;
       projectNumberNext?: number;
       autoNumberProjects?: boolean;
+      invoiceNumberPrefix?: string;
+      invoiceNumberNext?: number;
+      autoNumberInvoices?: boolean;
+      invoiceNumberFormat?: string;
     };
 
     const data: Record<string, unknown> = {};
@@ -74,6 +90,32 @@ export async function PATCH(request: Request) {
     if (autoNumberProjects !== undefined) {
       data.autoNumberProjects = autoNumberProjects;
     }
+    if (invoiceNumberPrefix !== undefined) {
+      data.invoiceNumberPrefix = invoiceNumberPrefix.trim().toUpperCase() || "INV";
+    }
+    if (invoiceNumberNext !== undefined) {
+      const num = Math.max(1, Math.floor(Number(invoiceNumberNext)));
+      data.invoiceNumberNext = num;
+    }
+    if (autoNumberInvoices !== undefined) {
+      data.autoNumberInvoices = autoNumberInvoices;
+    }
+    if (invoiceNumberFormat !== undefined) {
+      const trimmed = invoiceNumberFormat.trim();
+      // Validate at least the {N...} counter token is present so saved
+      // formats actually produce unique numbers. Falls back to default
+      // if the user clears the field entirely.
+      if (!trimmed) {
+        data.invoiceNumberFormat = "{prefix}-{N3}";
+      } else if (!/\{N\d*\}/i.test(trimmed)) {
+        return NextResponse.json(
+          { error: "Invoice number format must include a counter token like {N}, {N3}, {N4}, or {N5}." },
+          { status: 400 }
+        );
+      } else {
+        data.invoiceNumberFormat = trimmed;
+      }
+    }
 
     const updated = await prisma.organization.update({
       where: { id: currentUser.organizationId },
@@ -82,6 +124,10 @@ export async function PATCH(request: Request) {
         projectNumberPrefix: true,
         projectNumberNext: true,
         autoNumberProjects: true,
+        invoiceNumberPrefix: true,
+        invoiceNumberNext: true,
+        autoNumberInvoices: true,
+        invoiceNumberFormat: true,
       },
     });
 
