@@ -87,8 +87,10 @@ export async function POST(request: Request) {
       transactionalId: LOOPS_TEMPLATES.INVITE,
       dataVariables: {
         recipientName: firstName || "there",
+        recipientFullName: targetUser.fullName.trim(),
         orgName,
         role: userRole,
+        title: targetUser.title || "",
         inviteUrl,
       },
     }).catch((err) => {
