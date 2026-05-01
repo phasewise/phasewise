@@ -55,6 +55,16 @@ export default function WorkPlanEditor({ projectId, phases, teamMembers, onSaved
     if (success) setSuccess(false);
   }
 
+  // Build a stable key from phase ids so the effect only re-fires when
+  // the actual phase set changes, not on every parent render. The parent
+  // (EditProjectPage) re-creates the phases array on every render
+  // (which happens whenever ANY state changes — including the
+  // workPlanDirty flag we set when the user clicks "+ Add staff").
+  // Without this, clicking + would: trigger markDirty → parent
+  // re-renders → new phases reference → this effect re-fires → re-fetch
+  // → setPlan clobbers the new empty row → row vanishes.
+  const phaseIdsKey = phases.map((p) => p.id).join(",");
+
   // Load existing work plan
   useEffect(() => {
     fetch(`/api/projects/${projectId}/work-plan`)
@@ -96,7 +106,8 @@ export default function WorkPlanEditor({ projectId, phases, teamMembers, onSaved
         );
         setLoading(false);
       });
-  }, [projectId, phases]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId, phaseIdsKey]);
 
   function addStaffToPhase(phaseIndex: number) {
     markDirty();
