@@ -323,7 +323,14 @@ export default function TimeSheetClient({
                             step="0.25"
                             min="0"
                             max="24"
-                            value={isDisabled ? "" : (entries[key] ?? "")}
+                            // Always show the saved entry value — even on
+                            // approved/future-blocked weeks. Previously this
+                            // forced "" when disabled, making approved
+                            // entries appear to vanish even though they
+                            // were still in the database. Empty rows
+                            // (incomplete project/phase) still render
+                            // empty since rowIsComplete is false.
+                            value={rowIsComplete(row) ? (entries[key] ?? "") : ""}
                             onChange={(e) =>
                               setEntries((prev) => ({
                                 ...prev,
@@ -332,9 +339,13 @@ export default function TimeSheetClient({
                             }
                             onBlur={() => handleBlur(row, date)}
                             disabled={isDisabled}
+                            // disabled:opacity-60 (was 30) so read-only
+                            // values stay legible. They're not editable
+                            // but they still need to be readable for
+                            // someone reviewing the week.
                             className={`w-14 text-center bg-[#F7F9F7] border rounded-lg px-1 py-2 text-sm outline-none transition-colors
                               ${isSaving ? "border-[#52B788] bg-[#F0FAF4]" : "border-[#E2EBE4]"}
-                              focus:border-[#52B788] disabled:opacity-30`}
+                              focus:border-[#52B788] disabled:opacity-60 disabled:text-[#3D5C48]`}
                           />
                         </td>
                       );

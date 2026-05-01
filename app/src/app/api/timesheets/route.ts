@@ -87,6 +87,11 @@ export async function POST(request: Request) {
           data: {
             status: "SUBMITTED",
             submittedAt: new Date(),
+            // Clear any prior reviewer feedback — user just re-submitted,
+            // so the old "fix this" note is no longer relevant.
+            reviewComment: null,
+            reviewedById: null,
+            reviewedAt: null,
           },
         })
       : await prisma.weeklyTimesheet.create({
@@ -129,10 +134,66 @@ export async function POST(request: Request) {
         status: "APPROVED",
         approvedById: currentUser.id,
         approvedAt: new Date(),
+        // Approving clears any prior reject comment — fresh slate.
+        reviewComment: null,
+        reviewedById: null,
+        reviewedAt: null,
       },
     });
 
     return NextResponse.json({ success: true, timesheet: approved });
+  }
+
+  // "Reject" / "Request changes" — approver sends a SUBMITTED timesheet
+  // back to DRAFT with a comment. The staff member sees the comment on
+  // their timesheet page and re-submits after fixing. Same flow as
+  // reopen, but it explicitly captures WHY the reviewer sent it back so
+  // it's a teachable moment, not a silent reset.
+  if (action === "reject") {
+    if (!approverRoles.includes(currentUser.role)) {
+      return NextResponse.json({ error: "Insufficient permissions." }, { status: 403 });
+    }
+
+    if (!timesheetId) {
+      return NextResponse.json({ error: "timesheetId is required to reject." }, { status: 400 });
+    }
+
+    const reviewComment = (body.reviewComment as string | undefined)?.trim();
+    if (!reviewComment) {
+      return NextResponse.json(
+        { error: "A comment is required when sending a timesheet back." },
+        { status: 400 }
+      );
+    }
+
+    const timesheet = await prisma.weeklyTimesheet.findUnique({
+      where: { id: timesheetId },
+      include: { user: true },
+    });
+
+    if (!timesheet || timesheet.user.organizationId !== currentUser.organizationId) {
+      return NextResponse.json({ error: "Timesheet not found." }, { status: 404 });
+    }
+
+    if (timesheet.status !== "SUBMITTED") {
+      return NextResponse.json(
+        { error: "Only submitted timesheets can be sent back for changes." },
+        { status: 400 }
+      );
+    }
+
+    const rejected = await prisma.weeklyTimesheet.update({
+      where: { id: timesheetId },
+      data: {
+        status: "DRAFT",
+        submittedAt: null,
+        reviewComment,
+        reviewedById: currentUser.id,
+        reviewedAt: new Date(),
+      },
+    });
+
+    return NextResponse.json({ success: true, timesheet: rejected });
   }
 
   // Reopen a submitted or approved timesheet so the user can edit again.

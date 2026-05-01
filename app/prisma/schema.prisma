@@ -88,6 +88,7 @@ model User {
   timeEntries  TimeEntry[]
   createdProjects Project[] @relation("ProjectCreator")
   approvedTimesheets WeeklyTimesheet[] @relation("TimesheetApprover")
+  reviewedTimesheets WeeklyTimesheet[] @relation("TimesheetReviewer")
   timesheets   WeeklyTimesheet[]
   assignments ProjectAssignment[]
   assignedTasks ProjectTask[]
@@ -458,10 +459,17 @@ model WeeklyTimesheet {
   submittedAt  DateTime?       @map("submitted_at")
   approvedById String?         @map("approved_by_id") @db.Uuid
   approvedAt   DateTime?       @map("approved_at")
+  // Last reviewer comment — set when an approver clicks "Send back" /
+  // "Request changes". Surfaced to the staff member on the timesheet
+  // page so they know what to fix. Cleared when they re-submit.
+  reviewComment String?        @map("review_comment")
+  reviewedById  String?        @map("reviewed_by_id") @db.Uuid
+  reviewedAt    DateTime?      @map("reviewed_at")
   createdAt    DateTime        @default(now()) @map("created_at")
 
   user       User  @relation(fields: [userId], references: [id])
   approvedBy User? @relation("TimesheetApprover", fields: [approvedById], references: [id])
+  reviewedBy User? @relation("TimesheetReviewer", fields: [reviewedById], references: [id])
 
   @@unique([userId, weekStart])
   @@map("weekly_timesheets")

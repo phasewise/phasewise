@@ -298,6 +298,20 @@ export default async function TimePage({
         </div>
       )}
 
+      {/* Reviewer comment from a rejected/sent-back timesheet. Persists
+          on the WeeklyTimesheet and renders here until the user re-submits
+          (at which point the submit handler clears it). */}
+      {timesheet?.reviewComment && timesheet.status === "DRAFT" && !isViewingOther && (
+        <div className="mb-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+          <div className="font-semibold mb-1">
+            Sent back by your reviewer — please make changes and re-submit.
+          </div>
+          <div className="text-rose-900">
+            &ldquo;{timesheet.reviewComment}&rdquo;
+          </div>
+        </div>
+      )}
+
       {balances.some((b) => b.annualHours > 0 || b.usedHours > 0) && (
         <div className="mb-5 grid grid-cols-2 sm:grid-cols-5 gap-3">
           {balances.map((b) => {
