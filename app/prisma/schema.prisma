@@ -35,6 +35,11 @@ model Organization {
   // Default `{prefix}-{N3}` preserves existing INV-001 behavior. Common
   // alternative: `{prefix}-{YY}-{N4}` -> INV-26-0001.
   invoiceNumberFormat      String              @default("{prefix}-{N3}") @map("invoice_number_format")
+  // Firm-managed list of project type values. JSON string array. When
+  // null, the new/edit project forms fall back to a built-in default
+  // set (Residential / Commercial / Public / etc.). Populated once a
+  // firm visits /settings/project-types and saves their own taxonomy.
+  projectTypes             Json?               @map("project_types")
   leavePolicy              Json?               @map("leave_policy")
   createdAt                DateTime            @default(now()) @map("created_at")
   updatedAt                DateTime            @updatedAt @map("updated_at")

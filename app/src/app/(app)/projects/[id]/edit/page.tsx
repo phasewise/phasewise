@@ -46,6 +46,15 @@ export default function EditProjectPage() {
   // Team members for work plan
   const [teamMembers, setTeamMembers] = useState<Array<{ id: string; fullName: string; billingRate: number }>>([]);
 
+  // Org-managed project type list (Settings → Project types).
+  const [projectTypeOptions, setProjectTypeOptions] = useState<string[]>([]);
+  useEffect(() => {
+    fetch("/api/projects/types")
+      .then((r) => r.json())
+      .then((d) => setProjectTypeOptions(Array.isArray(d.types) ? d.types : []))
+      .catch(() => {});
+  }, []);
+
   // True when WorkPlanEditor has unsaved edits. We use this to warn the
   // user (and require an explicit confirm) on Save all changes — work
   // plan saves to its own endpoint, so a top-level submit silently drops
@@ -343,17 +352,13 @@ export default function EditProjectPage() {
                   placeholder="Residential / Commercial / Public / Entry monument / …"
                   className="mt-2 w-full rounded-lg border border-[#E2EBE4] bg-[#F7F9F7] px-4 py-3 text-sm text-[#1A2E22] outline-none focus:border-[#52B788] focus:bg-white"
                 />
-                {/* Datalist gives a typeahead with the canonical taxonomy
-                    while still allowing free text — firms vary in what
-                    they call their work. */}
+                {/* Datalist sourced from /settings/project-types so each
+                    firm controls its own taxonomy. Free text still
+                    allowed for one-off types. */}
                 <datalist id="pedit-project-type-suggestions">
-                  <option value="Residential" />
-                  <option value="Commercial" />
-                  <option value="Public" />
-                  <option value="Entry Monument" />
-                  <option value="Mixed Use" />
-                  <option value="Park" />
-                  <option value="Streetscape" />
+                  {projectTypeOptions.map((t) => (
+                    <option key={t} value={t} />
+                  ))}
                 </datalist>
               </div>
             </div>

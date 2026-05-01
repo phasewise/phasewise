@@ -41,9 +41,20 @@ export default function NewProjectPage() {
   const [contractFee, setContractFee] = useState("");
   const [city, setCity] = useState("");
   const [projectType, setProjectType] = useState("");
+  // Org-managed project type list — fetched on mount. The Settings page
+  // at /settings/project-types lets owners curate this. Free-text input
+  // still allowed for one-off types.
+  const [projectTypeOptions, setProjectTypeOptions] = useState<string[]>([]);
   const [phases, setPhases] = useState<PhaseRow[]>(defaultPhases);
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/projects/types")
+      .then((r) => r.json())
+      .then((d) => setProjectTypeOptions(Array.isArray(d.types) ? d.types : []))
+      .catch(() => {});
+  }, []);
 
   const selectedPhaseCount = useMemo(
     () => phases.filter((phase) => phase.selected).length,
@@ -266,13 +277,9 @@ export default function NewProjectPage() {
                   className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none focus:border-emerald-500"
                 />
                 <datalist id="pnew-project-type-suggestions">
-                  <option value="Residential" />
-                  <option value="Commercial" />
-                  <option value="Public" />
-                  <option value="Entry Monument" />
-                  <option value="Mixed Use" />
-                  <option value="Park" />
-                  <option value="Streetscape" />
+                  {projectTypeOptions.map((t) => (
+                    <option key={t} value={t} />
+                  ))}
                 </datalist>
               </div>
             </div>

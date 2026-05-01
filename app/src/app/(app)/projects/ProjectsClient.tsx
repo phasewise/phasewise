@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronDown, ChevronRight, FolderPlus, Search, X } from "lucide-react";
@@ -80,26 +80,22 @@ export default function ProjectsClient({ projects: initialProjects }: Props) {
     return Array.from(set).sort();
   }, [projects]);
 
-  // Suggested types — shown in the filter even before any project uses
-  // them, so a fresh org sees the canonical taxonomy. Free text is still
-  // allowed when editing a project.
-  const SUGGESTED_TYPES = useMemo(
-    () => [
-      "Residential",
-      "Commercial",
-      "Public",
-      "Entry Monument",
-      "Mixed Use",
-      "Park",
-      "Streetscape",
-    ],
-    []
-  );
+  // Org-managed type list from /settings/project-types. Falls back to
+  // empty until the fetch resolves; merged with knownTypes below so any
+  // projectType already saved on a project still shows even if it was
+  // removed from the org list.
+  const [orgTypes, setOrgTypes] = useState<string[]>([]);
+  useEffect(() => {
+    fetch("/api/projects/types")
+      .then((r) => r.json())
+      .then((d) => setOrgTypes(Array.isArray(d.types) ? d.types : []))
+      .catch(() => {});
+  }, []);
 
   const allTypeOptions = useMemo(() => {
-    const merged = new Set<string>([...knownTypes, ...SUGGESTED_TYPES]);
+    const merged = new Set<string>([...knownTypes, ...orgTypes]);
     return Array.from(merged).sort();
-  }, [knownTypes, SUGGESTED_TYPES]);
+  }, [knownTypes, orgTypes]);
 
   const filterMatches = (p: ProjectListItem) => {
     const q = search.trim().toLowerCase();
