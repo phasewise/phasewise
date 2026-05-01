@@ -224,7 +224,13 @@ function InvoiceDocument({ data }: { data: InvoicePdfInput }) {
           <View style={{ alignItems: "flex-end" }}>
             <Text style={styles.title}>INVOICE</Text>
             <Text style={styles.subtle}>#{data.invoiceNumber}</Text>
-            <Text style={styles.statusPill}>{data.status.replace("_", " ")}</Text>
+            {/* Status pill — only render for non-DRAFT statuses. Showing
+                "DRAFT" on a PDF the user might forward to a client looks
+                like a watermark and creates confusion. PAID / SENT /
+                OVERDUE are signal worth showing. */}
+            {data.status && data.status !== "DRAFT" ? (
+              <Text style={styles.statusPill}>{data.status.replace("_", " ")}</Text>
+            ) : null}
           </View>
         </View>
 

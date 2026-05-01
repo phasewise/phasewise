@@ -268,3 +268,56 @@ export async function PATCH(request: NextRequest) {
 
   return NextResponse.json({ invoice: updated });
 }
+
+/**
+ * DELETE /api/invoices?id=xxx
+ *
+ * Permanently removes an invoice and its line items. Source TimeEntries
+ * that were tagged to this invoice get untagged so they can be billed
+ * on a future invoice — otherwise deleting an invoice would silently
+ * lock those hours away.
+ *
+ * Permissions: OWNER and ADMIN only. PMs intentionally can't delete
+ * invoices because PAID ones are a real accounting action.
+ */
+export async function DELETE(request: NextRequest) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) {
+    return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
+  }
+
+  if (currentUser.role !== "OWNER" && currentUser.role !== "ADMIN") {
+    return NextResponse.json(
+      { error: "Only owners and admins can delete invoices." },
+      { status: 403 }
+    );
+  }
+
+  const url = new URL(request.url);
+  const id = url.searchParams.get("id");
+  if (!id) {
+    return NextResponse.json({ error: "id is required." }, { status: 400 });
+  }
+
+  const existing = await prisma.invoice.findUnique({
+    where: { id },
+    select: { organizationId: true, status: true },
+  });
+  if (!existing || existing.organizationId !== currentUser.organizationId) {
+    return NextResponse.json({ error: "Invoice not found." }, { status: 404 });
+  }
+
+  // Un-tag all source TimeEntries first so they're available for future
+  // invoices. Then delete the invoice (cascades line items via Prisma
+  // schema). Both inside a transaction so a partial failure can't
+  // orphan tagged entries.
+  await prisma.$transaction(async (tx) => {
+    await tx.timeEntry.updateMany({
+      where: { invoiceId: id },
+      data: { invoiceId: null, invoicedAt: null },
+    });
+    await tx.invoice.delete({ where: { id } });
+  });
+
+  return NextResponse.json({ success: true });
+}

@@ -13,6 +13,7 @@ import {
   Plus,
   Send,
   Sparkles,
+  Trash2,
   X,
 } from "lucide-react";
 
@@ -339,6 +340,27 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
     setEditStatus("PAID");
     setEditPaidAmount(String(invoice.total));
     setEditPaidDate(new Date().toISOString().split("T")[0]);
+  }
+
+  // Delete an invoice. PAID invoices get a stronger confirm because
+  // deleting one is a real bookkeeping action, not a typo recovery.
+  // Server-side un-tags any source TimeEntries inside the same
+  // transaction so those hours are billable again on a future invoice.
+  async function handleDelete(invoice: Invoice) {
+    const isPaid = invoice.status === "PAID" || invoice.status === "PARTIALLY_PAID";
+    const message = isPaid
+      ? `Delete ${invoice.invoiceNumber}? This invoice has $${invoice.paidAmount.toLocaleString()} recorded as paid — deleting it removes that payment record. You'll need to re-create the invoice if you delete by mistake. Continue?`
+      : `Delete ${invoice.invoiceNumber}? Source time entries (if any) will be untagged so they can be billed on a future invoice.`;
+    if (!confirm(message)) return;
+
+    setError(null);
+    const res = await fetch(`/api/invoices?id=${invoice.id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setError(data.error || "Failed to delete invoice.");
+      return;
+    }
+    setInvoices((prev) => prev.filter((i) => i.id !== invoice.id));
   }
 
   // One-click "Mark as Sent" — records sentAt + flips DRAFT to SENT.
@@ -890,6 +912,19 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
                                   >
                                     PDF
                                   </a>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDelete(inv)}
+                                    aria-label="Delete invoice"
+                                    title={
+                                      inv.status === "PAID" || inv.status === "PARTIALLY_PAID"
+                                        ? "Delete (paid invoice — confirms twice)"
+                                        : "Delete invoice"
+                                    }
+                                    className="p-1 rounded-md text-[#A3BEA9] hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
                                 </div>
                               </td>
                             </tr>
