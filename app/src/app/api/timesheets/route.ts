@@ -107,10 +107,6 @@ export async function POST(request: Request) {
   }
 
   if (action === "approve") {
-    if (!approverRoles.includes(currentUser.role)) {
-      return NextResponse.json({ error: "Insufficient permissions." }, { status: 403 });
-    }
-
     if (!timesheetId) {
       return NextResponse.json({ error: "timesheetId is required to approve." }, { status: 400 });
     }
@@ -122,6 +118,16 @@ export async function POST(request: Request) {
 
     if (!timesheet || timesheet.user.organizationId !== currentUser.organizationId) {
       return NextResponse.json({ error: "Timesheet not found." }, { status: 404 });
+    }
+
+    // Approval gate: standard OWNER/ADMIN/SUPERVISOR roles, OR the
+    // user's direct supervisor (delegation). Means a PM with role=PM
+    // can approve their direct reports' timesheets without needing
+    // full SUPERVISOR role permissions across the org.
+    const isRoleApprover = approverRoles.includes(currentUser.role);
+    const isDirectSupervisor = timesheet.user.supervisorId === currentUser.id;
+    if (!isRoleApprover && !isDirectSupervisor) {
+      return NextResponse.json({ error: "Insufficient permissions." }, { status: 403 });
     }
 
     if (timesheet.status !== "SUBMITTED") {
@@ -150,10 +156,6 @@ export async function POST(request: Request) {
   // reopen, but it explicitly captures WHY the reviewer sent it back so
   // it's a teachable moment, not a silent reset.
   if (action === "reject") {
-    if (!approverRoles.includes(currentUser.role)) {
-      return NextResponse.json({ error: "Insufficient permissions." }, { status: 403 });
-    }
-
     if (!timesheetId) {
       return NextResponse.json({ error: "timesheetId is required to reject." }, { status: 400 });
     }
@@ -173,6 +175,14 @@ export async function POST(request: Request) {
 
     if (!timesheet || timesheet.user.organizationId !== currentUser.organizationId) {
       return NextResponse.json({ error: "Timesheet not found." }, { status: 404 });
+    }
+
+    // Same delegation rule as approve — direct supervisors can also
+    // send a timesheet back for changes.
+    const isRoleApprover = approverRoles.includes(currentUser.role);
+    const isDirectSupervisor = timesheet.user.supervisorId === currentUser.id;
+    if (!isRoleApprover && !isDirectSupervisor) {
+      return NextResponse.json({ error: "Insufficient permissions." }, { status: 403 });
     }
 
     if (timesheet.status !== "SUBMITTED") {

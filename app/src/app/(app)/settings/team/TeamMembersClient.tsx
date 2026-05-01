@@ -16,6 +16,9 @@ type TeamUser = {
   isActive?: boolean;
   photoUrl?: string | null;
   inviteToken?: string | null;
+  // Direct supervisor — when set, that user can approve THIS user's
+  // timesheets in addition to any OWNER/ADMIN/SUPERVISOR role-approver.
+  supervisorId?: string | null;
 };
 
 function MemberAvatar({ name, photoUrl }: { name: string; photoUrl?: string | null }) {
@@ -98,6 +101,9 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
   const [editPhone, setEditPhone] = useState("");
   const [editBillingRate, setEditBillingRate] = useState("");
   const [editSalary, setEditSalary] = useState("");
+  // "" = no supervisor (will send null on save). Not blocking own self —
+  // server rejects userId === supervisorId.
+  const [editSupervisorId, setEditSupervisorId] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [inviteBanner, setInviteBanner] = useState<{ name: string; url: string } | null>(null);
 
@@ -201,6 +207,7 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
     setEditPhone(user.phone || "");
     setEditBillingRate(user.billingRate != null ? String(user.billingRate) : "");
     setEditSalary(user.salary != null ? String(user.salary) : "");
+    setEditSupervisorId(user.supervisorId || "");
     setError(null);
   }
 
@@ -214,6 +221,7 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
     setEditPhone("");
     setEditBillingRate("");
     setEditSalary("");
+    setEditSupervisorId("");
   }
 
   function handleEditTitleSelect(value: string) {
@@ -241,6 +249,8 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
       title: editTitle,
       role: editRole,
       phone: editPhone,
+      // Send null to clear; otherwise pass the selected user id.
+      supervisorId: editSupervisorId || null,
     };
     if (editBillingRate !== "") body.billingRate = editBillingRate;
     if (editSalary !== "") body.salary = editSalary;
@@ -269,6 +279,7 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
               title: updated.title,
               role: updated.role,
               phone: updated.phone,
+              supervisorId: updated.supervisorId ?? null,
               billingRate: updated.billingRate != null ? Number(updated.billingRate) : null,
               salary: updated.salary != null ? Number(updated.salary) : null,
               costRate: updated.costRate != null ? Number(updated.costRate) : null,
@@ -696,17 +707,41 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
                 </div>
               </div>
 
-              <div>
-                <label htmlFor="team-edit-phone" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Phone</label>
-                <input
-                  id="team-edit-phone"
-                  type="tel"
-                  value={editPhone}
-                  onChange={(e) => setEditPhone(e.target.value)}
-                  autoComplete="tel"
-                  placeholder="(555) 123-4567"
-                  className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788] transition-colors"
-                />
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="team-edit-phone" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Phone</label>
+                  <input
+                    id="team-edit-phone"
+                    type="tel"
+                    value={editPhone}
+                    onChange={(e) => setEditPhone(e.target.value)}
+                    autoComplete="tel"
+                    placeholder="(555) 123-4567"
+                    className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788] transition-colors"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="team-edit-supervisor" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Supervisor</label>
+                  <select
+                    id="team-edit-supervisor"
+                    value={editSupervisorId}
+                    onChange={(e) => setEditSupervisorId(e.target.value)}
+                    className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788] transition-colors"
+                  >
+                    <option value="">— No direct supervisor —</option>
+                    {users
+                      .filter((u) => u.id !== editingUser.id && u.isActive !== false)
+                      .map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {u.fullName}
+                          {u.title ? ` · ${u.title}` : ""}
+                        </option>
+                      ))}
+                  </select>
+                  <p className="text-[11px] text-[#A3BEA9] mt-1">
+                    The supervisor can approve this user&rsquo;s timesheets in addition to any Owner / Admin / Supervisor.
+                  </p>
+                </div>
               </div>
 
               <div className="grid sm:grid-cols-2 gap-4 pt-2 border-t border-[#E8EDE9]">

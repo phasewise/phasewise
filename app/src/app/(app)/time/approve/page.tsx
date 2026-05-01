@@ -20,23 +20,26 @@ export default async function TimeApprovePage() {
     );
   }
 
-  const canApprove = ["OWNER", "ADMIN", "SUPERVISOR"].includes(currentUser.role);
+  // Approver eligibility: standard OWNER/ADMIN/SUPERVISOR roles see all
+  // submitted timesheets in the org. Anyone else only sees their direct
+  // reports' submissions (User.supervisorId === currentUser.id). A PM
+  // with no direct reports lands here with an empty queue, which is
+  // correct — nothing to approve.
+  const isRoleApprover = ["OWNER", "ADMIN", "SUPERVISOR"].includes(currentUser.role);
 
-  if (!canApprove) {
-    return (
-      <div className="p-8">
-        <div className="rounded-3xl border border-slate-200 bg-white p-8 text-slate-700">
-          <h1 className="text-2xl font-semibold">Approve timesheets</h1>
-          <p className="mt-3 text-sm text-slate-500">You do not have permission to approve timesheets.</p>
-        </div>
-      </div>
-    );
-  }
+  // Anyone can navigate to this page; we show whatever's in their queue
+  // (or empty state). Hard-blocking non-approvers was wrong — a PM with
+  // direct reports should land here without needing role escalation.
 
   const submittedTimesheets = await prisma.weeklyTimesheet.findMany({
     where: {
       status: "SUBMITTED",
-      user: { organizationId: currentUser.organizationId },
+      user: {
+        organizationId: currentUser.organizationId,
+        // Role-approvers see every submission in the org. Everyone else
+        // sees only the timesheets of users who report directly to them.
+        ...(isRoleApprover ? {} : { supervisorId: currentUser.id }),
+      },
     },
     include: { user: true },
     orderBy: { submittedAt: "desc" },

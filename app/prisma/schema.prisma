@@ -85,6 +85,11 @@ model User {
   costRate        Decimal? @map("cost_rate") @db.Decimal(10, 2) // Hourly cost (salary / 2080)
   leavePolicyOverride Json? @map("leave_policy_override")
   isActive        Boolean  @default(true) @map("is_active")
+  // Direct supervisor — when set, this user (the supervisor) can
+  // approve THIS staff member's timesheets in addition to the standard
+  // OWNER/ADMIN/SUPERVISOR role-based approvers. Lets a firm delegate
+  // approval down without giving the delegate full SUPERVISOR role.
+  supervisorId    String?  @map("supervisor_id") @db.Uuid
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
@@ -92,6 +97,10 @@ model User {
   timeEntries  TimeEntry[]
   createdProjects Project[] @relation("ProjectCreator")
   approvedTimesheets WeeklyTimesheet[] @relation("TimesheetApprover")
+
+  // Direct-supervisor edges. supervisor → directReports.
+  supervisor      User?  @relation("UserSupervisor", fields: [supervisorId], references: [id], onDelete: SetNull)
+  directReports   User[] @relation("UserSupervisor")
   reviewedTimesheets WeeklyTimesheet[] @relation("TimesheetReviewer")
   timesheets   WeeklyTimesheet[]
   assignments ProjectAssignment[]

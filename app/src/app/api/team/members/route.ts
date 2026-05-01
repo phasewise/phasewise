@@ -168,7 +168,18 @@ export async function PATCH(request: Request) {
     }
 
     const body = await request.json();
-    const { userId, fullName, email, title, role, phone, billingRate, salary, isActive } = body as {
+    const {
+      userId,
+      fullName,
+      email,
+      title,
+      role,
+      phone,
+      billingRate,
+      salary,
+      isActive,
+      supervisorId,
+    } = body as {
       userId?: string;
       fullName?: string;
       email?: string;
@@ -178,6 +189,9 @@ export async function PATCH(request: Request) {
       billingRate?: string | number;
       salary?: string | number;
       isActive?: boolean;
+      // null = clear; "" treated same as null. Anything else is a UUID
+      // we'll verify is a valid user in the same org.
+      supervisorId?: string | null;
     };
 
     if (!userId) {
@@ -248,6 +262,36 @@ export async function PATCH(request: Request) {
     if (role !== undefined) updateData.role = role as UserRole;
     if (phone !== undefined) updateData.phone = phone.trim() || null;
     if (isActive !== undefined) updateData.isActive = isActive;
+
+    if (supervisorId !== undefined) {
+      if (!supervisorId) {
+        updateData.supervisorId = null;
+      } else if (supervisorId === userId) {
+        return NextResponse.json(
+          { error: "A user can't be their own supervisor." },
+          { status: 400 }
+        );
+      } else {
+        // Verify the supervisor is in the same org. Doesn't have to be
+        // an approver-role user — any active team member can be assigned
+        // as a direct supervisor.
+        const supervisor = await prisma.user.findUnique({
+          where: { id: supervisorId },
+          select: { organizationId: true, isActive: true },
+        });
+        if (
+          !supervisor ||
+          supervisor.organizationId !== currentUser.organizationId ||
+          !supervisor.isActive
+        ) {
+          return NextResponse.json(
+            { error: "Supervisor not found or inactive." },
+            { status: 400 }
+          );
+        }
+        updateData.supervisorId = supervisorId;
+      }
+    }
 
     if (billingRate !== undefined) {
       const rate = billingRate === "" || billingRate === null ? null : Number(billingRate);

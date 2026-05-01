@@ -52,6 +52,7 @@ export default async function TeamSettingsPage() {
       phone: true,
       isActive: true,
       photoUrl: true,
+      supervisorId: true,
       billingRate: canSeeBillingRate,
       salary: canManageBilling, // Only OWNER/ADMIN see salary
       costRate: canManageBilling,
@@ -68,6 +69,7 @@ export default async function TeamSettingsPage() {
     phone: u.phone,
     isActive: u.isActive,
     photoUrl: u.photoUrl,
+    supervisorId: u.supervisorId,
     billingRate: canSeeBillingRate && "billingRate" in u ? Number(u.billingRate ?? 0) : null,
     salary: canManageBilling && "salary" in u ? Number(u.salary ?? 0) : null,
     costRate: canManageBilling && "costRate" in u ? Number(u.costRate ?? 0) : null,
