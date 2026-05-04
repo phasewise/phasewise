@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { addDays, format, startOfWeek } from "date-fns";
 import { getCurrentUser } from "@/lib/supabase/auth";
 import { prisma } from "@/lib/prisma";
@@ -249,6 +250,23 @@ export default async function TimePage({
             />
           )}
         </div>
+      </div>
+
+      <div className="mb-4 flex items-center gap-3 text-xs">
+        <Link
+          href="/time/my-schedule"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-[#E2EBE4] bg-white text-[#3D5C48] hover:border-[#52B788] hover:text-[#2D6A4F] transition-colors"
+        >
+          My Schedule →
+        </Link>
+        {canViewOthers && (
+          <Link
+            href="/time/approve"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-[#E2EBE4] bg-white text-[#3D5C48] hover:border-[#52B788] hover:text-[#2D6A4F] transition-colors"
+          >
+            Approvals →
+          </Link>
+        )}
       </div>
 
       {isViewingOther && (
