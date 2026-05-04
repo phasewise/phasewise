@@ -62,6 +62,11 @@ export async function handleAuth(request: NextRequest) {
     publicExact.has(path) ||
     path.startsWith("/blog/") ||
     path.startsWith("/invite/") ||
+    // Public invoice viewer + its PDF endpoint. Clients open these from
+    // an email link without a Phasewise account; the cuid token in the
+    // URL is the only credential.
+    path.startsWith("/invoice/") ||
+    path.startsWith("/api/public/invoices/") ||
     path.startsWith("/api/auth/") ||
     path.startsWith("/api/invitations/") ||
     // Sentry browser-error tunnel (configured as `tunnelRoute` in

@@ -524,6 +524,16 @@ model Invoice {
   paymentReference String?      @map("payment_reference")
   paymentMethod    String?      @map("payment_method")
   sentAt          DateTime?     @map("sent_at")
+  // Public link token — surfaces the invoice at /invoice/{publicToken}
+  // without auth so clients can view + download the PDF from the email
+  // without needing a Phasewise account. Lazily generated on first
+  // send (or via a backfill); kept nullable so the additive migration
+  // doesn't fail on pre-existing rows. The token is unguessable (cuid),
+  // so anyone with the link has access.
+  publicToken     String?       @unique @map("public_token")
+  // Set the first time the public link is opened. Useful for "client
+  // viewed your invoice" surfacing on the firm side.
+  viewedAt        DateTime?     @map("viewed_at")
   notes           String?
   createdAt       DateTime      @default(now()) @map("created_at")
   updatedAt       DateTime      @updatedAt @map("updated_at")
