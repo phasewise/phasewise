@@ -4,6 +4,8 @@ import { getCurrentUser } from "@/lib/supabase/auth";
 import { renderMweloPdf, MweloPdfInput } from "@/lib/mwelo-pdf";
 
 export const dynamic = "force-dynamic";
+// React-PDF cold starts can exceed Vercel's default 10s budget.
+export const maxDuration = 30;
 
 type SavedCalc = {
   inputs?: {

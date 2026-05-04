@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Building2, Mail, MapPin, Pencil, Phone, Plus, X } from "lucide-react";
-import { toTitleCase } from "@/lib/utils";
+import { formatPhone, toTitleCase } from "@/lib/utils";
 
 type Client = {
   id: string;
@@ -250,7 +250,7 @@ export default function ClientsClient({ clients: initialClients }: Props) {
               {client.phone && (
                 <div className="flex items-center gap-2">
                   <Phone className="w-3 h-3 text-[#A3BEA9]" />
-                  <span>{client.phone}</span>
+                  <span>{formatPhone(client.phone)}</span>
                 </div>
               )}
               {(client.city || client.state) && (

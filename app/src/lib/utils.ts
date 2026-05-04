@@ -16,3 +16,21 @@ export function toTitleCase(s: string | null | undefined): string {
     .map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1) : w))
     .join(" ")
 }
+
+// Format phone numbers for display. Accepts whatever the user typed
+// (digits, dashes, spaces, parentheses) and returns a normalized
+// display: "(559) 555-1234" for US 10-digit, "+1 (559) 555-1234"
+// when a leading country code is present. Returns the original
+// string for anything that doesn't fit those shapes (international,
+// extensions, partial numbers — the user sees what they typed).
+export function formatPhone(value: string | null | undefined): string {
+  if (!value) return ""
+  const digits = value.replace(/\D/g, "")
+  if (digits.length === 10) {
+    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`
+  }
+  if (digits.length === 11 && digits.startsWith("1")) {
+    return `+1 (${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`
+  }
+  return value
+}

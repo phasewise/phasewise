@@ -4,6 +4,8 @@ import { renderInvoicePdf } from "@/lib/invoice-pdf";
 import { PHASE_LABELS } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
+// Same cold-start concern as /api/invoices/[id]/pdf.
+export const maxDuration = 30;
 
 // Public PDF endpoint — no auth, identified by the invoice's
 // publicToken (cuid) in the URL. Used by clients clicking through

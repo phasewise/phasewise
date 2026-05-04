@@ -5,6 +5,10 @@ import { renderInvoicePdf } from "@/lib/invoice-pdf";
 import { PHASE_LABELS } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
+// React-PDF rendering can exceed Vercel's default 10s function budget
+// on cold starts (font loading + first compile). 30s gives slack
+// without making the serverless cost meaningfully different.
+export const maxDuration = 30;
 
 export async function GET(
   request: Request,
