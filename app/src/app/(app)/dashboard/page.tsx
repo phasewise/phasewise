@@ -1,9 +1,11 @@
-import { ArrowUpRight, FolderKanban, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { ArrowUpRight, FolderKanban, AlertTriangle, CalendarCheck, CheckCircle2, Clock } from "lucide-react";
 import Link from "next/link";
+import { addDays, format, startOfWeek } from "date-fns";
 import { PHASE_SHORT_LABELS, STATUS_COLORS } from "@/lib/constants";
 import { getCurrentUser } from "@/lib/supabase/auth";
 import { prisma } from "@/lib/prisma";
 import { getBudgetAlertLevel, ALERT_LABELS } from "@/lib/budget-alerts";
+import { computeUserLeaveBalances, LEAVE_TYPE_LABELS } from "@/lib/leave";
 
 // Display order for status sections — matches the Projects page so users
 // see the same hierarchy in both places.
@@ -49,6 +51,13 @@ export default async function DashboardPage() {
         </div>
       </div>
     );
+  }
+
+  // STAFF dashboard — personal view rather than firm-wide metrics. Staff
+  // care about their hours, their assignments, their leave — not the
+  // org's at-risk project count or burn rate.
+  if (currentUser.role === "STAFF") {
+    return <StaffDashboard userId={currentUser.id} fullName={currentUser.fullName} />;
   }
 
   const projects = await prisma.project.findMany({
@@ -425,6 +434,193 @@ export default async function DashboardPage() {
           })}
         </div>
       )}
+    </div>
+  );
+}
+
+// Staff-mode dashboard. Personal-context only — what the staff member
+// has been doing this week, what they're assigned to, where they
+// stand on leave. Mirrors the firm dashboard's tile layout so the
+// app feels consistent across roles.
+async function StaffDashboard({ userId, fullName }: { userId: string; fullName: string }) {
+  const today = new Date();
+  const weekStart = startOfWeek(today, { weekStartsOn: 1 });
+  const weekEnd = addDays(weekStart, 6);
+
+  const [weekEntries, weekTimesheet, planCount, balances] = await Promise.all([
+    prisma.timeEntry.findMany({
+      where: { userId, date: { gte: weekStart, lte: weekEnd } },
+      select: { hours: true, isBillable: true, leaveType: true, overheadCategory: true },
+    }),
+    prisma.weeklyTimesheet.findUnique({
+      where: { userId_weekStart: { userId, weekStart } },
+      select: { status: true, reviewComment: true, submittedAt: true },
+    }),
+    prisma.phaseStaffPlan.count({
+      where: { userId, phase: { project: { status: { not: "ARCHIVED" } } } },
+    }),
+    computeUserLeaveBalances(userId),
+  ]);
+
+  const totalHoursThisWeek = weekEntries.reduce((s, e) => s + Number(e.hours), 0);
+  const billableHoursThisWeek = weekEntries
+    .filter((e) => e.isBillable && !e.leaveType && !e.overheadCategory)
+    .reduce((s, e) => s + Number(e.hours), 0);
+  const targetHours = 40;
+  const hoursPct = Math.min(100, (totalHoursThisWeek / targetHours) * 100);
+
+  const firstName = fullName.split(/\s+/)[0];
+  const hour = today.getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+
+  // Top 3 leave balances to show — vacation, sick, holiday — in that
+  // order. Other types are usually zero-allocation by default.
+  const balanceTypesToShow = ["VACATION", "SICK", "HOLIDAY"] as const;
+  const balanceCards = balanceTypesToShow
+    .map((t) => balances.find((b) => b.type === t))
+    .filter((b): b is NonNullable<typeof b> => Boolean(b));
+
+  const sentBack = weekTimesheet?.status === "DRAFT" && weekTimesheet?.reviewComment;
+
+  return (
+    <div className="p-6 sm:p-8 max-w-7xl">
+      <div className="mb-8">
+        <h1 className="font-serif text-3xl text-[#1A2E22]">
+          {greeting}, {firstName}
+        </h1>
+        <p className="text-sm text-[#6B8C74] mt-1">
+          Week of {format(weekStart, "MMMM d, yyyy")}
+        </p>
+      </div>
+
+      {/* Sent-back banner — same alert as the timesheet page so staff
+          see it from any landing surface. */}
+      {sentBack && (
+        <Link
+          href="/time"
+          className="block mb-6 rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 hover:border-rose-300 transition-colors group"
+        >
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-rose-600 mt-0.5 flex-shrink-0" strokeWidth={1.75} />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-rose-900">
+                Your timesheet was sent back
+              </p>
+              <p className="text-xs text-rose-800 mt-0.5">
+                &ldquo;{weekTimesheet?.reviewComment}&rdquo;
+              </p>
+              <p className="text-xs text-rose-700 mt-1.5 font-medium">Edit and re-submit →</p>
+            </div>
+          </div>
+        </Link>
+      )}
+
+      {/* This week / assignments / leave */}
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 mb-8">
+        <div className="rounded-2xl border border-[#E2EBE4] bg-white p-5 shadow-sm">
+          <div className="text-xs font-semibold uppercase tracking-[0.24em] text-[#6B8C74] mb-2 flex items-center gap-1.5">
+            <Clock className="w-3.5 h-3.5" /> This week
+          </div>
+          <div className="text-3xl font-semibold text-[#2D6A4F]">
+            {totalHoursThisWeek.toFixed(1)}
+            <span className="text-sm text-[#6B8C74] font-normal"> / {targetHours} hrs</span>
+          </div>
+          <div className="mt-2 h-1.5 rounded-full bg-[#F0F2F0] overflow-hidden">
+            <div
+              className={`h-full ${hoursPct >= 100 ? "bg-[#2D6A4F]" : hoursPct >= 75 ? "bg-[#52B788]" : "bg-amber-400"}`}
+              style={{ width: `${hoursPct}%` }}
+            />
+          </div>
+          <p className="mt-2 text-xs text-[#6B8C74]">
+            {billableHoursThisWeek.toFixed(1)} hrs billable
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-[#E2EBE4] bg-white p-5 shadow-sm">
+          <div className="text-xs font-semibold uppercase tracking-[0.24em] text-[#6B8C74] mb-2 flex items-center gap-1.5">
+            <FolderKanban className="w-3.5 h-3.5" /> Phase Assignments
+          </div>
+          <div className="text-3xl font-semibold text-[#1A2E22]">{planCount}</div>
+          <Link
+            href="/time/my-schedule"
+            className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-[#2D6A4F] hover:underline"
+          >
+            View my schedule →
+          </Link>
+        </div>
+
+        <div className="rounded-2xl border border-[#E2EBE4] bg-white p-5 shadow-sm">
+          <div className="text-xs font-semibold uppercase tracking-[0.24em] text-[#6B8C74] mb-2 flex items-center gap-1.5">
+            <CalendarCheck className="w-3.5 h-3.5" /> Timesheet status
+          </div>
+          <div className="text-2xl font-semibold text-[#1A2E22]">
+            {weekTimesheet?.status === "APPROVED"
+              ? "Approved"
+              : weekTimesheet?.status === "SUBMITTED"
+              ? "Submitted"
+              : sentBack
+              ? "Sent back"
+              : "Draft"}
+          </div>
+          <Link
+            href="/time"
+            className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-[#2D6A4F] hover:underline"
+          >
+            Open timesheet →
+          </Link>
+        </div>
+
+        <div className="rounded-2xl border border-[#E2EBE4] bg-white p-5 shadow-sm">
+          <div className="text-xs font-semibold uppercase tracking-[0.24em] text-[#6B8C74] mb-2">
+            Leave Balance
+          </div>
+          <div className="space-y-1">
+            {balanceCards.length === 0 ? (
+              <p className="text-xs text-[#6B8C74]">No leave allocated.</p>
+            ) : (
+              balanceCards.map((b) => (
+                <div key={b.type} className="flex items-center justify-between text-sm">
+                  <span className="text-[#3D5C48]">{LEAVE_TYPE_LABELS[b.type]}</span>
+                  <span className="font-medium text-[#1A2E22]">
+                    {b.remainingHours.toFixed(0)}
+                    <span className="text-xs text-[#A3BEA9]"> / {b.annualHours} hrs</span>
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Quick actions */}
+      <div className="rounded-2xl border border-[#E2EBE4] bg-white p-6 shadow-sm">
+        <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-[#6B8C74] mb-3">
+          Quick actions
+        </h2>
+        <div className="flex flex-wrap gap-3">
+          <Link
+            href="/time"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-[#2D6A4F] text-white hover:bg-[#40916C] transition-colors"
+          >
+            <Clock className="w-4 h-4" />
+            Log time
+          </Link>
+          <Link
+            href="/time/my-schedule"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-[#E2EBE4] bg-white text-[#3D5C48] hover:border-[#52B788] hover:text-[#2D6A4F] transition-colors"
+          >
+            <CalendarCheck className="w-4 h-4" />
+            My schedule
+          </Link>
+          <Link
+            href="/submittals"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border border-[#E2EBE4] bg-white text-[#3D5C48] hover:border-[#52B788] hover:text-[#2D6A4F] transition-colors"
+          >
+            <CheckCircle2 className="w-4 h-4" />
+            Submittals
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }
