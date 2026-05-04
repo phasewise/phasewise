@@ -124,6 +124,52 @@ export async function GET(request: Request) {
     approvedWeekKeys.has(`${e.userId}|${weekStartOf(e.date).toISOString()}`)
   );
 
+  // Build warnings for billable entries whose week isn't approved yet.
+  // A firm can quietly lose revenue if they invoice while a partner's
+  // late timesheet is still SUBMITTED — those hours never reach the
+  // line items. We surface them so the operator can chase the approval
+  // before sending the invoice.
+  type Warning = {
+    userId: string;
+    userName: string;
+    weekStart: string;
+    status: "DRAFT" | "SUBMITTED" | "SENT_BACK";
+    hours: number;
+  };
+  const sheetByKey = new Map<string, (typeof sheets)[number]>();
+  for (const s of sheets) {
+    sheetByKey.set(`${s.userId}|${s.weekStart.toISOString()}`, s);
+  }
+  const warningsByKey = new Map<string, Warning>();
+  for (const e of entries) {
+    const weekStart = weekStartOf(e.date);
+    const weekKey = `${e.userId}|${weekStart.toISOString()}`;
+    if (approvedWeekKeys.has(weekKey)) continue;
+    const sheet = sheetByKey.get(weekKey);
+    let displayStatus: Warning["status"] = "DRAFT";
+    if (sheet?.status === "SUBMITTED") displayStatus = "SUBMITTED";
+    else if (sheet?.reviewComment) displayStatus = "SENT_BACK";
+    const existing = warningsByKey.get(weekKey);
+    if (existing) {
+      existing.hours += Number(e.hours);
+    } else {
+      warningsByKey.set(weekKey, {
+        userId: e.userId,
+        userName: e.user.fullName,
+        weekStart: weekStart.toISOString().slice(0, 10),
+        status: displayStatus,
+        hours: Number(e.hours),
+      });
+    }
+  }
+  const warnings = Array.from(warningsByKey.values())
+    .map((w) => ({ ...w, hours: Number(w.hours.toFixed(2)) }))
+    .sort((a, b) =>
+      a.weekStart === b.weekStart
+        ? a.userName.localeCompare(b.userName)
+        : a.weekStart.localeCompare(b.weekStart)
+    );
+
   // First pass: always group by (phase, user, rate) — this is the
   // detailed-mode shape AND the source for summary-mode aggregation.
   type DetailGroup = {
@@ -224,6 +270,7 @@ export async function GET(request: Request) {
   return NextResponse.json({
     lineItems,
     phases,
+    warnings,
     summary: {
       totalEntries: billableEntries.length,
       totalHours: Number(

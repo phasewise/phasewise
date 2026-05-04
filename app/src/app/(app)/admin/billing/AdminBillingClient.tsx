@@ -145,6 +145,18 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
   >([{ description: "", quantity: "1", unitPrice: "" }]);
   const [pulling, setPulling] = useState(false);
   const [pullSummary, setPullSummary] = useState<string | null>(null);
+  // Non-approved timesheets in the period — surfaced so the operator
+  // chases approvals before invoicing instead of quietly losing those
+  // hours from the bill.
+  const [pullWarnings, setPullWarnings] = useState<
+    Array<{
+      userId: string;
+      userName: string;
+      weekStart: string;
+      status: "DRAFT" | "SUBMITTED" | "SENT_BACK";
+      hours: number;
+    }>
+  >([]);
   // Line-item granularity. Summary (default) hides staff names + rates
   // and shows one line per phase — matches what most LA firms put on
   // an invoice they send to a client. Detailed shows one line per
@@ -198,6 +210,7 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
   async function pullFromTimesheets() {
     setError(null);
     setPullSummary(null);
+    setPullWarnings([]);
     if (!formProjectId) {
       setError("Pick a project first.");
       return;
@@ -223,6 +236,14 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
         unitPrice: number;
         sourceEntryIds: string[];
       }>;
+      const warnings = (data.warnings ?? []) as Array<{
+        userId: string;
+        userName: string;
+        weekStart: string;
+        status: "DRAFT" | "SUBMITTED" | "SENT_BACK";
+        hours: number;
+      }>;
+      setPullWarnings(warnings);
       if (items.length === 0) {
         setPullSummary(
           data.summary?.skippedNotApproved
@@ -252,6 +273,12 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
+    if (pullWarnings.length > 0) {
+      const ok = window.confirm(
+        `${pullWarnings.length} timesheet${pullWarnings.length === 1 ? " in this period isn't" : "s in this period aren't"} approved yet. Their hours aren't on this invoice. Create the invoice anyway?`
+      );
+      if (!ok) return;
+    }
     setError(null);
     setSaving(true);
 
@@ -329,6 +356,7 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
     setFormNotes("");
     setFormLines([{ description: "", quantity: "1", unitPrice: "" }]);
     setPullSummary(null);
+    setPullWarnings([]);
   }
 
   function openPayment(invoice: Invoice) {
@@ -742,6 +770,40 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
           {pullSummary && (
             <div className="mb-4 rounded-lg bg-blue-50 border border-blue-200/40 p-3 text-xs text-blue-900">
               {pullSummary}
+            </div>
+          )}
+          {pullWarnings.length > 0 && (
+            <div className="mb-4 rounded-lg bg-amber-50 border border-amber-300 p-3 text-xs text-amber-900">
+              <div className="font-semibold mb-1.5">
+                ⚠ {pullWarnings.length} timesheet{pullWarnings.length === 1 ? "" : "s"} in this period {pullWarnings.length === 1 ? "isn't" : "aren't"} approved yet
+              </div>
+              <div className="text-amber-800 mb-2">
+                Their hours weren&apos;t added to the line items. Review these before invoicing to avoid missing billable hours.
+              </div>
+              <ul className="space-y-1">
+                {pullWarnings.map((w) => (
+                  <li key={`${w.userId}|${w.weekStart}`} className="flex items-baseline gap-2">
+                    <span className="font-medium">{w.userName}</span>
+                    <span className="text-amber-700">
+                      — Week of {new Date(w.weekStart).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+                    </span>
+                    <span className="rounded-full px-1.5 py-0.5 bg-amber-100 border border-amber-300 text-amber-900 font-mono text-[10px]">
+                      {w.status === "SUBMITTED"
+                        ? "SUBMITTED — waiting for review"
+                        : w.status === "SENT_BACK"
+                        ? "SENT BACK — awaiting re-submission"
+                        : "DRAFT — not yet submitted"}
+                    </span>
+                    <span className="text-amber-700">· {w.hours.toFixed(2)} hrs</span>
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href="/time/approve"
+                className="inline-block mt-2 text-amber-900 underline hover:text-amber-700"
+              >
+                Review pending timesheets →
+              </Link>
             </div>
           )}
 

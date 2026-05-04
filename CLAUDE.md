@@ -560,9 +560,255 @@ Ordered by my estimated value-per-effort. Revisit during the forensic audit.
 - **Client portal / shared read-only link** — send clients a URL that shows project health, current phase, outstanding submittals, invoice status. Big differentiator — no competitor does this well for LA firms.
 - **Plant library redesign** — current flat list is low-value. Turn it into a reusable firm library that auto-populates MWELO hydrozones and links to submittals. Irrigation section a candidate companion.
 - **Leave request/approval workflow** — employee requests → manager approves → auto-adds to timesheet. Currently leave is entered directly; this adds a real approval step like vacation requests in most HRIS systems.
-- **Pro-rata leave accrual** — accrues per pay period instead of annual front-loading. For firms that prefer it.
-- **Automated year-end rollover** — apply the `rolloverCap` automatically when the calendar year changes.
+- **🚨 P1: Stripe Payment Links on invoices — electronic billing (smoke test 2026-05-04, Kevin asked)** — industry standard for invoicing SaaS (FreshBooks, Wave, Zoho, QBO, Bonsai). Builds on the Path B public invoice link. Marginal extension of existing Stripe integration, no new vendor. Architecture: at invoice creation, call Stripe Payment Links API to create a unique link, store on `Invoice.stripePaymentLinkUrl` and `Invoice.stripePaymentLinkId`. PDF embeds clickable "Pay this invoice online" URL pointing to `/invoice/[token]`. Public page shows [Download PDF] and [Pay now →] buttons. Stripe webhook on `checkout.session.completed` auto-flips the invoice to PAID + records `paidAmount` + `paymentMethod` (Stripe metadata) + sends a payment confirmation email to the firm via Loops. Stage 1 ships pass-through fees (2.9% + 30¢ card, 0.8% capped at $5 ACH). Stage 2: configurable surcharges (firm decides "card +3% surcharge" or "ACH only"), recurring billing for retainers, Stripe Tax integration for invoices, "ACH default / Card optional" toggle. Big differentiator vs Monograph (which doesn't have built-in payments at all). Real "we'll handle everything else" magic — invoice goes out Friday, payment lands in firm's bank by Wednesday with zero manual reconciliation.
+- **Standardize confirmation/input modals across the app (smoke test 2026-05-04)** — Send-to-client uses a browser `prompt()` (looks like "phasewise.io says"); Mark paid uses a proper React modal (Update Payment). Sweep through and replace all `confirm()` / `prompt()` / `alert()` usage with a consistent modal component. Browser prompts are visually inconsistent with the brand and limit input options (no datepickers, no multi-field forms, no styling). Audit codebase for `window.confirm`, `window.prompt`, `window.alert` usages.
+- **🐛 MWELO project picker dropdown unclickable in render-back mode only (smoke test 2026-05-04)** — On `/tools/mwelo-calculator?itemId=...` (View calc render-back), clicking the Project dropdown does nothing. On the standalone `/tools/mwelo-calculator` (no itemId), the dropdown opens correctly and selection works. Bug scope is confined to render-back mode. Suspects: (1) the "Editing saved calculation for X" banner overlay is intercepting clicks above the dropdown, (2) the select has a `disabled` attribute conditionally set when itemId is present, (3) the dropdown is being conditionally hidden behind the read-only project name text input. Fix path: open the calculator component, find the conditional render around the picker, ensure the dropdown stays interactive even when an itemId is present. The dropdown should also auto-select the saved `projectId` (related bug below).
+- **MWELO render-back: project picker dropdown not auto-selected (smoke test 2026-05-04)** — when loading a saved MWELO calc via View calc, the project name text field pre-fills correctly but the project picker dropdown stays at "— Pick a project —". Likely because pre-2026-05-01 saved calcs have no `projectId` linkage (the dropdown was added on 2026-05-01 in commit `1a635b4`). Two fixes: (1) when saving from the dropdown, store both `projectId` and the project's name in the calculation JSON; (2) on render-back, if `projectId` exists, set the dropdown selection. Existing saved calcs will degrade gracefully (text-only) until re-saved.
+- **Auto-clear stale error banners on next successful action (smoke test 2026-05-04)** — the "Failed to send invoice email" banner persisted after a successful Mark sent action. Error banners should fade out or clear when the user takes another action against the same row.
+- **🚨 P0: Send-to-client fails — Loops free tier rejects attachments (smoke test 2026-05-04)** — clicking Send to client returns `400 - Your team is not allowed to send attachments. Need to upgrade? Contact us at help@loops.so`. Loops Pro is $49/mo to enable attachments. Recommend instead: switch to link-based delivery (matches Stripe Invoicing, QuickBooks Online, FreshBooks pattern). Implementation: add `Invoice.publicToken String @unique @default(cuid())`, new public route `/invoice/[token]` rendering the same React PDF component + "Download PDF" button, allowlist the route in `lib/supabase/middleware.ts` (similar to `/invite/[token]`), update `INVOICE_SEND` Loops template body to "Click to view and download: https://phasewise.io/invoice/{publicToken}" — no attachment needed. Benefits: works on Loops free tier, better deliverability (attachments hit spam filters), smaller emails, view-tracking via `Invoice.viewedAt`, always latest version, future-compatible with Stripe Payment Link integration. Removes the attachment code path in `lib/loops.ts` and the Render-PDF step in `/api/invoices/[id]/send/route.ts`. Until shipped, "Send to client" is broken on free tier.
+- **🚨 P1: Invoice header industry-standard gaps (smoke test 2026-05-04, comparison vs Blankinship/Bowman LA invoice)** — current Phasewise invoice PDF is visually clean but missing 4 elements that real LA firm clients expect; without them, every send-to-client triggers a back-and-forth ("how do I pay you?", "what's your EIN?", "what contract is this against?"). Add to the invoice header:
+  - **Remit-to / payment methods block** (top-right corner, MUST-HAVE for actually getting paid). Three methods: **Mail** (mailing address for check), **ACH** (routing + account), **Wire** (routing + account). Owner enters once in firm settings and it auto-populates every invoice.
+  - **Fed ID / EIN** (firm-level setting). Required when clients issue 1099-NEC. Shown in the remit-to block.
+  - **Agreement / Contract Number** (per-project field). Required by Caltrans, federal agencies, and most enterprise client APs. Many won't even process the invoice without it. Add `Project.contractNumber String?`.
+  - **Attn: contact name** on BILL TO line (per-Client field already exists as `contactName` — verify it surfaces on the PDF). Adds polish + speeds up internal routing on the client's side.
+
+  New settings page: `/settings/billing-info` with fields: Fed ID, mailing address, ACH routing/account, Wire routing/account, "Submit invoice in triplicate" toggle (optional, public-agency edge case). All fields optional except mailing address. PDF route reads firm record once and renders into the header. Without this work, Phasewise loses to Monograph + BQE Core where remit-to is table stakes.
+- **🐛 P2: Invoice PDF cold-start timeout (smoke test 2026-05-04)** — first click on `/api/invoices/{id}/pdf` after a long idle period returns `ERR_SSL_PROTOCOL_ERROR` (TLS framing broken from a serverless function timing out mid-stream). Second click renders the PDF cleanly. Same render path is used by Send-to-client and the daily auto-invoicing cron, so this affects more than just the manual download. Mitigation options: (a) bump Vercel function `maxDuration` config for the PDF route, (b) precompute PDFs at invoice creation and store the binary on S3/Supabase Storage so the route just streams from storage, (c) add Vercel "Fluid compute" or warming. Option (b) also unblocks attaching the PDF in Loops emails without re-rendering on every send. Repro on Clovis Project #1 INV-003 (id `e0a8464f-ff2e-4659-83fc-32b3d0193e0b`). Sentry should have the trace if it caught it.
+- **🚨 Auto-invoicing UX surfacing (smoke test 2026-05-04, brand-promise gap)** — the monthly auto-invoicing cron shipped 2026-04-30 (commit `b867a18`) already auto-creates draft invoices on the 5th of every month for every non-archived project covering the prior calendar month. But the UI doesn't surface this — owners still see the manual New Invoice form as the primary path, which contradicts the "Focus on the design, we'll handle everything else" landing-page promise. Four UX gaps to close:
+  - **/admin/billing top panel**: "Auto-invoicing status — Last run: May 5, 2026 → created 3 draft invoices for April. Next run: June 5. [Review drafts →]"
+  - **New Invoice form quick periods**: buttons for Last month / This month / Last week / Custom. Default to "Last month" for monthly cadence.
+  - **Per-project billing schedule**: dropdown on project edit (`Monthly` / `Biweekly` / `Milestone` / `Manual`). Cron skips projects set to Manual or Milestone.
+  - **Dashboard tile**: "X draft invoices ready to review" — appears after each auto-run, links to /admin/billing filtered to the new drafts.
+  This is the highest-leverage UX improvement on the platform — the firm operator's monthly billing workflow goes from "20 minutes of manual work" to "review the auto-generated drafts and click Send to client." Real "we'll handle everything else" magic.
+- **🐛 Invoice Detailed line-item mode doesn't show staff name + rate (smoke test 2026-05-04)** — toggle's label says "Detailed · one line per phase + person, shows hourly rates" but with a single person, the description renders identical to Summary (`Phase — Professional Services`). Should always include the person's name and rate in Detailed mode, even when there's one staff per phase. Fix: in `lib/invoice-builder.ts` (or wherever the line item description is composed), when `style === 'detailed'`, append `— {fullName} @ ${rate}/hr` to every row regardless of how many people. Also worth verifying with a second test staff that multi-person phases split into multiple lines as designed.
+- **🚨 P1: Invoice un-approved-time warning (smoke test 2026-05-04, revenue risk)** — Was in the original 2026-04-30 invoice-overhaul spec but deferred. When user clicks "Pull from timesheets" on a period, also surface any DRAFT / SUBMITTED / SENT-BACK weekly timesheets within that period from team members assigned to the project. UI: amber warning banner under the existing "Pulled X hours" message listing unreviewed timesheets with status + a "Review pending timesheets" link. Confirmation gate on the Create invoice button if warnings exist ("Some timesheets are unreviewed. Are you sure you want to invoice now?"). Without this, firms will silently lose billable hours every month — a partner approves Tuesday, invoice goes out Wednesday, but Friday's late timesheet submission misses the cut. This is revenue protection, not polish.
+- **City name display: normalize to title case (smoke test 2026-05-04)** — Projects list shows mixed casing for the same city (`FRESNO` and `Fresno` both for City of Fresno projects). Apply title-case normalization at display time so "FRESNO" → "Fresno", "san francisco" → "San Francisco", etc. Don't mutate the stored value, just normalize on render.
+- **Phone number input mask (smoke test 2026-05-04)** — phone fields display raw digits (`15595555555`). Standard UX: format on display as `(559) 555-5555` (US 10-digit) or `+1 (559) 555-5555` (with country code), store digits-only in the DB. Apply to `User.phone` (team management), `Client.phone`, project contact phones. Use a small input mask library or roll a simple onChange handler that strips non-digits and reformats.
+- **Rename "Billing & Subscription" → "Phasewise Subscription" (smoke test 2026-05-04)** — current label on the admin landing page card AND in the Settings sidebar is ambiguous; users confuse it with Project Billing (which IS for invoicing the firm's clients). Rename to "Phasewise Subscription" everywhere it surfaces. Description stays similar but tweak to emphasize SaaS plan ("Manage your Phasewise plan, payment method, and invoices.").
+- **🐛 Reviewer comment banner persists after re-submit (smoke test 2026-05-04)** — The send-back modal copy explicitly states "The staff member will see your comment on their timesheet page until they re-submit." After the staff member edits and clicks Submit, the pink "Sent back by your reviewer" banner remains visible on the SUBMITTED-state timesheet. Either clear `reviewComment` on the SUBMITTED transition (matches modal copy) OR keep the banner and update modal copy to "until it's approved." Pick one. Probably the former is cleaner — once the user has acted on the feedback, the prompt should disappear.
+- **🐛 Approver page column grid misaligned with period label (smoke test 2026-05-04)** — Approver row shows period "May 3 – May 9, 2026" (Sun-Sat) but the data grid headers render SAT 5/2 → FRI 5/8 (Sat-Fri). One-day shift between label and column grid. Same week's hours but visually misleading. Also inconsistent with the timesheet entry view which uses Mon-Sun. Pick one week-start convention (Mon-Sun is most common in US payroll) and apply it across BOTH the entry grid AND the approver detail grid AND the period label.
+- **Approver page: history view (smoke test 2026-05-04)** — current `/time/approve` only shows pending submissions; once approved or sent-back, the row disappears. Managers need an audit trail. Add a tab toggle ("Pending / Approved / Sent back") or a separate `/time/approve/history` page listing past decisions with reviewer + timestamp + comment + a "Reopen" action on Approved rows.
+- **Admin timesheet rollup dashboard (smoke test 2026-05-04)** — new section at `/admin/timesheets` with: monthly totals by staff (rows) × project (columns), billable vs non-billable split, leave / overhead / billable mix per person, utilization % per person, "this month vs last month" delta. Worth a small chart library (recharts already a candidate) for stacked bars. Owners want to see at a glance who's overbooked, who's slacking, and which projects are eating the most labor.
+- **🐛 Timesheet Week status card stuck on wrong week (smoke test 2026-05-04)** — After submitting a week, navigating to a different week (Prev/Next) keeps the top-right Week status card showing SUBMITTED + Recall submission for the previously-submitted week, even though the grid below has switched to the new week. Each week has its own `WeeklyTimesheet` record so this is a frontend state bug — the status card needs to re-read the currently-displayed week's record on navigation. Confirmed in TimeSheetClient. Fix: replace the static prop-based `weekStatus` with a derived value keyed on the visible week, or refetch on `weekStart` change. Low-effort fix, high-value polish — submitting one week should not appear to lock other weeks.
+- **Notifications panel / widget (smoke test 2026-05-04, Kevin shared PeopleSoft reference)** — universal "what needs my attention" surface. Header dropdown or persistent sidebar widget with badge count. Surfaces: pending timesheet approvals (for managers), overdue submittals (ball-in-court), draft invoices ready to send, budget alerts, sent-back timesheets (for staff). Each notification links to the action page. Without this, a manager logging in cold has to navigate to /time/approve to know if anything's pending. Critical for the brand promise — operators shouldn't have to hunt for what needs them.
+- **Alternate / backup supervisor (smoke test 2026-05-04, Kevin shared PeopleSoft reference)** — extension of existing `User.supervisorId`: add `User.alternateSupervisorId String?`. When primary supervisor's calendar shows them on leave (or after N days of inactivity?), pending approvals route to alternate. Real firms need this when partners take vacation — the pre-2026-05-01 model where only OWNER/ADMIN could approve was already too rigid; supervisor delegation helped, but backup is the next step.
+- **"My Schedule" staff-side view (smoke test 2026-05-04, Kevin shared PeopleSoft reference)** — staff-facing read-only view of their `PhaseStaffPlan` assignments: which projects, which phases, planned hours per week. Different from the Work Plan (manager's editing view). Helps staff answer "what should I be working on this week?" at a glance. Could be a tab on the timesheet page or a dashboard widget.
+- **Role-based dashboard differentiation (smoke test 2026-05-04, Kevin shared PeopleSoft reference)** — `/dashboard` currently renders the same content for all roles. PeopleSoft splits Employee Self Service (personal time, leave balance, my projects) vs Manager Self Service (team status, pending approvals, project health). Phasewise should differentiate: STAFF sees my-hours-this-week + my-leave-balance + my-projects + sent-back-timesheets; OWNER/ADMIN/SUPERVISOR sees all-projects-health + pending-approvals-count + draft-invoices-count + budget-at-risk-count + utilization-this-week.
+- **Apply Schedule pre-fill (PeopleSoft pattern, Kevin requested 2026-05-04)** — saved per-employee weekly template (e.g. "8 hrs Mon-Fri on Project X, Schematic Design") that fills the entire week with one click. Goes beyond the existing "Copy rows from last week" because it's a stable template the employee maintains, not just the previous week's rows. Useful for production staff with stable phase assignments. Schema: `User.weeklyScheduleTemplate Json?` storing array of `{ projectId, phaseId, hoursPerDay: { mon, tue, wed, thu, fri, sat, sun } }`. UI: small "Apply schedule" button next to "Copy from last week"; first-time use opens a "Set up your schedule" modal.
+- **Monthly leave accrual with cap + rollover (Kevin proposed 2026-05-04)** — replaces the current "lump-sum on day one" model. Owner-level setting per leave type (Vacation / Sick / Holiday / Unpaid / Other) lets the firm choose between **Front-load** (current behavior) or **Accrued** mode. In Accrued mode: owner sets `monthlyAccrual` (e.g. 6.67 hrs/mo for 80 hrs/yr vacation), `cap` (max balance an employee can hold), and `rolloverAmount` (max hours that carry into next year). Each month, a cron credits `monthlyAccrual` to every active employee's balance, clamped at `cap`. At year-end, balance is reduced to `min(balance, rolloverAmount)`. Why: prevents staff from burning a year's worth of PTO in month one — they have to "earn it" — and gives firms the standard accrual mechanics they already use in QuickBooks Payroll / Gusto / ADP. Requires per-employee `accruedBalance` field separate from current allocation. Ties into existing balance widget on timesheet (which currently shows `used / allocated`).
+- **Automated year-end rollover** — apply the `rolloverCap` automatically when the calendar year changes. Subsumed by the monthly-accrual feature above.
 - **Forensic audit** — top-to-bottom value review once the queue slows down. Rate each feature on value delivered vs maintenance cost. Cut or sharpen anything that doesn't earn its keep.
+
+## Where We Left Off (2026-05-04)
+
+**Status: 🟢 Big discovery session. Two GitHub admin items closed (2FA + Copilot opt-out). Smoke test verified 4 major flows end-to-end and surfaced 28 bugs/features for triage. Zero commits — entirely a testing + product-discovery day.**
+
+### Closed today
+
+1. **GitHub 2FA enabled** — authenticator app + recovery codes + GitHub Mobile push (3 layers). Beat the 2026-05-23 mandatory deadline by 19 days.
+2. **GitHub Copilot AI model training opt-out** — `Settings → Copilot → Privacy → Allow GitHub to use my data for AI model training: Disabled`.
+
+### Smoke test coverage — 4 flows verified end-to-end
+
+- **✅ Timesheet** — entry, auto-save, submit, recall, approve, reopen, send-back-with-comment, edit + re-submit
+- **✅ Invoice** — auto-numbered creation, period-based pull from approved timesheets, mark sent, mark paid (proper modal with method + reference), status group transitions (DRAFT → SENT → PAID), stat card math, PDF rendering with PAID badge after marking paid
+- **✅ MWELO** — view calc render-back, recompute, branded print PDF, project detail surfacing
+- **✅ Projects list** — search, type filter, status filter, inline status dropdown with reactive stat card recomputation, 4-section status grouping (Active / On Hold / Completed / Archived)
+
+### NOT covered (lower priority — visual sweeps for next time)
+
+Submittals, Plants, Reports (Profitability / Team Utilization / Project Detail), Compliance Add-Item-via-MWELO routing, Compliance Show Archived toggle, mobile responsive sweep.
+
+### Triage of 28 items found today
+
+All entries are captured in the **Product Wishlist** section above with full detail. Ordered here by priority:
+
+#### 🚨 P0 — fix this week (revenue + brand-promise)
+
+1. **Send-to-client broken on Loops free tier** → solution is **Path B: public invoice link + Stripe Payment Link** (combined work). Replaces base64 PDF attachment with `/invoice/[token]` viewer page + "Pay now" button. ~1-2 days.
+2. ✅ **Invoice un-approved-time warning** (shipped 2026-05-04) — `/api/invoices/timesheet-preview` now returns a `warnings[]` array with `{userId, userName, weekStart, status, hours}` for every billable entry whose week isn't APPROVED. AdminBillingClient renders an amber banner with each unreviewed timesheet (DRAFT, SUBMITTED, or SENT BACK) plus a "Review pending timesheets →" link. Confirmation gate on Create Invoice when warnings exist.
+3. **Auto-invoicing UX surfacing** → highest-leverage UX work on the platform. Make the existing monthly auto-invoicing cron VISIBLE: status panel on /admin/billing, dashboard tile for drafts-to-review, quick-period presets on New Invoice form, per-project billing cadence dropdown. ~1 day.
+
+#### 🟠 P1 — fix next sprint
+
+4. **Invoice header industry-standard gaps** → add Remit-to (Mail/ACH/Wire), Fed ID, Agreement Number, Attn line. New `/settings/billing-info` page. ~1 day.
+5. **Stripe Payment Links integration** (Stage 1 of the broader payments work) — bundles with #1 above.
+6. **Approver page history view** → toggle/tab for past Approved + Sent-back, with audit trail.
+7. **Admin timesheet rollup dashboard** → monthly per-staff × per-project with utilization and billable mix.
+8. **Notifications widget** → header dropdown surfacing pending approvals, overdue submittals, draft invoices, budget alerts.
+
+#### 🟡 P2 — clean up bugs
+
+9. **🐛 Reviewer comment banner persists after re-submit** → either clear on SUBMITTED transition or update modal copy. Small fix.
+10. **🐛 Week status card stuck on wrong week** → re-read currently-displayed week's record on navigation.
+11. **🐛 Approver column grid misaligned with period label** → pick Mon-Sun convention everywhere.
+12. **🐛 Invoice Detailed line-item mode doesn't show staff name + rate** → bug in `lib/invoice-builder.ts` description composer.
+13. **🐛 MWELO project picker dropdown unclickable in render-back mode** → CSS/state issue confined to `?itemId=...`.
+14. **🐛 Invoice PDF cold-start timeout** → consider pre-rendering at creation + caching to Storage.
+
+#### 🟢 P3 — UX polish
+
+15. Standardize confirmation/input modals (replace `window.confirm` / `prompt` with React modals across the codebase)
+16. Auto-clear stale error banners on next successful action
+17. Phone number input mask
+18. City name display: normalize to title case
+19. Rename "Billing & Subscription" → "Phasewise Subscription"
+20. MWELO render-back: project picker auto-select saved projectId
+
+#### 💡 P3 — feature ideas (not blocking, captured for later)
+
+21. Apply Schedule pre-fill (saved per-employee weekly template — PeopleSoft pattern)
+22. Monthly leave accrual with cap + rollover (replace "lump-sum on day one" model with earn-as-you-go)
+23. Alternate / backup supervisor (for vacation coverage)
+24. "My Schedule" staff-side view (read-only PhaseStaffPlan view per staff)
+25. Role-based dashboard differentiation (Employee Self Service vs Manager Self Service split)
+
+### Tomorrow's first task
+
+**Start P0 #1: Path B + Stripe Payment Links combined work.** Plan:
+
+1. Schema: add `Invoice.publicToken String @unique @default(cuid())` and `Invoice.stripePaymentLinkUrl String?` and `Invoice.viewedAt DateTime?`.
+2. Public route `/invoice/[token]` that renders the existing invoice React PDF view + "Download PDF" button + "Pay now →" button.
+3. Allowlist `/invoice/[token]` in `lib/supabase/middleware.ts`.
+4. At invoice creation in `lib/invoice-builder.ts`, call Stripe Payment Links API to create a unique link, store on the Invoice.
+5. Update `LOOPS_TEMPLATE_INVOICE_SEND` template body in Loops dashboard: replace attachment reference with the public URL.
+6. Remove the base64 PDF attachment code path in `/api/invoices/[id]/send/route.ts` and `lib/loops.ts`.
+7. Stripe webhook handler: listen for `checkout.session.completed` from Payment Links → auto-flip Invoice to PAID + set paidAmount, paymentMethod, paidAt.
+8. Test end-to-end with the same INV-003 send flow that broke today.
+
+Estimated 1-2 days. After that ships: tackle P0 #2 (un-approved-time warning) and P0 #3 (auto-invoicing UX surfacing) in parallel.
+
+---
+
+## Where We Left Off (2026-05-03)
+
+**Status: 🟢 X AUTO-POSTING LIVE.** The n8n SEO content pipeline now auto-tweets every new pillar article to @phasewise on Friday morning when it ships. First test tweet posted successfully (tweet ID `2051026738046488746`, "Best Software for Landscape Architects (2026 Guide)" link card auto-rendered from phasewise.io OG metadata).
+
+### What unblocked
+
+The 2026-05-01 OAuth blocker (popup kept authorizing @VfieldInc instead of @phasewise) was a **default-browser hijack**. n8n's OAuth popup was opening in **Avast Secure Browser** (Windows default), which had its own cookie store still logged in as @VfieldInc — separate from Chrome where @phasewise was active.
+
+**Fix:**
+1. Moved to Chrome incognito with NO X session
+2. Signed in fresh as @phasewise only
+3. Opened n8n in same incognito window → reconnected the X OAuth2 credential
+4. Popup correctly identified @phasewise → authorized
+5. Account connected ✅
+
+### Workflow wiring (final)
+
+`Schedule Trigger → List existing articles → Build prompt → Generate article → Extract article → Commit to GitHub → Wait (3 min) → Code in JavaScript → Create Tweet`
+
+**Wait node** — 3 min after GitHub commit so Vercel has time to deploy the article (otherwise the tweet's URL would 404 briefly).
+
+**Code in JavaScript** — parses the markdown frontmatter from `$('Extract article').first().json.article` to extract `title` and `description`, builds a tweet of the form:
+
+```
+{title}
+
+{description}
+
+https://phasewise.io/blog/{slug}
+```
+
+with body trimming if needed to stay under X's 280-char limit (URL auto-shortens to 23 chars on t.co).
+
+**Create Tweet** — credential `X OAuth2 (Phasewise blog poster)`, Text field bound to `{{ $json.text }}` from the Code node.
+
+### Notes for next session
+
+- **GitHub commit "sha wasn't supplied" error** during testing was a stale-test-artifact issue: re-firing the workflow with the same slug rejected the commit because the file already existed. Not a production concern — the Build prompt node feeds existing slugs to the LLM as a blocklist, so re-runs in production won't pick a duplicate slug for ~6 months (40-keyword priority list at 1/week cadence).
+- **First test tweet** is real and live (about a real, deployed article) — leaving it up. It serves its purpose as a real announcement.
+- **X API tier**: paid minimum funded ($5 in API credits). Should last months at 1 tweet/week.
+- **Ownership**: X Developer Console is owned by @phasewise (verified by green logomark in `/Account/Settings`). App is `phasewise-blog-poster`. Default browser remains Avast Secure — n8n testing was done in Chrome incognito to bypass the cookie hijack. Long-term should switch default browser to Chrome to prevent recurrence.
+
+### Tomorrow's first task
+
+**Continue Tier 0 #2 smoke test from step 7** (timesheet flow steps 7-17). Then:
+- Tier 0 #3: in-app "report a problem" widget
+- Tier 0 #4: manual `curl` cron verification (`/api/cron/monthly-invoicing` + `/api/cron/submittal-reminders` with `CRON_SECRET`)
+- Tier 0 #5: mobile timesheet entry test on iOS
+
+Lower priority: monitor Friday's auto-tweet land for the first 4 weeks; confirm tweet quality holds and X hasn't throttled the account.
+
+---
+
+## Where We Left Off (2026-05-01)
+
+**Status: 🟢 13 commits shipped — Round 1 + Round 2 smoke-test fixes, brand-sender anonymity migration, two new Loops templates live, automated invoice-send-via-email working. 🟡 X auto-posting setup BLOCKED on OAuth account confusion; deferred.**
+
+### What shipped today (commits in order)
+
+1. `0104088` — **Fix: approved timesheet entries vanish + reject/send-back flow.** Smoke-test bug — `value={isDisabled ? "" : ...}` was forcing empty string when disabled, hiding approved values. Fix: `value={rowIsComplete(row) ? (entries[key] ?? "") : ""}`. Also added Reject action with `reviewComment` (sends timesheet back to DRAFT with reason visible).
+2. `692f7ad` — **Approver page: inline expansion + Send-back with comment.** Clicking a pending row expands inline (no nav). Approve / Send back with comment buttons. Schema: `WeeklyTimesheet.reviewComment/reviewedById/reviewedAt`.
+3. `ae019ba` — **Fix: invoice PDF DRAFT suppression + invoice delete with un-tag.** Drafts no longer render watermark. Deleting an invoice un-tags the linked TimeEntry rows so hours go back into the un-invoiced pool.
+4. `9ee56e2` — **Fix: Work Plan staff-add row vanishes after clicking +.** Render-loop bug: useEffect depended on `phases` array reference which parent recreated every render. Stable dep: `phaseIdsKey = phases.map((p) => p.id).join(",")`.
+5. `ade631c` — **Invoice line items: Summary mode default + Detailed toggle.** Summary collapses per-phase rollups (1 row per phase). Detailed shows per-person-per-phase. Default Summary; toggle persists.
+6. `2707a32` — **Invoice number format: customizable template with year/counter tokens.** New `Organization.invoiceNumberFormat` (e.g. `INV-{YY}-{####}` → `INV-26-0042`). Settings page at `/settings/invoice-numbering`. Shared renderer in `lib/invoice-numbering.ts`.
+7. `46595d7` — **Supervisor delegation: direct supervisors can approve their reports.** New `User.supervisorId`. Approval gate now allows OWNER/ADMIN OR direct supervisor of timesheet owner. Team page edit modal exposes supervisor picker.
+8. `4fd17fb` — **Send Invoice via Loops — automated PDF email to client.** New `POST /api/invoices/[id]/send`. Renders branded PDF, attaches base64 to Loops `INVOICE_SEND` template (recipient = client's email on the project's linked Client). Sets `Invoice.sentAt`. "Send to client" button on `/admin/billing` rows. Anonymous brand voice — sender is `hello@mail.phasewise.io`, Reply-To `hello@phasewise.io`.
+9. `b726e04` — **Invite emails: add recipientFullName + title to Loops variables.** Existing INVITE template merge fields now populated.
+10. `1a635b4` — **MWELO calculator: project picker dropdown.** Standalone calculator gets a project select at the top so users can route MWELO calcs into the right project from one place.
+11. `3493f43` — **Project types: org-managed taxonomy.** New `Organization.projectTypes JSON` + `/settings/project-types` page. Defaults pulled into a shared `lib/project-types.ts`. Replaces hard-coded list on project create/edit forms.
+12. `a8b344d` — **Team page: clear link to /admin/leave for setting PTO/vacation standards.** Added a top-level "Manage leave & PTO standards" button + helper text on the team settings page so OWNERs can find the firm-wide leave policy without hunting in admin.
+13. `71e7f18` — **CLAUDE.md: Loops Invite + Invoice Send templates live + brand sender swap.** Documented today's Loops work.
+
+### Loops — anonymity-of-brand sender migration
+
+All 8 transactional templates were previously sending from `kgallo22@mail.phasewise.io` (founder's name visible in inbox preview). Migrated to:
+
+- **From:** `Phasewise Team <hello@mail.phasewise.io>`
+- **Reply-To:** `hello@phasewise.io`
+
+Templates updated individually (Loops has no global default sender): Welcome, Trial Started (branded), Subscription Canceled (branded), Payment Failed (branded), Submittal Reminder (branded), Budget Alert (branded), Invite, Invoice Send.
+
+**Two new Loops templates created today:**
+- **Invite** — `cmonelbq000qv0izk52er5uom` (env: `LOOPS_TEMPLATE_INVITE`)
+- **Invoice Send** — `cmond6ahz02pu0i107sqfg8cz` (env: `LOOPS_TEMPLATE_INVOICE_SEND`)
+
+Both wired into Vercel + local `.env`. Invoice Send template accepts a base64 PDF attachment via Loops API. Code in `lib/loops.ts` extends `sendTransactional()` with optional `attachments` parameter; falls through gracefully if template ID is missing.
+
+### Outstanding anonymity TODO
+
+Loops **Settings → Domain → Company Address** still shows founder's residential address. CAN-SPAM injects this into the footer of every transactional email. **Action:** before scaling outreach, swap for a PO Box (~$60-100/yr USPS) or virtual mailbox (iPostal1, Earth Class Mail, ~$15-30/mo). Not blocking — only ~3 outreach replies expected this week — but should be in place before broader cold-email sends.
+
+### X (Twitter) auto-posting setup — BLOCKED, deferred
+
+Goal: extend n8n SEO content workflow with a "Post to X" node so each new pillar article auto-shares to @phasewise on Friday morning when it ships.
+
+**Done today:**
+- Subscribed to X API paid tier — minimum $5 in API credits funded
+- Created X Developer App `phasewise-blog-poster` under @phasewise developer account (verified by green logomark in `/Account/Settings`)
+- Generated all OAuth credentials: Consumer Key, Consumer Secret, Bearer Token, Client ID, Client Secret, Access Token + Secret
+- Added 3 callback URIs to the X app: `https://oauth.n8n.cloud/oauth2/callback`, `https://app.n8n.cloud/rest/oauth2-credential/callback`, `https://dailymm.app.n8n.cloud/rest/oauth2-credential/callback`
+- Set up n8n **X OAuth2 API** credential with Client ID + Client Secret
+
+**Blocker:** Clicking "Connect my account" in n8n opens an OAuth popup that says **"phasewise-blog-poster wants to access @VfieldInc"** instead of @phasewise. Tried:
+
+1. Signed out of @VfieldInc on x.com in Chrome → confirmed only @phasewise active
+2. Realized OAuth popup was opening in **Avast Secure Browser** (Windows default browser), which had its own separate session still logged in as @VfieldInc
+3. Signed into Avast Secure Browser as @phasewise only (confirmed via screenshot — only "Log out @phasewise" option in account switcher)
+4. Retried OAuth flow → popup STILL shows @VfieldInc as the authorizing account
+
+**Theory:** something deeper is binding the OAuth context to @VfieldInc — possibly a residual cookie/cache state in Avast Secure, OR the X app has internal account-binding metadata that doesn't follow the user's current x.com session. Worth trying next session:
+
+- **Hard browser reset:** Use a totally fresh browser (Chrome incognito, or Firefox if Chrome's @VfieldInc cache persists) with NO X session at all → sign in fresh as @phasewise → only then click Reconnect in n8n
+- **Verify in X Developer Console:** check `Apps → phasewise-blog-poster → Settings` for any "owner account" metadata that may need to be re-bound
+- **Last resort:** delete the X app and recreate it from a clean Avast Secure session signed in only as @phasewise
+
+Until X auto-posting is wired, the n8n content workflow continues to ship articles to GitHub (and via Vercel auto-deploy, to `/blog`) every Friday — the social amplification step is the only piece missing.
+
+### Tomorrow's first task
+
+**Troubleshoot X OAuth account binding** with the steps above (fresh browser session OR app recreation). When unblocked: add Compose-social-posts Code node + Post to X node to the n8n workflow, then manual-fire test to confirm a tweet lands at x.com/phasewise.
+
+After that's working, the next priorities (in order):
+1. Continue Tier 0 #2 smoke test from step 7 (timesheet flow steps 7-17)
+2. Tier 0 #3: in-app "report a problem" widget
+3. Tier 0 #4: manual `curl` cron verification (`/api/cron/monthly-invoicing` + `/api/cron/submittal-reminders` with `CRON_SECRET`)
+4. Tier 0 #5: mobile timesheet entry test on iOS
+
+---
 
 ## Where We Left Off (2026-04-30)
 
@@ -1217,10 +1463,15 @@ After a strategy discussion this session, Kevin confirmed that his top prioritie
 - [x] **Invoice overhaul: auto-#, period dates, timesheet pull, paid flow, status grouping** ✅ 2026-04-30
 - [x] **Monthly auto-invoicing cron + project billing visibility** ✅ 2026-04-30
 - [x] **Tier 0 #1: Sentry error monitoring** ✅ 2026-04-30 — SDK installed, Vercel integration, GitHub source-code integration, MCP config, inbound filters + SDK noise filters, tested end-to-end (frontend + backend + source maps). Day-one catch: SyntaxError noise from HeadlessChrome bots, filtered.
-- [ ] **Tier 0 #2: End-to-end smoke test** — in progress as of 2026-04-30 EOD (steps 1-6/17 done). Fresh test account `kevin@gallodesigns.com`. Pickup at step 7 (timesheet flow) tomorrow.
+- [x] **Loops anonymity sender migration** ✅ 2026-05-01 — All 8 transactional templates now send from `Phasewise Team <hello@mail.phasewise.io>`, Reply-To `hello@phasewise.io`
+- [x] **Loops INVITE template created** ✅ 2026-05-01 — `cmonelbq000qv0izk52er5uom`
+- [x] **Loops INVOICE_SEND template created + Send Invoice via email** ✅ 2026-05-01 — `cmond6ahz02pu0i107sqfg8cz`, branded PDF attached to client email
+- [ ] **Loops Company Address: swap residential for PO Box / virtual mailbox** — CAN-SPAM injects into transactional email footers. Do before scaling outreach
+- [ ] **Tier 0 #2: End-to-end smoke test** — in progress as of 2026-04-30 EOD (steps 1-6/17 done). Round 1 + Round 2 fixes shipped 2026-05-01. Pickup at step 7 (timesheet flow) next session
 - [ ] **Tier 0 #3: In-app "report a problem" widget** — small button on every page; one-click feedback to founder
 - [ ] **Tier 0 #4: Manual cron verification** — `curl` test `/api/cron/monthly-invoicing` + `/api/cron/submittal-reminders` with `CRON_SECRET` to verify no crash on first real fire
 - [ ] **Tier 0 #5: Mobile timesheet entry test** — POC_SCOPE explicitly says "time entry must work on phone"; need to actually verify iOS + Android render
+- [x] **X auto-posting via n8n LIVE** ✅ 2026-05-03 — OAuth blocker (Avast Secure Browser cookie hijack) resolved by using Chrome incognito with fresh @phasewise session. Workflow now auto-tweets every Friday at 7am UTC. First test tweet posted (ID `2051026738046488746`)
 - [ ] **Monitor indexing progress** in Search Console over next 1-2 weeks (Performance + Indexing reports)
 
 ### Sales / outreach (highest revenue ROI)
