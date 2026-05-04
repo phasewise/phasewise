@@ -111,6 +111,20 @@ export default async function DashboardPage() {
   const hasTimeEntries = timeTotals.length > 0;
   const onboardingComplete = hasProjects && hasMultipleMembers && hasTimeEntries;
 
+  // Draft invoice count for the "drafts ready to review" tile — surfaces
+  // the work the auto-invoicing cron has already done so owners don't
+  // have to remember to check /admin/billing on the 5th. OWNER/ADMIN
+  // only — staff don't see invoice metadata.
+  const isOwnerOrAdmin = currentUser.role === "OWNER" || currentUser.role === "ADMIN";
+  const draftInvoiceCount = isOwnerOrAdmin
+    ? await prisma.invoice.count({
+        where: {
+          organizationId: currentUser.organizationId,
+          status: "DRAFT",
+        },
+      })
+    : 0;
+
   return (
     <div className="p-6 sm:p-8 max-w-7xl">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
@@ -180,6 +194,31 @@ export default async function DashboardPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Drafts-to-review banner — surfaces auto-invoicing output for
+          OWNER/ADMIN so they see what the monthly cron created without
+          navigating to /admin/billing first. Staff don't see this. */}
+      {draftInvoiceCount > 0 && (
+        <Link
+          href="/admin/billing#draft-section"
+          className="block mb-6 rounded-2xl border border-[#52B788]/30 bg-[#F0FAF4] px-5 py-4 hover:border-[#52B788] hover:shadow-[0_8px_24px_rgba(45,106,79,0.08)] transition-all group"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="w-5 h-5 text-[#2D6A4F] mt-0.5 flex-shrink-0" strokeWidth={1.75} />
+              <div>
+                <p className="text-sm font-medium text-[#1A2E22]">
+                  {draftInvoiceCount} draft invoice{draftInvoiceCount === 1 ? "" : "s"} ready to review
+                </p>
+                <p className="text-xs text-[#3D5C48] mt-0.5">
+                  Auto-invoicing has prepared {draftInvoiceCount === 1 ? "an invoice" : "invoices"} for you. Review and send to your client{draftInvoiceCount === 1 ? "" : "s"}.
+                </p>
+              </div>
+            </div>
+            <ArrowUpRight className="w-4 h-4 text-[#2D6A4F] group-hover:translate-x-0.5 transition-transform flex-shrink-0" />
+          </div>
+        </Link>
       )}
 
       <div className="grid grid-cols-2 gap-4 xl:grid-cols-4 mb-8">
