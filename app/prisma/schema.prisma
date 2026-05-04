@@ -112,6 +112,14 @@ model User {
   // don't pile up while the primary supervisor is out. Same approval
   // privilege as `supervisorId`. Optional.
   alternateSupervisorId String? @map("alternate_supervisor_id") @db.Uuid
+  // Saved weekly schedule template — fills a fresh week with this
+  // user's standard recurring pattern (e.g. 8 hrs Mon-Fri on Project
+  // X / Schematic Design + 4 hrs Wed on Project Y / RFI). JSON shape:
+  //   [{ projectId, phaseId, hoursPerDay: { mon, tue, wed, thu, fri, sat, sun } }]
+  // Captured by clicking "Save this week as template" — populated
+  // from the user's current-week entries — and applied by clicking
+  // "Apply schedule" on a draft week.
+  weeklyScheduleTemplate Json? @map("weekly_schedule_template")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 

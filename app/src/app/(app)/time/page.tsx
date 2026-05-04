@@ -177,6 +177,19 @@ export default async function TimePage({
 
   const balances = await computeUserLeaveBalances(viewingUserId);
 
+  // Detect whether the viewed user has a saved schedule template so
+  // the Apply-schedule button knows whether to render. Only relevant
+  // when the user is viewing their own week (templates are per-user).
+  const viewingUserRow = !isViewingOther
+    ? await prisma.user.findUnique({
+        where: { id: currentUser.id },
+        select: { weeklyScheduleTemplate: true },
+      })
+    : null;
+  const hasScheduleTemplate =
+    Array.isArray(viewingUserRow?.weeklyScheduleTemplate) &&
+    (viewingUserRow!.weeklyScheduleTemplate as unknown[]).length > 0;
+
   // Previous-week rows for the "Copy rows" button. We only need the
   // distinct {projectId, phaseId} / {leaveType} combos, not the hours.
   const prevWeekStart = addDays(weekStartDate, -7);
@@ -375,6 +388,9 @@ export default async function TimePage({
         initialEntries={initialEntries}
         initialRows={initialRows}
         previousWeekRows={previousWeekRows}
+        weekStart={format(weekStartDate, "yyyy-MM-dd")}
+        hasScheduleTemplate={hasScheduleTemplate}
+        canManageTemplate={!isViewingOther}
         readOnly={
           isViewingOther ||
           timesheet?.status === "APPROVED"

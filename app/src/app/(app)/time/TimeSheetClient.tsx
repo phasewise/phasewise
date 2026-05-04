@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus, Trash2, CalendarDays, Copy, Briefcase } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Plus, Trash2, CalendarDays, Copy, Briefcase, Sparkles, Save } from "lucide-react";
 import { LEAVE_TYPE_LABELS, LEAVE_TYPES } from "@/lib/leave";
 
 const OVERHEAD_CATEGORIES = [
@@ -37,6 +38,15 @@ type Props = {
   initialEntries: Record<string, string>;
   initialRows: Row[];
   previousWeekRows?: Row[];
+  // ISO date "yyyy-MM-dd" of the Monday of the displayed week — needed
+  // by the save-template / apply-template API actions.
+  weekStart?: string;
+  // True if the user has a saved weeklyScheduleTemplate. Drives whether
+  // the "Apply schedule" button renders.
+  hasScheduleTemplate?: boolean;
+  // False when viewing someone else's timesheet — disables the
+  // template buttons since templates are per-user.
+  canManageTemplate?: boolean;
   readOnly?: boolean;
 };
 
@@ -57,14 +67,78 @@ export default function TimeSheetClient({
   initialEntries,
   initialRows,
   previousWeekRows = [],
+  weekStart,
+  hasScheduleTemplate = false,
+  canManageTemplate = true,
   readOnly = false,
 }: Props) {
+  const router = useRouter();
   const [rows, setRows] = useState<Row[]>(
     initialRows.length > 0 ? initialRows : []
   );
   const [entries, setEntries] = useState<Record<string, string>>(initialEntries);
   const [saving, setSaving] = useState<Record<string, boolean>>({});
   const [error, setError] = useState<string | null>(null);
+  const [templateBusy, setTemplateBusy] = useState(false);
+
+  async function saveWeekAsTemplate() {
+    if (!weekStart || !canManageTemplate || templateBusy) return;
+    if (
+      !confirm(
+        "Save this week as your schedule template? Next time you click 'Apply schedule' on a draft week, it'll fill in this same Mon-Sun grid of project hours. Doesn't include leave or overhead."
+      )
+    ) {
+      return;
+    }
+    setError(null);
+    setTemplateBusy(true);
+    try {
+      const res = await fetch("/api/timesheets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "save-template", weekStart }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Failed to save schedule template.");
+        return;
+      }
+      // No need to refresh — the template lives on the user record,
+      // not the current grid. Just nudge the user.
+      router.refresh();
+    } finally {
+      setTemplateBusy(false);
+    }
+  }
+
+  async function applyScheduleTemplate() {
+    if (!weekStart || !canManageTemplate || templateBusy) return;
+    if (
+      !confirm(
+        "Apply your saved schedule template to this week? Existing draft project entries for this week will be replaced by the template. Leave and overhead entries are kept."
+      )
+    ) {
+      return;
+    }
+    setError(null);
+    setTemplateBusy(true);
+    try {
+      const res = await fetch("/api/timesheets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "apply-template", weekStart }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Failed to apply schedule template.");
+        return;
+      }
+      // Refresh to pick up the new TimeEntry rows the server created.
+      router.refresh();
+    } finally {
+      setTemplateBusy(false);
+    }
+  }
 
   function getPhasesForProject(projectId: string) {
     return projects.find((p) => p.id === projectId)?.phases ?? [];
@@ -444,6 +518,30 @@ export default function TimeSheetClient({
             >
               <Copy className="w-4 h-4" />
               Copy rows from last week
+            </button>
+          )}
+          {canManageTemplate && hasScheduleTemplate && (
+            <button
+              type="button"
+              onClick={applyScheduleTemplate}
+              disabled={templateBusy}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-[#F0FAF4] text-[#2D6A4F] border border-[#52B788]/30 hover:bg-[#52B788] hover:text-white transition-all disabled:opacity-60"
+              title="Replace this week's project entries with your saved schedule template"
+            >
+              <Sparkles className="w-4 h-4" />
+              {templateBusy ? "Applying..." : "Apply schedule"}
+            </button>
+          )}
+          {canManageTemplate && (
+            <button
+              type="button"
+              onClick={saveWeekAsTemplate}
+              disabled={templateBusy}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-white text-[#6B8C74] border border-[#E2EBE4] hover:border-[#52B788] hover:text-[#2D6A4F] transition-all disabled:opacity-60"
+              title="Save this week's project hours as a reusable weekly template"
+            >
+              <Save className="w-4 h-4" />
+              {templateBusy ? "Saving..." : hasScheduleTemplate ? "Update saved schedule" : "Save week as schedule"}
             </button>
           )}
         </div>

@@ -284,5 +284,167 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, timesheet: reopened });
   }
 
+  // ── Schedule template (Apply Schedule) ──────────────────────────────
+  // Phase 1 of the Apply-Schedule feature: capture this week's entries
+  // as a reusable weekly pattern, then fill any other DRAFT week from
+  // it. Removes the friction of typing the same Mon-Fri grid every
+  // week for staff with stable assignments.
+
+  if (action === "save-template") {
+    if (!weekStart) {
+      return NextResponse.json({ error: "weekStart is required to save template." }, { status: 400 });
+    }
+    const parsedWeekStart = new Date(weekStart);
+    if (Number.isNaN(parsedWeekStart.getTime())) {
+      return NextResponse.json({ error: "Invalid week start date." }, { status: 400 });
+    }
+    const weekEndDate = new Date(parsedWeekStart);
+    weekEndDate.setDate(weekEndDate.getDate() + 6);
+
+    // Pull this user's billable / project-linked entries for the week.
+    // Skip leave + overhead entries — those don't belong in a recurring
+    // template (you don't take vacation every week).
+    const entries = await prisma.timeEntry.findMany({
+      where: {
+        userId: currentUser.id,
+        date: { gte: parsedWeekStart, lte: weekEndDate },
+        leaveType: null,
+        overheadCategory: null,
+        projectId: { not: null },
+        phaseId: { not: null },
+      },
+      select: { projectId: true, phaseId: true, date: true, hours: true },
+    });
+
+    // Build the template: group by (projectId, phaseId), stamp hours
+    // per day-of-week.
+    const dayKeys: Array<keyof typeof byDow> = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+    const byDow = { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0, sat: 0, sun: 0 } as const;
+    type Row = { projectId: string; phaseId: string; hoursPerDay: typeof byDow };
+    const rowsByKey = new Map<string, Row>();
+
+    for (const e of entries) {
+      if (!e.projectId || !e.phaseId) continue;
+      const key = `${e.projectId}|${e.phaseId}`;
+      // JS getDay(): 0=Sun .. 6=Sat. Map to Mon-first 0..6.
+      const dow = e.date.getDay();
+      const dayIdx = (dow + 6) % 7;
+      const dayKey = dayKeys[dayIdx];
+      const existing = rowsByKey.get(key);
+      if (existing) {
+        existing.hoursPerDay = {
+          ...existing.hoursPerDay,
+          [dayKey]: existing.hoursPerDay[dayKey] + Number(e.hours),
+        };
+      } else {
+        rowsByKey.set(key, {
+          projectId: e.projectId,
+          phaseId: e.phaseId,
+          hoursPerDay: { ...byDow, [dayKey]: Number(e.hours) },
+        });
+      }
+    }
+
+    const template = Array.from(rowsByKey.values());
+    if (template.length === 0) {
+      return NextResponse.json(
+        { error: "Nothing to save — log at least one project hour this week first." },
+        { status: 400 }
+      );
+    }
+
+    await prisma.user.update({
+      where: { id: currentUser.id },
+      data: { weeklyScheduleTemplate: template },
+    });
+
+    return NextResponse.json({ success: true, rowCount: template.length });
+  }
+
+  if (action === "apply-template") {
+    if (!weekStart) {
+      return NextResponse.json({ error: "weekStart is required to apply template." }, { status: 400 });
+    }
+    const parsedWeekStart = new Date(weekStart);
+    if (Number.isNaN(parsedWeekStart.getTime())) {
+      return NextResponse.json({ error: "Invalid week start date." }, { status: 400 });
+    }
+
+    // Only DRAFT weeks accept a template apply — overwriting submitted
+    // or approved data via a one-click action would be too dangerous.
+    const sheet = await prisma.weeklyTimesheet.findUnique({
+      where: { userId_weekStart: { userId: currentUser.id, weekStart: parsedWeekStart } },
+    });
+    if (sheet && sheet.status !== "DRAFT") {
+      return NextResponse.json(
+        { error: "Apply schedule only works on draft weeks. Recall this submission first." },
+        { status: 400 }
+      );
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: currentUser.id },
+      select: { weeklyScheduleTemplate: true, organizationId: true },
+    });
+    const template = user?.weeklyScheduleTemplate;
+    if (!Array.isArray(template) || template.length === 0) {
+      return NextResponse.json(
+        { error: "No saved schedule template. Click 'Save week as template' on a typical week first." },
+        { status: 400 }
+      );
+    }
+
+    // Build the new TimeEntry rows. Skip cells where hours = 0 so the
+    // grid doesn't get a wall of zeros.
+    const dayKeys = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
+    type TemplateRow = {
+      projectId: string;
+      phaseId: string;
+      hoursPerDay: Record<(typeof dayKeys)[number], number>;
+    };
+    const rows = template as TemplateRow[];
+
+    const created: Array<{ date: Date; projectId: string; phaseId: string; hours: number }> = [];
+    for (const r of rows) {
+      for (let i = 0; i < 7; i++) {
+        const hrs = Number(r.hoursPerDay?.[dayKeys[i]] ?? 0);
+        if (hrs <= 0) continue;
+        const date = new Date(parsedWeekStart);
+        date.setDate(date.getDate() + i);
+        created.push({ date, projectId: r.projectId, phaseId: r.phaseId, hours: hrs });
+      }
+    }
+    if (created.length === 0) {
+      return NextResponse.json({ error: "Template has no hours to apply." }, { status: 400 });
+    }
+
+    // Delete any existing draft entries for this week first so the
+    // apply is a clean replacement, not an additive duplicate.
+    const weekEndDate = new Date(parsedWeekStart);
+    weekEndDate.setDate(weekEndDate.getDate() + 6);
+    await prisma.timeEntry.deleteMany({
+      where: {
+        userId: currentUser.id,
+        date: { gte: parsedWeekStart, lte: weekEndDate },
+        invoiceId: null,
+        leaveType: null,
+        overheadCategory: null,
+      },
+    });
+    await prisma.timeEntry.createMany({
+      data: created.map((c) => ({
+        organizationId: user!.organizationId,
+        userId: currentUser.id,
+        projectId: c.projectId,
+        phaseId: c.phaseId,
+        date: c.date,
+        hours: c.hours,
+        isBillable: true,
+      })),
+    });
+
+    return NextResponse.json({ success: true, entryCount: created.length });
+  }
+
   return NextResponse.json({ error: "Unsupported action." }, { status: 400 });
 }
