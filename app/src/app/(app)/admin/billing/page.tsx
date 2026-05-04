@@ -13,7 +13,7 @@ export default async function AdminBillingPage() {
     prisma.invoice.findMany({
       where: { organizationId: currentUser.organizationId },
       include: {
-        project: { select: { name: true, projectNumber: true } },
+        project: { select: { name: true, projectNumber: true, clientEmail: true } },
         lineItems: true,
       },
       orderBy: { issueDate: "desc" },
@@ -63,6 +63,7 @@ export default async function AdminBillingPage() {
     projectName: inv.project.name,
     projectNumber: inv.project.projectNumber,
     projectId: inv.projectId,
+    clientEmail: inv.project.clientEmail,
     lineItems: inv.lineItems.map((li) => ({
       id: li.id,
       description: li.description,

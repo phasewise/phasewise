@@ -45,6 +45,7 @@ type Invoice = {
   projectName: string;
   projectNumber: string | null;
   projectId: string;
+  clientEmail: string | null;
   lineItems: LineItem[];
 };
 
@@ -115,6 +116,15 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
+
+  // Send-invoice modal state — replaces the back-to-back browser
+  // prompt() calls that were the v1 path. Real form gives the user a
+  // proper recipient input + multiline message + a clear send action.
+  const [sendingInvoice, setSendingInvoice] = useState<Invoice | null>(null);
+  const [sendToEmail, setSendToEmail] = useState("");
+  const [sendBodyMessage, setSendBodyMessage] = useState("");
+  const [sendError, setSendError] = useState<string | null>(null);
+  const [sendSuccess, setSendSuccess] = useState<string | null>(null);
   // Tracks which invoice's Send button is in-flight, so we can disable
   // it without disabling the whole row.
   const [savingStatusId, setSavingStatusId] = useState<string | null>(null);
@@ -346,6 +356,7 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
         projectName: inv.project.name,
         projectNumber: inv.project.projectNumber,
         projectId: inv.projectId,
+        clientEmail: inv.project.clientEmail ?? null,
         lineItems: inv.lineItems.map(
           (li: { id: string; description: string; quantity: string; unitPrice: string; amount: string }) => ({
             id: li.id,
@@ -411,50 +422,57 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
     setInvoices((prev) => prev.filter((i) => i.id !== invoice.id));
   }
 
-  // Send the invoice to the project's client via Loops (with PDF
-  // attached). Confirms the recipient first so a typo on the project
-  // doesn't accidentally email the wrong client. Server flips status
-  // to SENT and records sentAt on success.
-  async function sendInvoiceToClient(invoice: Invoice) {
-    setError(null);
-    // Use the project's clientEmail by default; user can adjust at the
-    // prompt. (For a richer UX we'd open a real modal; this is fine
-    // for v1 — fast to ship, gives the user the confirm step they need.)
-    const defaultEmail = ""; // we don't have it on the row payload yet
-    const promptedEmail = prompt(
-      `Send ${invoice.invoiceNumber} to the client?\n\nThe PDF will be attached. Enter the client email (or leave blank to use the project's client email):`,
-      defaultEmail
-    );
-    if (promptedEmail === null) return; // cancelled
+  // Open the Send-invoice modal — we're not actually sending yet, just
+  // collecting the recipient + optional message in a real form.
+  function openSendModal(invoice: Invoice) {
+    setSendError(null);
+    setSendSuccess(null);
+    setSendToEmail(invoice.clientEmail ?? "");
+    setSendBodyMessage("");
+    setSendingInvoice(invoice);
+  }
 
-    const optionalMessage = prompt(
-      "Optional message to include in the email (leave blank to skip):",
-      ""
-    );
+  function closeSendModal() {
+    setSendingInvoice(null);
+    setSendToEmail("");
+    setSendBodyMessage("");
+    setSendError(null);
+  }
 
-    setSavingStatusId(invoice.id);
+  async function handleSendSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!sendingInvoice) return;
+    setSendError(null);
+    setSavingStatusId(sendingInvoice.id);
     try {
-      const res = await fetch(`/api/invoices/${invoice.id}/send`, {
+      const res = await fetch(`/api/invoices/${sendingInvoice.id}/send`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          toEmail: promptedEmail || undefined,
-          bodyMessage: optionalMessage || undefined,
+          toEmail: sendToEmail.trim() || undefined,
+          bodyMessage: sendBodyMessage.trim() || undefined,
         }),
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Failed to send invoice.");
+        setSendError(data.error || "Failed to send invoice.");
         return;
       }
       setInvoices((prev) =>
         prev.map((i) =>
-          i.id === invoice.id
+          i.id === sendingInvoice.id
             ? { ...i, status: data.status, sentAt: data.sentAt }
             : i
         )
       );
-      alert(`Invoice ${invoice.invoiceNumber} sent to ${data.recipient}.`);
+      setSendSuccess(
+        `Sent to ${data.recipient}. Status updated to ${data.status}.`
+      );
+      // Auto-close after a moment so the user sees the confirmation.
+      setTimeout(() => {
+        setSendingInvoice(null);
+        setSendSuccess(null);
+      }, 1800);
     } finally {
       setSavingStatusId(null);
     }
@@ -1193,7 +1211,7 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
                                   {(inv.status === "DRAFT" || inv.status === "SENT") && (
                                     <button
                                       type="button"
-                                      onClick={() => sendInvoiceToClient(inv)}
+                                      onClick={() => openSendModal(inv)}
                                       disabled={savingStatusId === inv.id}
                                       className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 hover:text-emerald-800 hover:underline disabled:opacity-50"
                                       title="Email PDF to client via Phasewise"
@@ -1257,6 +1275,124 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Send invoice modal — replaces the back-to-back browser
+          prompts that v1 used. Recipient + optional message + send.
+          Auto-closes ~1.8s after a successful send so the user sees
+          the confirmation, not just an instant disappearance. */}
+      {sendingInvoice && (
+        <div
+          className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={closeSendModal}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-6 pb-0">
+              <h2 className="font-serif text-xl text-[#1A2E22]">Send invoice</h2>
+              <button
+                type="button"
+                onClick={closeSendModal}
+                aria-label="Close send invoice modal"
+                className="text-[#A3BEA9] hover:text-[#1A2E22] transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <form onSubmit={handleSendSubmit} className="p-6 space-y-4">
+              <div className="bg-[#F7F9F7] rounded-xl p-4 space-y-1 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-[#6B8C74]">Invoice</span>
+                  <span className="font-mono font-semibold text-[#1A2E22]">
+                    {sendingInvoice.invoiceNumber}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#6B8C74]">Project</span>
+                  <span className="text-[#1A2E22]">{sendingInvoice.projectName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#6B8C74]">Total</span>
+                  <span className="font-semibold text-[#1A2E22]">
+                    ${sendingInvoice.total.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="send-to-email"
+                  className="text-sm text-[#3D5C48] block mb-1.5 font-medium"
+                >
+                  Send to
+                </label>
+                <input
+                  id="send-to-email"
+                  type="email"
+                  value={sendToEmail}
+                  onChange={(e) => setSendToEmail(e.target.value)}
+                  placeholder={sendingInvoice.clientEmail ?? "client@example.com"}
+                  className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]"
+                />
+                <p className="mt-1 text-xs text-[#A3BEA9]">
+                  Defaults to the client&apos;s email on the project. Override here for a one-off.
+                </p>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="send-message"
+                  className="text-sm text-[#3D5C48] block mb-1.5 font-medium"
+                >
+                  Message <span className="text-[#A3BEA9] font-normal">(optional)</span>
+                </label>
+                <textarea
+                  id="send-message"
+                  rows={3}
+                  value={sendBodyMessage}
+                  onChange={(e) => setSendBodyMessage(e.target.value)}
+                  placeholder="Hi — invoice for last month is attached. Reach out with any questions."
+                  className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]"
+                />
+              </div>
+
+              {sendError && (
+                <div className="rounded-lg bg-rose-50 border border-rose-200 px-3 py-2 text-xs text-rose-700">
+                  {sendError}
+                </div>
+              )}
+              {sendSuccess && (
+                <div className="rounded-lg bg-[#F0FAF4] border border-[#52B788]/40 px-3 py-2 text-xs text-[#2D6A4F]">
+                  {sendSuccess}
+                </div>
+              )}
+
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  type="submit"
+                  disabled={savingStatusId === sendingInvoice.id || !!sendSuccess}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold bg-[#2D6A4F] text-white hover:bg-[#40916C] transition-colors disabled:opacity-60"
+                >
+                  <Send className="w-4 h-4" />
+                  {savingStatusId === sendingInvoice.id
+                    ? "Sending..."
+                    : sendSuccess
+                    ? "Sent ✓"
+                    : "Send invoice"}
+                </button>
+                <button
+                  type="button"
+                  onClick={closeSendModal}
+                  className="px-4 py-2.5 rounded-lg text-sm font-medium text-[#6B8C74] hover:text-[#1A2E22] transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
