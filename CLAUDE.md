@@ -633,7 +633,7 @@ All entries are captured in the **Product Wishlist** section above with full det
 
 4. **Invoice header industry-standard gaps** → add Remit-to (Mail/ACH/Wire), Fed ID, Agreement Number, Attn line. New `/settings/billing-info` page. ~1 day.
 5. **Stripe Payment Links integration** (Stage 1 of the broader payments work) — bundles with #1 above.
-6. **Approver page history view** → toggle/tab for past Approved + Sent-back, with audit trail.
+6. ✅ **Approver page history view** (shipped 2026-05-04) — added a Pending / History tab toggle on `/time/approve`. History tab lists the most recent 50 past decisions (APPROVED rows + DRAFT rows with `reviewComment` set, i.e. sent-back). Each row shows user, week, hours, decision badge (Approved / Sent back), reviewer name + date. APPROVED rows have a Reopen action (with confirm dialog) that calls `/api/timesheets` with `action: "reopen"` + the timesheet owner's `userId`. Sent-back rows display the reviewer's comment inline.
 7. **Admin timesheet rollup dashboard** → monthly per-staff × per-project with utilization and billable mix.
 8. **Notifications widget** → header dropdown surfacing pending approvals, overdue submittals, draft invoices, budget alerts.
 

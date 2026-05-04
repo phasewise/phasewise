@@ -31,19 +31,44 @@ export default async function TimeApprovePage() {
   // (or empty state). Hard-blocking non-approvers was wrong — a PM with
   // direct reports should land here without needing role escalation.
 
-  const submittedTimesheets = await prisma.weeklyTimesheet.findMany({
-    where: {
-      status: "SUBMITTED",
-      user: {
-        organizationId: currentUser.organizationId,
-        // Role-approvers see every submission in the org. Everyone else
-        // sees only the timesheets of users who report directly to them.
-        ...(isRoleApprover ? {} : { supervisorId: currentUser.id }),
+  // Same scope filter for both Pending and History — role-approvers see
+  // the whole org, everyone else sees their direct reports only.
+  const userScope = {
+    organizationId: currentUser.organizationId,
+    ...(isRoleApprover ? {} : { supervisorId: currentUser.id }),
+  };
+
+  const [submittedTimesheets, historyTimesheets] = await Promise.all([
+    prisma.weeklyTimesheet.findMany({
+      where: {
+        status: "SUBMITTED",
+        user: userScope,
       },
-    },
-    include: { user: true },
-    orderBy: { submittedAt: "desc" },
-  });
+      include: { user: true },
+      orderBy: { submittedAt: "desc" },
+    }),
+    // History: most recent decisions. Approved rows are the bulk of it;
+    // sent-back ones (status=DRAFT with reviewComment) are also included
+    // so the audit trail captures both decisions an approver makes.
+    prisma.weeklyTimesheet.findMany({
+      where: {
+        OR: [
+          { status: "APPROVED" },
+          { AND: [{ status: "DRAFT" }, { reviewComment: { not: null } }] },
+        ],
+        user: userScope,
+      },
+      include: {
+        user: true,
+        approvedBy: { select: { fullName: true } },
+        reviewedBy: { select: { fullName: true } },
+      },
+      // Sort by whichever is most recent — approvedAt for APPROVED rows,
+      // reviewedAt for sent-back rows. Both are populated when set.
+      orderBy: [{ approvedAt: "desc" }, { reviewedAt: "desc" }],
+      take: 50,
+    }),
+  ]);
 
   // Fetch time entries for each submitted timesheet so the approver can
   // expand a row and see exactly what they're approving — by phase, by
@@ -145,6 +170,51 @@ export default async function TimeApprovePage() {
     })
   );
 
+  // History: lightweight list of past decisions. We don't fetch entries
+  // for these (the day grid would be heavy and isn't actionable post-
+  // decision); the row just summarises hours and offers Reopen for the
+  // approved ones.
+  const history = await Promise.all(
+    historyTimesheets.map(async (ts) => {
+      const weekStart = ts.weekStart;
+      const weekEnd = addDays(weekStart, 6);
+      const totals = await prisma.timeEntry.aggregate({
+        where: {
+          userId: ts.userId,
+          date: { gte: weekStart, lte: weekEnd },
+        },
+        _sum: { hours: true },
+      });
+      const totalHours = Number(totals._sum.hours ?? 0);
+      // Effective decision moment + label for the audit row.
+      const decision =
+        ts.status === "APPROVED"
+          ? {
+              kind: "APPROVED" as const,
+              by: ts.approvedBy?.fullName ?? "—",
+              at: ts.approvedAt?.toISOString() ?? null,
+              comment: null as string | null,
+            }
+          : {
+              kind: "SENT_BACK" as const,
+              by: ts.reviewedBy?.fullName ?? "—",
+              at: ts.reviewedAt?.toISOString() ?? null,
+              comment: ts.reviewComment ?? null,
+            };
+      return {
+        id: ts.id,
+        weekStart: ts.weekStart.toISOString(),
+        weekEnd: weekEnd.toISOString(),
+        user: {
+          id: ts.user.id,
+          fullName: ts.user.fullName,
+        },
+        totalHours,
+        decision,
+      };
+    })
+  );
+
   return (
     <div className="p-8">
       <div className="mb-8">
@@ -154,7 +224,7 @@ export default async function TimeApprovePage() {
         </p>
       </div>
 
-      <TimeApprovalClient rows={rows} />
+      <TimeApprovalClient rows={rows} history={history} />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { addDays, format } from "date-fns";
 import { Check, ChevronDown, ChevronRight, MessageSquareWarning, X } from "lucide-react";
@@ -21,17 +22,34 @@ export type ApprovalRow = {
   }>;
 };
 
-type Props = {
-  rows: ApprovalRow[];
+export type HistoryRow = {
+  id: string;
+  weekStart: string;
+  weekEnd: string;
+  user: { id: string; fullName: string };
+  totalHours: number;
+  decision: {
+    kind: "APPROVED" | "SENT_BACK";
+    by: string;
+    at: string | null;
+    comment: string | null;
+  };
 };
 
-export default function TimeApprovalClient({ rows: initialRows }: Props) {
+type Props = {
+  rows: ApprovalRow[];
+  history: HistoryRow[];
+};
+
+export default function TimeApprovalClient({ rows: initialRows, history }: Props) {
+  const router = useRouter();
   const [rows, setRows] = useState(initialRows);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [rejectDialogFor, setRejectDialogFor] = useState<string | null>(null);
   const [rejectComment, setRejectComment] = useState("");
+  const [tab, setTab] = useState<"pending" | "history">("pending");
 
   function toggle(id: string) {
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -113,6 +131,34 @@ export default function TimeApprovalClient({ rows: initialRows }: Props) {
     return `${format(d, "EEE")} ${format(d, "M/d")}`;
   };
 
+  async function reopenFromHistory(weekStartIso: string, userId: string) {
+    if (
+      !confirm(
+        "Reopen this approved timesheet for editing? It will move back to draft and need to be re-submitted and re-approved."
+      )
+    ) {
+      return;
+    }
+    setError(null);
+    const response = await fetch("/api/timesheets", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "reopen",
+        weekStart: weekStartIso.slice(0, 10),
+        userId,
+      }),
+    });
+    const result = await response.json();
+    if (!response.ok) {
+      setError(result.error || "Unable to reopen timesheet.");
+      return;
+    }
+    // Refetch the page so the timesheet leaves history (now DRAFT) and
+    // the staff member sees the reopened cells next time they look.
+    router.refresh();
+  }
+
   return (
     <div className="space-y-6">
       {error && (
@@ -121,6 +167,98 @@ export default function TimeApprovalClient({ rows: initialRows }: Props) {
         </p>
       )}
 
+      {/* Tabs */}
+      <div className="flex items-center gap-1 border-b border-slate-200">
+        <button
+          type="button"
+          onClick={() => setTab("pending")}
+          className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
+            tab === "pending"
+              ? "border-emerald-600 text-emerald-700"
+              : "border-transparent text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          Pending
+          {rows.length > 0 && (
+            <span className="ml-1.5 px-1.5 py-0.5 text-xs rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+              {rows.length}
+            </span>
+          )}
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab("history")}
+          className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
+            tab === "history"
+              ? "border-emerald-600 text-emerald-700"
+              : "border-transparent text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          History
+          {history.length > 0 && (
+            <span className="ml-1.5 px-1.5 py-0.5 text-xs rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+              {history.length}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {tab === "history" ? (
+        <div className="rounded-3xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+          {history.length === 0 ? (
+            <div className="px-6 py-10 text-center text-sm text-slate-500">
+              No approval history yet. Past Approve and Send-back decisions will appear here.
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-100">
+              {history.map((h) => {
+                const weekRange = `${format(parseLocalDate(h.weekStart), "MMM d")} – ${format(parseLocalDate(h.weekEnd), "MMM d, yyyy")}`;
+                return (
+                  <div key={h.id} className="px-6 py-4 flex flex-wrap items-center gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-slate-900 truncate">{h.user.fullName}</div>
+                      <div className="text-xs text-slate-500 truncate">
+                        {weekRange} · {h.totalHours.toFixed(1)} hrs
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {h.decision.kind === "APPROVED" ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-0.5 text-xs font-medium">
+                          <Check size={12} /> Approved
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 text-amber-800 border border-amber-300 px-2.5 py-0.5 text-xs font-medium">
+                          <MessageSquareWarning size={12} /> Sent back
+                        </span>
+                      )}
+                      <span className="text-xs text-slate-500">
+                        by {h.decision.by}
+                        {h.decision.at && (
+                          <> · {new Date(h.decision.at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</>
+                        )}
+                      </span>
+                    </div>
+                    {h.decision.kind === "APPROVED" && (
+                      <button
+                        type="button"
+                        onClick={() => reopenFromHistory(h.weekStart, h.user.id)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 transition-colors"
+                      >
+                        Reopen
+                      </button>
+                    )}
+                    {h.decision.kind === "SENT_BACK" && h.decision.comment && (
+                      <div className="basis-full text-xs text-amber-900 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mt-1">
+                        &ldquo;{h.decision.comment}&rdquo;
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      ) : (
       <div className="rounded-3xl border border-slate-200 bg-white shadow-sm overflow-hidden">
         {rows.length === 0 ? (
           <div className="px-6 py-10 text-center text-sm text-slate-500">
@@ -271,6 +409,7 @@ export default function TimeApprovalClient({ rows: initialRows }: Props) {
           </div>
         )}
       </div>
+      )}
 
       {/* Reject / send-back modal */}
       {rejectDialogFor && (
