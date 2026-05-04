@@ -599,11 +599,11 @@ Ordered by my estimated value-per-effort. Revisit during the forensic audit.
 - **Automated year-end rollover** — apply the `rolloverCap` automatically when the calendar year changes. Subsumed by the monthly-accrual feature above.
 - **Forensic audit** — top-to-bottom value review once the queue slows down. Rate each feature on value delivered vs maintenance cost. Cut or sharpen anything that doesn't earn its keep.
 
-## Where We Left Off (2026-05-04 — late afternoon update)
+## Where We Left Off (2026-05-04 — final EOD)
 
-**Status: 🟢🟢🟢 Massive day — 15 commits, 20 items shipped from the smoke-test triage list.** Morning was discovery (smoke test of 4 major flows, 28 items found). Afternoon + evening were execution. **Every P0 closed, every P1 except Stripe Payment Links, every P2 bug, and every P3 polish item.** Stripe Payment Links deferred to a fresh session because it requires Stripe Connect (multi-tenant payment routing) which is real 1-2 day scope.
+**Status: 🟢🟢🟢🟢 Historic day — 21 commits, 25 items shipped from the 28-item smoke-test triage list.** Morning was discovery (smoke test of 4 major flows, 28 items found). Afternoon + evening were execution. **Every wishlist item is now shipped except Stripe Payment Links** — deferred to a fresh session because it requires Stripe Connect (multi-tenant payment routing), which is real 1-2 day scope. The platform is now genuinely cohesive end-to-end across every workflow we tested.
 
-### Commits in order (15 total)
+### Commits in order (21 total)
 
 1. `bad981a` — Invoice timesheet preview: warn on non-approved hours (P0 #2)
 2. `bd8a3a9` — Timesheet UX bugs: refresh on submit + week-state sync + TZ-safe day grid (P2 #9, #10, #11)
@@ -618,7 +618,13 @@ Ordered by my estimated value-per-effort. Revisit during the forensic audit.
 11. `d5d46f9` — Sidebar nav badges: surface what needs attention without leaving (P1 #8)
 12. `578948c` — Admin: timesheet rollup dashboard (P1 #7)
 13. `d366048` — Invoice header: Attn line from linked Client.contactPerson (P1 #4 stage 2 finish)
-14. `6dee87f` — Send invoice: replace browser prompts with proper modal (P3 #15 partial)
+14. `6dee87f` — Send invoice: replace browser prompts with proper modal (P3 #15)
+15. `a6d1969` — CLAUDE.md: 2026-05-04 EOD — 15 commits, 20 items closed (docs)
+16. `6bec9bb` — Backup supervisor: vacation cover for timesheet approvals (P3 #23)
+17. `bea53d9` — My Schedule: staff-side read-only view of phase assignments (P3 #24)
+18. `f572e7b` — Dashboard: separate STAFF view from firm-wide view (P3 #25)
+19. `641e24c` — Apply Schedule: save week as template, one-click apply to draft week (P3 #21)
+20. `65dc445` — Leave: accrued mode (earn it, don't lump-sum it) (P3 #22)
 
 ### Schema changes pushed to Supabase
 
@@ -626,17 +632,23 @@ Ordered by my estimated value-per-effort. Revisit during the forensic audit.
 - `Organization.billingMailingAddress`, `billingFedId`, `billingAchRouting`, `billingAchAccount`, `billingWireRouting`, `billingWireAccount` — Remit-to block
 - `Project.contractNumber` (String?) — agreement / contract number rendered on invoice
 - `Project.billingCadence` (enum MONTHLY/MILESTONE/MANUAL, default MONTHLY) — controls auto-invoicing cron eligibility
+- `User.alternateSupervisorId` (Uuid?, FK) — backup approver for vacation cover
+- `User.weeklyScheduleTemplate` (Json?) — saved Apply-Schedule template
 
 ### Manual steps still pending
 
 - **Loops INVOICE_SEND template** needs body update in the dashboard: replace any attachment reference with a `{{ invoiceUrl }}` button/link. Until done, the email sends but the body has no link.
 - **Verify on Vercel** — `db push` was applied to Supabase but Vercel will redeploy on next push to GitHub. The `.next` cache is in sync locally.
 
-### Still on the punch list (fresh-session items)
+### Still on the punch list (one fresh-session item, plus minor follow-ups)
 
-- **P1 #5: Stripe Payment Links integration** — biggest remaining feature. Requires Stripe Connect (each firm has its own connected account, not Phasewise's account). Multi-tenant payments. Real 1-2 day scope. Defer until a fresh session — too big to graft on at the end of a long day.
-- **Modal standardization sweep continuation** — other `confirm()` usages across ~9 client components (less visually offensive than `prompt()`, lower priority). Send Invoice was the worst offender and got the modal.
-- **P3 features 21-25** — Apply Schedule pre-fill, monthly leave accrual, alternate / backup supervisor, "My Schedule" staff-side view, role-based dashboard differentiation. Each is a real feature, days of work.
+- **P1 #5: Stripe Payment Links integration** — only big item remaining. Requires Stripe Connect (each firm has its own connected account, not Phasewise's). Multi-tenant payments + webhook + auto-mark-paid. Real 1-2 day scope. Cleanest as a fresh-session block of focused work.
+
+**Minor follow-ups carried into the wishlist** (none blocking):
+- Per-user override editor for the new accrued-leave fields (org-default works; per-user shape still uses the legacy 2-field UI)
+- "Submit invoice in triplicate" public-agency toggle (rare, low priority)
+- Apply Schedule Phase 2 — separate template editor UI for tweaking without re-saving from a real week
+- Year-end leave rollover automation (currently manual)
 
 ### Loops template — manually updated by Kevin during the session ✅
 
@@ -644,20 +656,20 @@ Kevin updated the `INVOICE_SEND` template in the Loops dashboard to use the new 
 
 ### Tomorrow's first task
 
-**End-to-end test the Send-to-client flow** with the new Loops template + public viewer:
+**End-to-end test the new flows** that shipped today. Suggested order:
 
-1. Visit `/settings/billing-info` and fill in Remit-to address + Fed ID + ACH details so the invoice has data to render.
-2. From `/admin/billing`, click **Send to client** on any invoice. Use the new modal (no more prompts).
-3. Confirm the email arrives at the recipient with a working `View & Download Invoice` button pointing at `/invoice/[token]`.
-4. Open the link, verify the public viewer page renders with the Remit-to block + Attn: line + Agreement No.
-5. Click Download PDF and verify the same layout in the PDF.
+1. **Settings → Phasewise Subscription & Billing info**: visit `/settings/billing-info` and populate Remit-to mailing address + Fed ID + ACH details.
+2. **Send-to-client flow**: from `/admin/billing`, click **Send to client** on any invoice. New modal (not prompts). Confirm email arrives with the `View & Download Invoice` button. Open the link → verify the public viewer page renders with Remit-to + Attn + Agreement No. Download PDF and verify the same.
+3. **Auto-invoicing surfacing**: visit `/dashboard` (as owner) and `/admin/billing`; see the drafts banner and the auto-invoicing status panel. Set a project's billing cadence to MILESTONE on edit and verify the cron will skip it.
+4. **Approver History**: submit a timesheet, approve it, then visit `/time/approve` → click the **History** tab → see the audit row → click Reopen.
+5. **Sidebar badges**: confirm the rose badges on Time Sheets / Submittals + the green Admin badge match what's pending.
+6. **Admin → Timesheet Rollup**: visit `/admin/timesheets`, see per-staff and per-project breakdown for this and last month.
+7. **Backup supervisor**: assign a backup on a team member, verify the alternate can approve their reports.
+8. **My Schedule**: visit `/time/my-schedule` (or click the link from the timesheet header) and see your phase assignments with progress bars.
+9. **Apply Schedule**: log a typical week, click **Save week as schedule**, then go to a future week and click **Apply schedule** to see it pre-fill.
+10. **Accrued leave**: switch a leave type to Accrued mode in `/admin/leave`, set monthlyAccrual + cap, verify staff balances update.
 
-After that's verified, choose between:
-- **Stripe Payment Links** (biggest remaining feature) — fresh session, 1-2 days
-- **Modal sweep continuation** — bounded but tedious
-- **One of P3 features 21-25** — pick the one that addresses the firm's most-pressing operational gap
-
-Or just settle in and use it. The platform is now genuinely cohesive end-to-end.
+When that's all green, the only remaining major work is **Stripe Payment Links** (Stripe Connect onboarding + Pay-now button + auto-mark-paid webhook). 1-2 day fresh-session block.
 
 ---
 
