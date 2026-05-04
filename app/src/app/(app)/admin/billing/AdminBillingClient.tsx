@@ -207,7 +207,12 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
   // period and replace the line items with one row per (phase, person).
   // Existing user-typed lines are dropped because the action implies
   // "use the timesheet as the source of truth."
-  async function pullFromTimesheets() {
+  // `modeOverride` lets the caller force a specific line-item style —
+  // used by the radio toggle to re-pull when the mode changes after
+  // an initial pull (state updates are async, so we can't rely on
+  // `lineItemMode` reflecting the just-set value).
+  async function pullFromTimesheets(modeOverride?: "summary" | "detailed") {
+    const mode = modeOverride ?? lineItemMode;
     setError(null);
     setPullSummary(null);
     setPullWarnings([]);
@@ -222,7 +227,7 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
     setPulling(true);
     try {
       const res = await fetch(
-        `/api/invoices/timesheet-preview?projectId=${formProjectId}&from=${formPeriodStart}&to=${formPeriodEnd}&mode=${lineItemMode}`
+        `/api/invoices/timesheet-preview?projectId=${formProjectId}&from=${formPeriodStart}&to=${formPeriodEnd}&mode=${mode}`
       );
       const data = await res.json();
       if (!res.ok) {
@@ -454,6 +459,7 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
     if (!confirm(`Mark ${invoice.invoiceNumber} as sent? This records today as the send date and changes status to SENT.`)) {
       return;
     }
+    setError(null);
     const res = await fetch("/api/invoices", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -722,7 +728,7 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
             </div>
             <button
               type="button"
-              onClick={pullFromTimesheets}
+              onClick={() => pullFromTimesheets()}
               disabled={pulling || !formProjectId || !formPeriodStart || !formPeriodEnd}
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               title="Replace line items with approved billable time entries from this period"
@@ -734,8 +740,9 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
 
           {/* Line-item mode toggle. Summary (default) is what most firms
               send to clients; Detailed exposes individual rates for T&M
-              billing. Affects what the next "Pull from timesheets" run
-              produces — already-pulled rows are unchanged. */}
+              billing. If the user has already pulled from timesheets,
+              changing the mode auto-re-pulls so the line items reflect
+              the new style without a second click. */}
           <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">
             <span className="text-[#3D5C48] font-medium">Line item style:</span>
             <label className="inline-flex items-center gap-1.5 cursor-pointer">
@@ -744,7 +751,13 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
                 name="line-item-mode"
                 value="summary"
                 checked={lineItemMode === "summary"}
-                onChange={() => setLineItemMode("summary")}
+                onChange={() => {
+                  setLineItemMode("summary");
+                  const hasPulled = formLines.some(
+                    (l) => l.sourceEntryIds && l.sourceEntryIds.length > 0
+                  );
+                  if (hasPulled) pullFromTimesheets("summary");
+                }}
                 className="accent-[#2D6A4F]"
               />
               <span className="text-[#3D5C48]">
@@ -758,7 +771,13 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
                 name="line-item-mode"
                 value="detailed"
                 checked={lineItemMode === "detailed"}
-                onChange={() => setLineItemMode("detailed")}
+                onChange={() => {
+                  setLineItemMode("detailed");
+                  const hasPulled = formLines.some(
+                    (l) => l.sourceEntryIds && l.sourceEntryIds.length > 0
+                  );
+                  if (hasPulled) pullFromTimesheets("detailed");
+                }}
                 className="accent-[#2D6A4F]"
               />
               <span className="text-[#3D5C48]">

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronDown, ChevronRight, FolderPlus, Search, X } from "lucide-react";
 import { PHASE_SHORT_LABELS, STATUS_COLORS } from "@/lib/constants";
+import { toTitleCase } from "@/lib/utils";
 
 type Phase = { phaseType: string; status: string; budgetedFee: number; budgetedHours: number };
 
@@ -418,7 +419,7 @@ function ProjectRow({
       </td>
       <td className="px-6 py-4 text-slate-600">{project.clientName || "—"}</td>
       <td className="px-6 py-4 text-slate-600">{project.projectType || "—"}</td>
-      <td className="px-6 py-4 text-slate-600">{project.city || "—"}</td>
+      <td className="px-6 py-4 text-slate-600">{project.city ? toTitleCase(project.city) : "—"}</td>
       <td className="px-6 py-4 text-slate-600">
         <span className="text-xs font-medium rounded-full bg-slate-100 px-2 py-1">
           {PHASE_SHORT_LABELS[currentPhase?.phaseType ?? "PRE_DESIGN"]}

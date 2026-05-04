@@ -642,18 +642,18 @@ All entries are captured in the **Product Wishlist** section above with full det
 9. ✅ **Reviewer comment banner persists after re-submit** (shipped 2026-05-04) — submit handler now calls `router.refresh()` so the page re-fetches the WeeklyTimesheet record and the banner clears (the API was already nulling `reviewComment` on re-submit).
 10. ✅ **Week status card stuck on wrong week** (shipped 2026-05-04) — TimesheetSubmitClient now syncs the optimistic `currentStatus` state when the `status`/`weekStart` props change via `useEffect`. Prev/Next navigation now updates the card correctly.
 11. ✅ **Approver column grid misaligned with period label** (shipped 2026-05-04) — root cause was JS Date timezone parsing. `weekStart` is stored as `@db.Date` but `new Date(isoString)` parsed UTC midnight as the previous day in west-of-UTC zones. Fixed via a `parseLocalDate` helper that extracts only the YYYY-MM-DD portion. Applied to `weekDays`, `dayHeaderLabel`, and `weekRange`.
-12. **🐛 Invoice Detailed line-item mode doesn't show staff name + rate** → bug in `lib/invoice-builder.ts` description composer.
-13. **🐛 MWELO project picker dropdown unclickable in render-back mode** → CSS/state issue confined to `?itemId=...`.
+12. ✅ **Invoice Detailed line-item mode doesn't show staff name + rate** (shipped 2026-05-04) — root cause was the radio toggle didn't trigger a re-fetch. Now toggling Summary↔Detailed after the initial pull auto-re-pulls with the new mode, and `pullFromTimesheets` accepts an explicit `modeOverride` parameter to avoid React's async-state quirk on the same render.
+13. ✅ **MWELO project picker dropdown unclickable in render-back mode** (shipped 2026-05-04) — calculator's `<select>` had `disabled={projectsLoading || Boolean(loadedItemId)}` which forcibly locked the dropdown when an itemId was present. Removed the `loadedItemId` half — operators can now re-link saved calcs to a different project if needed.
 14. **🐛 Invoice PDF cold-start timeout** → consider pre-rendering at creation + caching to Storage.
 
 #### 🟢 P3 — UX polish
 
 15. Standardize confirmation/input modals (replace `window.confirm` / `prompt` with React modals across the codebase)
-16. Auto-clear stale error banners on next successful action
+16. ✅ **Auto-clear stale error banners on next successful action** (shipped 2026-05-04) — `quickMarkAsSent` was missing `setError(null)` at the top, leaving the prior "Failed to send invoice email" banner visible after a successful Mark Sent. Added it. (Other actions in AdminBillingClient already cleared error on entry; just this one was missed.)
 17. Phone number input mask
-18. City name display: normalize to title case
-19. Rename "Billing & Subscription" → "Phasewise Subscription"
-20. MWELO render-back: project picker auto-select saved projectId
+18. ✅ **City name display: normalize to title case** (shipped 2026-05-04) — added `toTitleCase` helper to `lib/utils.ts`. Applied at display time on Projects list rows and Client cards. Also normalized state to uppercase (state abbreviations are uppercase by convention). Stored values aren't mutated — operators can type however they want.
+19. ✅ **Rename "Billing & Subscription" → "Phasewise Subscription"** (shipped 2026-05-04) — three surfaces updated: `/admin` landing card, `/settings` landing card, and `/settings/billing` page heading. Description text now explicitly says "your Phasewise plan" to disambiguate from project billing.
+20. ✅ **MWELO render-back: project picker auto-select saved projectId** (shipped 2026-05-04) — when loading a saved compliance item, the calc fetch returns `item.project = { id, name }` but only the name was being applied. Now also calls `setSaveProjectId(item.project.id)` so the dropdown reflects the linkage. Older saved calcs without a project id degrade gracefully (text-only).
 
 #### 💡 P3 — feature ideas (not blocking, captured for later)
 

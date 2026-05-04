@@ -100,8 +100,8 @@ export default async function AdminPage() {
           <div className="w-10 h-10 rounded-lg bg-[#F0FAF4] border border-[#52B788]/20 flex items-center justify-center mb-4 text-[#2D6A4F]">
             <CreditCard className="w-5 h-5" strokeWidth={1.75} />
           </div>
-          <h2 className="font-semibold text-[#1A2E22]">Billing & Subscription</h2>
-          <p className="mt-2 text-sm text-[#6B8C74]">Manage your plan, payment method, and invoices.</p>
+          <h2 className="font-semibold text-[#1A2E22]">Phasewise Subscription</h2>
+          <p className="mt-2 text-sm text-[#6B8C74]">Manage your Phasewise plan, payment method, and invoices.</p>
         </Link>
 
         <Link

@@ -105,7 +105,7 @@ export default async function BillingPage({
         <Link href="/settings" className="text-sm text-[#6B8C74] hover:text-[#1A2E22] transition-colors">
           ← Back to Settings
         </Link>
-        <h1 className="font-serif text-3xl text-[#1A2E22] mt-3">Billing & Subscription</h1>
+        <h1 className="font-serif text-3xl text-[#1A2E22] mt-3">Phasewise Subscription</h1>
         <p className="text-[#6B8C74] text-sm mt-1">
           Manage your Phasewise plan, payment method, and invoices.
         </p>

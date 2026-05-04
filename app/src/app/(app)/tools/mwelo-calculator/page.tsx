@@ -158,6 +158,13 @@ export default function MWELOCalculatorPage() {
         }
         setLoadedItemId(item.id);
         setLoadedProjectName(item.project?.name ?? null);
+        // Pre-select the linked project in the dropdown so the operator
+        // sees the calc is wired up correctly. Older saved calcs (created
+        // before the project picker shipped 2026-05-01) won't have an id
+        // here and degrade gracefully to text-only.
+        if (item.project?.id) {
+          setSaveProjectId(item.project.id);
+        }
         setCalculated(true);
       })
       .catch((err) => {
@@ -417,7 +424,7 @@ export default function MWELOCalculatorPage() {
                 value={saveProjectId}
                 onChange={(e) => handleSelectProject(e.target.value)}
                 className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]"
-                disabled={projectsLoading || Boolean(loadedItemId)}
+                disabled={projectsLoading}
               >
                 <option value="">
                   {projectsLoading

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Building2, Mail, MapPin, Pencil, Phone, Plus, X } from "lucide-react";
+import { toTitleCase } from "@/lib/utils";
 
 type Client = {
   id: string;
@@ -255,7 +256,7 @@ export default function ClientsClient({ clients: initialClients }: Props) {
               {(client.city || client.state) && (
                 <div className="flex items-center gap-2">
                   <MapPin className="w-3 h-3 text-[#A3BEA9]" />
-                  <span>{[client.city, client.state].filter(Boolean).join(", ")} {client.zip}</span>
+                  <span>{[client.city ? toTitleCase(client.city) : null, client.state?.toUpperCase()].filter(Boolean).join(", ")} {client.zip}</span>
                 </div>
               )}
             </div>
