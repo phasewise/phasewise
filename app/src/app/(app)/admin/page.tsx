@@ -149,6 +149,17 @@ export default async function AdminPage() {
         </Link>
 
         <Link
+          href="/admin/timesheets"
+          className="rounded-2xl border border-[#E2EBE4] bg-white p-6 hover:border-[#52B788] hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(45,106,79,0.08)] transition-all"
+        >
+          <div className="w-10 h-10 rounded-lg bg-[#F0FAF4] border border-[#52B788]/20 flex items-center justify-center mb-4 text-[#2D6A4F]">
+            <FileBarChart className="w-5 h-5" strokeWidth={1.75} />
+          </div>
+          <h2 className="font-semibold text-[#1A2E22]">Timesheet Rollup</h2>
+          <p className="mt-2 text-sm text-[#6B8C74]">Monthly hours, utilization, and revenue by staff and project.</p>
+        </Link>
+
+        <Link
           href="/admin/leave"
           className="rounded-2xl border border-[#E2EBE4] bg-white p-6 hover:border-[#52B788] hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(45,106,79,0.08)] transition-all"
         >
