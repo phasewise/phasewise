@@ -37,6 +37,10 @@ type InvoicePdfInput = {
     projectNumber: string | null;
     clientName: string | null;
     clientEmail: string | null;
+    // Optional contract / agreement number from the client side
+    // (Caltrans-style "Agreement No. 56A0814"). Renders under the
+    // project label in the meta grid when present.
+    contractNumber?: string | null;
   };
   organization: {
     name: string;
@@ -346,6 +350,11 @@ function InvoiceDocument({ data }: { data: InvoicePdfInput }) {
             <Text style={styles.metaValue}>{data.project.name}</Text>
             {data.project.projectNumber ? (
               <Text style={styles.subtle}>{data.project.projectNumber}</Text>
+            ) : null}
+            {data.project.contractNumber ? (
+              <Text style={{ ...styles.subtle, marginTop: 4 }}>
+                Agreement No. {data.project.contractNumber}
+              </Text>
             ) : null}
           </View>
           <View style={styles.metaBlock}>

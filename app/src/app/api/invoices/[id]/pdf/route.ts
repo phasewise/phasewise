@@ -28,6 +28,7 @@ export async function GET(
         select: {
           name: true,
           projectNumber: true,
+          contractNumber: true,
           clientName: true,
           clientEmail: true,
           organizationId: true,
@@ -98,6 +99,7 @@ export async function GET(
     project: {
       name: invoice.project.name,
       projectNumber: invoice.project.projectNumber,
+      contractNumber: invoice.project.contractNumber,
       clientName: invoice.project.clientName,
       clientEmail: invoice.project.clientEmail,
     },

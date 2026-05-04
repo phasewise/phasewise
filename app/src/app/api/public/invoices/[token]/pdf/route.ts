@@ -28,6 +28,7 @@ export async function GET(
         select: {
           name: true,
           projectNumber: true,
+          contractNumber: true,
           clientName: true,
           clientEmail: true,
           organizationId: true,

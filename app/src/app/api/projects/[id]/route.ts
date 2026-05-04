@@ -78,9 +78,11 @@ export async function PATCH(
       startDate,
       targetCompletion,
       contractFee,
+      contractNumber,
       description,
       city,
       projectType,
+      billingCadence,
     } = body;
 
     const data: Record<string, unknown> = {};
@@ -92,6 +94,13 @@ export async function PATCH(
     if (description !== undefined) data.description = description || null;
     if (city !== undefined) data.city = city?.trim() || null;
     if (projectType !== undefined) data.projectType = projectType?.trim() || null;
+    if (contractNumber !== undefined) data.contractNumber = contractNumber?.trim() || null;
+    if (
+      billingCadence !== undefined &&
+      (billingCadence === "MONTHLY" || billingCadence === "MILESTONE" || billingCadence === "MANUAL")
+    ) {
+      data.billingCadence = billingCadence;
+    }
     if (startDate !== undefined) {
       data.startDate = startDate ? new Date(startDate) : null;
     }

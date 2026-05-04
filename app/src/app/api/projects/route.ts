@@ -56,8 +56,10 @@ export async function POST(request: Request) {
       startDate,
       targetCompletion,
       contractFee,
+      contractNumber,
       city,
       projectType,
+      billingCadence,
       phases,
     } = body;
 
@@ -188,6 +190,11 @@ export async function POST(request: Request) {
               : undefined,
           city: city?.trim() || undefined,
           projectType: projectType?.trim() || undefined,
+          contractNumber: contractNumber?.trim() || undefined,
+          billingCadence:
+            billingCadence === "MILESTONE" || billingCadence === "MANUAL"
+              ? billingCadence
+              : undefined,
           phases: {
             create: (phases as PhaseInput[])
               .filter(

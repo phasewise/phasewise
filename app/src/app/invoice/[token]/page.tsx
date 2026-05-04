@@ -38,6 +38,7 @@ export default async function PublicInvoicePage({
         select: {
           name: true,
           projectNumber: true,
+          contractNumber: true,
           clientName: true,
           clientEmail: true,
           city: true,
@@ -157,6 +158,14 @@ export default async function PublicInvoicePage({
               {invoice.project.projectNumber && (
                 <p className="text-xs text-[#6B8C74] mt-0.5 font-mono">
                   {invoice.project.projectNumber}
+                </p>
+              )}
+              {invoice.project.contractNumber && (
+                <p className="text-xs text-[#6B8C74] mt-1">
+                  Agreement No.{" "}
+                  <span className="font-mono text-[#1A2E22]">
+                    {invoice.project.contractNumber}
+                  </span>
                 </p>
               )}
             </div>

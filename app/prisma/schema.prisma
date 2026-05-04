@@ -175,6 +175,17 @@ model Project {
   // monument / features / parks / etc.). Used by list-view filters.
   city             String?
   projectType      String?       @map("project_type")
+  // How invoices are generated for this project. MONTHLY (default) is
+  // the standard cadence — picked up by the auto-invoicing cron on
+  // the 5th of each month. MILESTONE projects bill on phase complete
+  // (not auto-generated). MANUAL is for one-off / hand-billed work
+  // where the cron stays out of the way.
+  billingCadence   BillingCadence @default(MONTHLY) @map("billing_cadence")
+  // Contract / agreement / purchase-order number from the client side.
+  // Required by Caltrans, federal agencies, and most enterprise APs;
+  // they can't process invoices without it. Renders in the invoice
+  // header.
+  contractNumber   String?        @map("contract_number")
   createdById      String        @map("created_by_id") @db.Uuid
   createdAt        DateTime      @default(now()) @map("created_at")
   updatedAt        DateTime      @updatedAt @map("updated_at")
@@ -201,6 +212,17 @@ enum ProjectStatus {
   ON_HOLD
   COMPLETED
   ARCHIVED
+}
+
+enum BillingCadence {
+  // Standard monthly cadence — auto-invoicing cron creates a draft on
+  // the 5th of each month for the prior calendar month's billable hours.
+  MONTHLY
+  // Phase-complete billing — invoices are created manually when a phase
+  // closes. Cron skips these projects.
+  MILESTONE
+  // One-off / hand-billed. Cron stays out of the way.
+  MANUAL
 }
 
 model ProjectAssignment {

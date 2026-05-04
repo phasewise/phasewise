@@ -39,8 +39,10 @@ export default function NewProjectPage() {
   const [targetCompletion, setTargetCompletion] = useState("");
   const [status, setStatus] = useState("ACTIVE");
   const [contractFee, setContractFee] = useState("");
+  const [contractNumber, setContractNumber] = useState("");
   const [city, setCity] = useState("");
   const [projectType, setProjectType] = useState("");
+  const [billingCadence, setBillingCadence] = useState("MONTHLY");
   // Org-managed project type list — fetched on mount. The Settings page
   // at /settings/project-types lets owners curate this. Free-text input
   // still allowed for one-off types.
@@ -78,8 +80,10 @@ export default function NewProjectPage() {
         startDate,
         targetCompletion,
         contractFee,
+        contractNumber,
         city,
         projectType,
+        billingCadence,
         phases,
       }),
     });
@@ -281,6 +285,42 @@ export default function NewProjectPage() {
                     <option key={t} value={t} />
                   ))}
                 </datalist>
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label htmlFor="pnew-billing-cadence" className="text-sm font-medium text-slate-700">
+                  Billing cadence
+                </label>
+                <select
+                  id="pnew-billing-cadence"
+                  value={billingCadence}
+                  onChange={(event) => setBillingCadence(event.target.value)}
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none focus:border-emerald-500"
+                >
+                  <option value="MONTHLY">Monthly (auto-invoiced on the 5th)</option>
+                  <option value="MILESTONE">Milestone (manual, per phase)</option>
+                  <option value="MANUAL">Manual (one-off / hand-billed)</option>
+                </select>
+                <p className="mt-1 text-xs text-slate-500">
+                  Monthly projects get auto-drafted invoices on the 5th of each month. Milestone and manual projects skip the cron.
+                </p>
+              </div>
+              <div>
+                <label htmlFor="pnew-contract-number" className="text-sm font-medium text-slate-700">
+                  Contract / agreement number <span className="text-slate-400 font-normal">(optional)</span>
+                </label>
+                <input
+                  id="pnew-contract-number"
+                  value={contractNumber}
+                  onChange={(event) => setContractNumber(event.target.value)}
+                  placeholder="e.g., 56A0814"
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none focus:border-emerald-500"
+                />
+                <p className="mt-1 text-xs text-slate-500">
+                  Required by Caltrans, federal agencies, and most enterprise APs. Renders on the invoice.
+                </p>
               </div>
             </div>
 

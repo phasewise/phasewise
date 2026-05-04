@@ -39,6 +39,8 @@ export default function EditProjectPage() {
   const [description, setDescription] = useState("");
   const [city, setCity] = useState("");
   const [projectType, setProjectType] = useState("");
+  const [billingCadence, setBillingCadence] = useState("MONTHLY");
+  const [contractNumber, setContractNumber] = useState("");
 
   // Phase fields
   const [phases, setPhases] = useState<PhaseRow[]>([]);
@@ -88,6 +90,8 @@ export default function EditProjectPage() {
         setDescription(p.description || "");
         setCity(p.city || "");
         setProjectType(p.projectType || "");
+        setBillingCadence(p.billingCadence || "MONTHLY");
+        setContractNumber(p.contractNumber || "");
         setPhases(
           (p.phases || []).map((phase: { id: string; phaseType: string; customName?: string | null; status: string; budgetedFee: string | number | null; budgetedHours: string | number | null; sortOrder: number }) => ({
             id: phase.id,
@@ -191,6 +195,8 @@ export default function EditProjectPage() {
         description,
         city,
         projectType,
+        billingCadence,
+        contractNumber,
       }),
     });
 
@@ -360,6 +366,37 @@ export default function EditProjectPage() {
                     <option key={t} value={t} />
                   ))}
                 </datalist>
+              </div>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label htmlFor="pedit-billing-cadence" className="text-sm font-medium text-[#3D5C48]">Billing cadence</label>
+                <select
+                  id="pedit-billing-cadence"
+                  value={billingCadence}
+                  onChange={(e) => setBillingCadence(e.target.value)}
+                  className="mt-2 w-full rounded-lg border border-[#E2EBE4] bg-[#F7F9F7] px-4 py-3 text-sm text-[#1A2E22] outline-none focus:border-[#52B788] focus:bg-white"
+                >
+                  <option value="MONTHLY">Monthly (auto-invoiced on the 5th)</option>
+                  <option value="MILESTONE">Milestone (manual, per phase)</option>
+                  <option value="MANUAL">Manual (one-off / hand-billed)</option>
+                </select>
+                <p className="mt-1 text-xs text-[#6B8C74]">
+                  Monthly projects get auto-drafted invoices each month. Milestone and manual projects skip the cron.
+                </p>
+              </div>
+              <div>
+                <label htmlFor="pedit-contract-number" className="text-sm font-medium text-[#3D5C48]">Contract / agreement number</label>
+                <input
+                  id="pedit-contract-number"
+                  value={contractNumber}
+                  onChange={(e) => setContractNumber(e.target.value)}
+                  placeholder="e.g., 56A0814"
+                  className="mt-2 w-full rounded-lg border border-[#E2EBE4] bg-[#F7F9F7] px-4 py-3 text-sm text-[#1A2E22] outline-none focus:border-[#52B788] focus:bg-white"
+                />
+                <p className="mt-1 text-xs text-[#6B8C74]">
+                  Optional. Required by Caltrans, federal agencies, and most enterprise APs. Renders on every invoice.
+                </p>
               </div>
             </div>
             <div>

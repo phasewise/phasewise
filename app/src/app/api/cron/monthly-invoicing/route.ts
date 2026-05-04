@@ -41,11 +41,15 @@ export async function GET(request: Request) {
 
   const { start: periodStart, end: periodEnd } = previousCalendarMonth();
 
-  // Find every non-archived project. We page by org for tidy logging,
-  // but a single big findMany would also work — there's no scale
-  // pressure here yet.
+  // Find every non-archived project on MONTHLY cadence. MILESTONE and
+  // MANUAL projects are intentionally hand-billed; the cron stays out
+  // of the way so it doesn't generate drafts those operators will
+  // just delete every month.
   const projects = await prisma.project.findMany({
-    where: { status: { not: "ARCHIVED" } },
+    where: {
+      status: { not: "ARCHIVED" },
+      billingCadence: "MONTHLY",
+    },
     select: { id: true, organizationId: true, name: true },
   });
 
