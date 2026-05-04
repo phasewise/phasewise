@@ -19,6 +19,8 @@ type TeamUser = {
   // Direct supervisor — when set, that user can approve THIS user's
   // timesheets in addition to any OWNER/ADMIN/SUPERVISOR role-approver.
   supervisorId?: string | null;
+  // Backup approver for when the primary supervisor is on leave.
+  alternateSupervisorId?: string | null;
 };
 
 function MemberAvatar({ name, photoUrl }: { name: string; photoUrl?: string | null }) {
@@ -104,6 +106,9 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
   // "" = no supervisor (will send null on save). Not blocking own self —
   // server rejects userId === supervisorId.
   const [editSupervisorId, setEditSupervisorId] = useState("");
+  // Backup supervisor for vacation/leave coverage. Same approval
+  // privilege as primary; covers when primary is unavailable.
+  const [editAlternateSupervisorId, setEditAlternateSupervisorId] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [inviteBanner, setInviteBanner] = useState<{ name: string; url: string } | null>(null);
 
@@ -208,6 +213,7 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
     setEditBillingRate(user.billingRate != null ? String(user.billingRate) : "");
     setEditSalary(user.salary != null ? String(user.salary) : "");
     setEditSupervisorId(user.supervisorId || "");
+    setEditAlternateSupervisorId(user.alternateSupervisorId || "");
     setError(null);
   }
 
@@ -222,6 +228,7 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
     setEditBillingRate("");
     setEditSalary("");
     setEditSupervisorId("");
+    setEditAlternateSupervisorId("");
   }
 
   function handleEditTitleSelect(value: string) {
@@ -251,6 +258,7 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
       phone: editPhone,
       // Send null to clear; otherwise pass the selected user id.
       supervisorId: editSupervisorId || null,
+      alternateSupervisorId: editAlternateSupervisorId || null,
     };
     if (editBillingRate !== "") body.billingRate = editBillingRate;
     if (editSalary !== "") body.salary = editSalary;
@@ -280,6 +288,7 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
               role: updated.role,
               phone: updated.phone,
               supervisorId: updated.supervisorId ?? null,
+              alternateSupervisorId: updated.alternateSupervisorId ?? null,
               billingRate: updated.billingRate != null ? Number(updated.billingRate) : null,
               salary: updated.salary != null ? Number(updated.salary) : null,
               costRate: updated.costRate != null ? Number(updated.costRate) : null,
@@ -740,6 +749,35 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
                   </select>
                   <p className="text-[11px] text-[#A3BEA9] mt-1">
                     The supervisor can approve this user&rsquo;s timesheets in addition to any Owner / Admin / Supervisor.
+                  </p>
+                </div>
+                <div className="sm:col-span-2">
+                  <label htmlFor="team-edit-alt-supervisor" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">
+                    Backup supervisor <span className="text-[#A3BEA9] font-normal">(optional)</span>
+                  </label>
+                  <select
+                    id="team-edit-alt-supervisor"
+                    value={editAlternateSupervisorId}
+                    onChange={(e) => setEditAlternateSupervisorId(e.target.value)}
+                    className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788] transition-colors"
+                  >
+                    <option value="">— No backup supervisor —</option>
+                    {users
+                      .filter(
+                        (u) =>
+                          u.id !== editingUser.id &&
+                          u.id !== editSupervisorId &&
+                          u.isActive !== false
+                      )
+                      .map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {u.fullName}
+                          {u.title ? ` · ${u.title}` : ""}
+                        </option>
+                      ))}
+                  </select>
+                  <p className="text-[11px] text-[#A3BEA9] mt-1">
+                    Covers approvals when the primary supervisor is on vacation or leave. Same approval privileges as the primary.
                   </p>
                 </div>
               </div>

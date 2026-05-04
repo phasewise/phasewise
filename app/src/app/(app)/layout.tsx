@@ -20,14 +20,22 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   const [pendingApprovals, draftInvoices, overdueSubmittals] = await Promise.all([
     // SUBMITTED timesheets in this user's approver scope. Role-approvers
-    // see all of org; everyone else only direct reports. Mirrors the
-    // /time/approve page's scoping rule.
+    // see all of org; everyone else only direct reports OR alternate-
+    // supervisor reports (vacation cover). Mirrors the /time/approve
+    // page's scoping rule.
     prisma.weeklyTimesheet.count({
       where: {
         status: "SUBMITTED",
         user: {
           organizationId: currentUser.organizationId,
-          ...(isApprover ? {} : { supervisorId: currentUser.id }),
+          ...(isApprover
+            ? {}
+            : {
+                OR: [
+                  { supervisorId: currentUser.id },
+                  { alternateSupervisorId: currentUser.id },
+                ],
+              }),
         },
       },
     }),

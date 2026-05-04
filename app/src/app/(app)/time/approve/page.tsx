@@ -32,10 +32,18 @@ export default async function TimeApprovePage() {
   // direct reports should land here without needing role escalation.
 
   // Same scope filter for both Pending and History — role-approvers see
-  // the whole org, everyone else sees their direct reports only.
+  // the whole org, everyone else sees direct reports OR reports they're
+  // covering as alternate supervisor (vacation backup).
   const userScope = {
     organizationId: currentUser.organizationId,
-    ...(isRoleApprover ? {} : { supervisorId: currentUser.id }),
+    ...(isRoleApprover
+      ? {}
+      : {
+          OR: [
+            { supervisorId: currentUser.id },
+            { alternateSupervisorId: currentUser.id },
+          ],
+        }),
   };
 
   const [submittedTimesheets, historyTimesheets] = await Promise.all([

@@ -121,12 +121,15 @@ export async function POST(request: Request) {
     }
 
     // Approval gate: standard OWNER/ADMIN/SUPERVISOR roles, OR the
-    // user's direct supervisor (delegation). Means a PM with role=PM
-    // can approve their direct reports' timesheets without needing
-    // full SUPERVISOR role permissions across the org.
+    // user's direct supervisor (delegation), OR the alternate
+    // supervisor (vacation cover). Means a PM with role=PM can
+    // approve their direct reports' timesheets without needing
+    // full SUPERVISOR role permissions across the org, AND the firm
+    // doesn't lose approval throughput when the primary is on leave.
     const isRoleApprover = approverRoles.includes(currentUser.role);
     const isDirectSupervisor = timesheet.user.supervisorId === currentUser.id;
-    if (!isRoleApprover && !isDirectSupervisor) {
+    const isAlternateSupervisor = timesheet.user.alternateSupervisorId === currentUser.id;
+    if (!isRoleApprover && !isDirectSupervisor && !isAlternateSupervisor) {
       return NextResponse.json({ error: "Insufficient permissions." }, { status: 403 });
     }
 
@@ -177,11 +180,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Timesheet not found." }, { status: 404 });
     }
 
-    // Same delegation rule as approve — direct supervisors can also
-    // send a timesheet back for changes.
+    // Same delegation rule as approve — direct + alternate supervisors
+    // can also send a timesheet back for changes.
     const isRoleApprover = approverRoles.includes(currentUser.role);
     const isDirectSupervisor = timesheet.user.supervisorId === currentUser.id;
-    if (!isRoleApprover && !isDirectSupervisor) {
+    const isAlternateSupervisor = timesheet.user.alternateSupervisorId === currentUser.id;
+    if (!isRoleApprover && !isDirectSupervisor && !isAlternateSupervisor) {
       return NextResponse.json({ error: "Insufficient permissions." }, { status: 403 });
     }
 

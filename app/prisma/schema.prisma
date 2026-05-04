@@ -108,6 +108,10 @@ model User {
   // OWNER/ADMIN/SUPERVISOR role-based approvers. Lets a firm delegate
   // approval down without giving the delegate full SUPERVISOR role.
   supervisorId    String?  @map("supervisor_id") @db.Uuid
+  // Backup supervisor — covers vacation / leave / illness so approvals
+  // don't pile up while the primary supervisor is out. Same approval
+  // privilege as `supervisorId`. Optional.
+  alternateSupervisorId String? @map("alternate_supervisor_id") @db.Uuid
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
@@ -119,6 +123,10 @@ model User {
   // Direct-supervisor edges. supervisor → directReports.
   supervisor      User?  @relation("UserSupervisor", fields: [supervisorId], references: [id], onDelete: SetNull)
   directReports   User[] @relation("UserSupervisor")
+  // Alternate-supervisor edges. Separate relation name so Prisma can
+  // distinguish them.
+  alternateSupervisor      User?  @relation("UserAlternateSupervisor", fields: [alternateSupervisorId], references: [id], onDelete: SetNull)
+  alternateDirectReports   User[] @relation("UserAlternateSupervisor")
   reviewedTimesheets WeeklyTimesheet[] @relation("TimesheetReviewer")
   timesheets   WeeklyTimesheet[]
   assignments ProjectAssignment[]

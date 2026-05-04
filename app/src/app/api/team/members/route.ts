@@ -181,6 +181,7 @@ export async function PATCH(request: Request) {
       salary,
       isActive,
       supervisorId,
+      alternateSupervisorId,
     } = body as {
       userId?: string;
       fullName?: string;
@@ -194,6 +195,7 @@ export async function PATCH(request: Request) {
       // null = clear; "" treated same as null. Anything else is a UUID
       // we'll verify is a valid user in the same org.
       supervisorId?: string | null;
+      alternateSupervisorId?: string | null;
     };
 
     if (!userId) {
@@ -292,6 +294,36 @@ export async function PATCH(request: Request) {
           );
         }
         updateData.supervisorId = supervisorId;
+      }
+    }
+
+    // Alternate supervisor — same validation rules as primary. Allowed
+    // to be different from primary; rejected if same as user (can't be
+    // own backup).
+    if (alternateSupervisorId !== undefined) {
+      if (!alternateSupervisorId) {
+        updateData.alternateSupervisorId = null;
+      } else if (alternateSupervisorId === userId) {
+        return NextResponse.json(
+          { error: "A user can't be their own backup supervisor." },
+          { status: 400 }
+        );
+      } else {
+        const altSup = await prisma.user.findUnique({
+          where: { id: alternateSupervisorId },
+          select: { organizationId: true, isActive: true },
+        });
+        if (
+          !altSup ||
+          altSup.organizationId !== currentUser.organizationId ||
+          !altSup.isActive
+        ) {
+          return NextResponse.json(
+            { error: "Backup supervisor not found or inactive." },
+            { status: 400 }
+          );
+        }
+        updateData.alternateSupervisorId = alternateSupervisorId;
       }
     }
 
