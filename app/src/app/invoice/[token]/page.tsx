@@ -42,6 +42,7 @@ export default async function PublicInvoicePage({
           clientName: true,
           clientEmail: true,
           city: true,
+          client: { select: { contactPerson: true } },
         },
       },
       organization: {
@@ -142,6 +143,11 @@ export default async function PublicInvoicePage({
               <p className="text-sm text-[#1A2E22] font-medium">
                 {invoice.project.clientName ?? "—"}
               </p>
+              {invoice.project.client?.contactPerson && (
+                <p className="text-xs text-[#6B8C74] mt-0.5">
+                  Attn: {invoice.project.client.contactPerson}
+                </p>
+              )}
               {invoice.project.clientEmail && (
                 <p className="text-xs text-[#6B8C74] mt-0.5">
                   {invoice.project.clientEmail}

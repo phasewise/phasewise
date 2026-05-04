@@ -32,6 +32,10 @@ export async function GET(
           clientName: true,
           clientEmail: true,
           organizationId: true,
+          // The linked Client record's contactPerson surfaces as
+          // "Attn: {name}" on the BILL TO block. Helps client-side
+          // AP route the invoice on receipt.
+          client: { select: { contactPerson: true } },
         },
       },
       organization: {
@@ -102,6 +106,7 @@ export async function GET(
       contractNumber: invoice.project.contractNumber,
       clientName: invoice.project.clientName,
       clientEmail: invoice.project.clientEmail,
+      clientContactName: invoice.project.client?.contactPerson ?? null,
     },
     organization: {
       name: invoice.organization.name,

@@ -37,6 +37,11 @@ type InvoicePdfInput = {
     projectNumber: string | null;
     clientName: string | null;
     clientEmail: string | null;
+    // Optional contact name from the linked Client record — renders
+    // as "Attn: {name}" on the BILL TO block. Speeds up internal
+    // routing on the client's side (AP knows who the invoice is for
+    // before opening it).
+    clientContactName?: string | null;
     // Optional contract / agreement number from the client side
     // (Caltrans-style "Agreement No. 56A0814"). Renders under the
     // project label in the meta grid when present.
@@ -341,6 +346,9 @@ function InvoiceDocument({ data }: { data: InvoicePdfInput }) {
             <Text style={styles.metaValue}>
               {data.project.clientName || "—"}
             </Text>
+            {data.project.clientContactName ? (
+              <Text style={styles.subtle}>Attn: {data.project.clientContactName}</Text>
+            ) : null}
             {data.project.clientEmail ? (
               <Text style={styles.subtle}>{data.project.clientEmail}</Text>
             ) : null}
