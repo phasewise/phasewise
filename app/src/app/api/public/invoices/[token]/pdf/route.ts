@@ -33,7 +33,17 @@ export async function GET(
           organizationId: true,
         },
       },
-      organization: { select: { name: true } },
+      organization: {
+        select: {
+          name: true,
+          billingMailingAddress: true,
+          billingFedId: true,
+          billingAchRouting: true,
+          billingAchAccount: true,
+          billingWireRouting: true,
+          billingWireAccount: true,
+        },
+      },
       lineItems: true,
       timeEntries: {
         include: {
@@ -86,7 +96,15 @@ export async function GET(
       clientName: invoice.project.clientName,
       clientEmail: invoice.project.clientEmail,
     },
-    organization: { name: invoice.organization.name },
+    organization: {
+      name: invoice.organization.name,
+      billingMailingAddress: invoice.organization.billingMailingAddress,
+      billingFedId: invoice.organization.billingFedId,
+      billingAchRouting: invoice.organization.billingAchRouting,
+      billingAchAccount: invoice.organization.billingAchAccount,
+      billingWireRouting: invoice.organization.billingWireRouting,
+      billingWireAccount: invoice.organization.billingWireAccount,
+    },
   });
 
   return new Response(new Uint8Array(pdfBuffer), {

@@ -40,6 +40,15 @@ type InvoicePdfInput = {
   };
   organization: {
     name: string;
+    // Remit-to block — all optional. Whatever's set renders. Renders
+    // a "Please Remit Payment Via" section in the upper-right of the
+    // header, matching the Blankinship/Bowman LA invoice convention.
+    billingMailingAddress?: string | null;
+    billingFedId?: string | null;
+    billingAchRouting?: string | null;
+    billingAchAccount?: string | null;
+    billingWireRouting?: string | null;
+    billingWireAccount?: string | null;
   };
 };
 
@@ -213,6 +222,18 @@ function formatDate(d: Date) {
 function InvoiceDocument({ data }: { data: InvoicePdfInput }) {
   const balanceDue = Math.max(0, data.total - data.paidAmount);
 
+  // Build the remit-to block once — only render the section if at
+  // least one of mailing/ach/wire is configured. Fed ID rides along
+  // in the same block since clients reference it together when
+  // setting up payment.
+  const hasRemit =
+    !!data.organization.billingMailingAddress ||
+    !!data.organization.billingAchRouting ||
+    !!data.organization.billingAchAccount ||
+    !!data.organization.billingWireRouting ||
+    !!data.organization.billingWireAccount ||
+    !!data.organization.billingFedId;
+
   return (
     <Document>
       <Page size="LETTER" style={styles.page}>
@@ -233,6 +254,82 @@ function InvoiceDocument({ data }: { data: InvoicePdfInput }) {
             ) : null}
           </View>
         </View>
+
+        {/* Remit-to / payment methods block — industry standard for B2B
+            invoices. Without this the client has to email and ask
+            "how do you want to be paid?" which defeats the brand
+            promise. Renders compactly under the header. */}
+        {hasRemit && (
+          <View
+            style={{
+              marginBottom: 24,
+              padding: 12,
+              backgroundColor: SURFACE,
+              borderRadius: 4,
+              flexDirection: "row",
+              gap: 16,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 8,
+                textTransform: "uppercase",
+                letterSpacing: 1.2,
+                color: INK_500,
+                width: 90,
+                paddingTop: 2,
+              }}
+            >
+              Please Remit{"\n"}Payment Via
+            </Text>
+            {data.organization.billingMailingAddress && (
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 8, color: INK_500, marginBottom: 2 }}>MAIL</Text>
+                <Text style={{ fontSize: 9, color: INK_900, lineHeight: 1.35 }}>
+                  {data.organization.billingMailingAddress}
+                </Text>
+              </View>
+            )}
+            {(data.organization.billingAchRouting || data.organization.billingAchAccount) && (
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 8, color: INK_500, marginBottom: 2 }}>ACH</Text>
+                {data.organization.billingAchRouting && (
+                  <Text style={{ fontSize: 9, color: INK_900 }}>
+                    Routing: {data.organization.billingAchRouting}
+                  </Text>
+                )}
+                {data.organization.billingAchAccount && (
+                  <Text style={{ fontSize: 9, color: INK_900 }}>
+                    A/C: {data.organization.billingAchAccount}
+                  </Text>
+                )}
+              </View>
+            )}
+            {(data.organization.billingWireRouting || data.organization.billingWireAccount) && (
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 8, color: INK_500, marginBottom: 2 }}>WIRE</Text>
+                {data.organization.billingWireRouting && (
+                  <Text style={{ fontSize: 9, color: INK_900 }}>
+                    Routing: {data.organization.billingWireRouting}
+                  </Text>
+                )}
+                {data.organization.billingWireAccount && (
+                  <Text style={{ fontSize: 9, color: INK_900 }}>
+                    A/C: {data.organization.billingWireAccount}
+                  </Text>
+                )}
+              </View>
+            )}
+            {data.organization.billingFedId && (
+              <View>
+                <Text style={{ fontSize: 8, color: INK_500, marginBottom: 2 }}>FED ID</Text>
+                <Text style={{ fontSize: 9, color: INK_900 }}>
+                  {data.organization.billingFedId}
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
 
         <View style={styles.metaGrid}>
           <View style={styles.metaBlock}>

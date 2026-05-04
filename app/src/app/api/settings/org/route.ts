@@ -27,6 +27,12 @@ export async function GET() {
         invoiceNumberNext: true,
         autoNumberInvoices: true,
         invoiceNumberFormat: true,
+        billingMailingAddress: true,
+        billingFedId: true,
+        billingAchRouting: true,
+        billingAchAccount: true,
+        billingWireRouting: true,
+        billingWireAccount: true,
       },
     });
 
@@ -69,6 +75,12 @@ export async function PATCH(request: Request) {
       invoiceNumberNext,
       autoNumberInvoices,
       invoiceNumberFormat,
+      billingMailingAddress,
+      billingFedId,
+      billingAchRouting,
+      billingAchAccount,
+      billingWireRouting,
+      billingWireAccount,
     } = body as {
       projectNumberPrefix?: string;
       projectNumberNext?: number;
@@ -77,6 +89,12 @@ export async function PATCH(request: Request) {
       invoiceNumberNext?: number;
       autoNumberInvoices?: boolean;
       invoiceNumberFormat?: string;
+      billingMailingAddress?: string | null;
+      billingFedId?: string | null;
+      billingAchRouting?: string | null;
+      billingAchAccount?: string | null;
+      billingWireRouting?: string | null;
+      billingWireAccount?: string | null;
     };
 
     const data: Record<string, unknown> = {};
@@ -116,6 +134,17 @@ export async function PATCH(request: Request) {
         data.invoiceNumberFormat = trimmed;
       }
     }
+    // Remit-to / billing info — strings get trimmed; empty strings get
+    // stored as null so the PDF renderer can boolean-check presence
+    // cleanly.
+    const cleanString = (v: string | null | undefined) =>
+      v === undefined ? undefined : (v ?? "").trim() || null;
+    if (billingMailingAddress !== undefined) data.billingMailingAddress = cleanString(billingMailingAddress);
+    if (billingFedId !== undefined) data.billingFedId = cleanString(billingFedId);
+    if (billingAchRouting !== undefined) data.billingAchRouting = cleanString(billingAchRouting);
+    if (billingAchAccount !== undefined) data.billingAchAccount = cleanString(billingAchAccount);
+    if (billingWireRouting !== undefined) data.billingWireRouting = cleanString(billingWireRouting);
+    if (billingWireAccount !== undefined) data.billingWireAccount = cleanString(billingWireAccount);
 
     const updated = await prisma.organization.update({
       where: { id: currentUser.organizationId },
@@ -128,6 +157,12 @@ export async function PATCH(request: Request) {
         invoiceNumberNext: true,
         autoNumberInvoices: true,
         invoiceNumberFormat: true,
+        billingMailingAddress: true,
+        billingFedId: true,
+        billingAchRouting: true,
+        billingAchAccount: true,
+        billingWireRouting: true,
+        billingWireAccount: true,
       },
     });
 

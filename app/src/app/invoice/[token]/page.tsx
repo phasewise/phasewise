@@ -43,7 +43,17 @@ export default async function PublicInvoicePage({
           city: true,
         },
       },
-      organization: { select: { name: true } },
+      organization: {
+        select: {
+          name: true,
+          billingMailingAddress: true,
+          billingFedId: true,
+          billingAchRouting: true,
+          billingAchAccount: true,
+          billingWireRouting: true,
+          billingWireAccount: true,
+        },
+      },
       lineItems: true,
     },
   });
@@ -71,6 +81,15 @@ export default async function PublicInvoicePage({
   const balanceDue = total - paidAmount;
 
   const isPaid = invoice.status === "PAID" || balanceDue <= 0;
+
+  const org = invoice.organization;
+  const hasRemit =
+    !!org.billingMailingAddress ||
+    !!org.billingAchRouting ||
+    !!org.billingAchAccount ||
+    !!org.billingWireRouting ||
+    !!org.billingWireAccount ||
+    !!org.billingFedId;
 
   return (
     <div className="min-h-screen bg-[#F7F9F7] py-12 px-4">
@@ -156,6 +175,61 @@ export default async function PublicInvoicePage({
               </p>
             </div>
           </div>
+
+          {/* Remit-to block — surfaces how clients can pay without
+              having to email and ask. Only renders when the firm has
+              configured at least one method in /settings/billing-info. */}
+          {hasRemit && (
+            <div className="mb-8 rounded-lg bg-[#F7F9F7] border border-[#E8EDE9] px-5 py-4">
+              <p className="text-xs uppercase tracking-[0.18em] text-[#6B8C74] mb-3">
+                Please remit payment via
+              </p>
+              <div className="grid sm:grid-cols-3 gap-4 text-sm">
+                {org.billingMailingAddress && (
+                  <div>
+                    <p className="text-xs text-[#6B8C74] mb-1">Mail</p>
+                    <p className="text-[#1A2E22] whitespace-pre-line">{org.billingMailingAddress}</p>
+                  </div>
+                )}
+                {(org.billingAchRouting || org.billingAchAccount) && (
+                  <div>
+                    <p className="text-xs text-[#6B8C74] mb-1">ACH</p>
+                    {org.billingAchRouting && (
+                      <p className="text-[#1A2E22] font-mono text-xs">
+                        Routing: {org.billingAchRouting}
+                      </p>
+                    )}
+                    {org.billingAchAccount && (
+                      <p className="text-[#1A2E22] font-mono text-xs">
+                        A/C: {org.billingAchAccount}
+                      </p>
+                    )}
+                  </div>
+                )}
+                {(org.billingWireRouting || org.billingWireAccount) && (
+                  <div>
+                    <p className="text-xs text-[#6B8C74] mb-1">Wire</p>
+                    {org.billingWireRouting && (
+                      <p className="text-[#1A2E22] font-mono text-xs">
+                        Routing: {org.billingWireRouting}
+                      </p>
+                    )}
+                    {org.billingWireAccount && (
+                      <p className="text-[#1A2E22] font-mono text-xs">
+                        A/C: {org.billingWireAccount}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+              {org.billingFedId && (
+                <p className="mt-3 pt-3 border-t border-[#E8EDE9] text-xs text-[#6B8C74]">
+                  <span className="uppercase tracking-[0.12em]">Fed ID</span>{" "}
+                  <span className="font-mono text-[#1A2E22] ml-1">{org.billingFedId}</span>
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Period statement */}
           {invoice.periodStart && invoice.periodEnd && (

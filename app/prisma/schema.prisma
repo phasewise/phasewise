@@ -41,6 +41,19 @@ model Organization {
   // firm visits /settings/project-types and saves their own taxonomy.
   projectTypes             Json?               @map("project_types")
   leavePolicy              Json?               @map("leave_policy")
+  // Invoice remit-to block — surfaces in the upper-right of every
+  // PDF + public invoice page so clients know how to pay without
+  // having to email and ask. All optional; whatever's set renders.
+  // Mailing address is multi-line free text (newlines preserved).
+  billingMailingAddress    String?             @map("billing_mailing_address")
+  // Federal Tax ID (EIN). Required by US clients issuing 1099s.
+  billingFedId             String?             @map("billing_fed_id")
+  // ACH (preferred for B2B — cheap and fast). Routing + account.
+  billingAchRouting        String?             @map("billing_ach_routing")
+  billingAchAccount        String?             @map("billing_ach_account")
+  // Wire transfer for high-value or international clients.
+  billingWireRouting       String?             @map("billing_wire_routing")
+  billingWireAccount       String?             @map("billing_wire_account")
   createdAt                DateTime            @default(now()) @map("created_at")
   updatedAt                DateTime            @updatedAt @map("updated_at")
 

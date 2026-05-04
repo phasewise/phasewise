@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CreditCard, Hash, Settings2, Users } from "lucide-react";
+import { CreditCard, Hash, Receipt, Settings2, Users } from "lucide-react";
 
 export default function SettingsPage() {
   return (
@@ -52,6 +52,17 @@ export default function SettingsPage() {
           </div>
           <h2 className="font-semibold text-[#1A2E22]">Invoice numbering</h2>
           <p className="mt-2 text-sm text-[#6B8C74]">Format template with year/counter tokens (e.g. <span className="font-mono">INV-26-0001</span>).</p>
+        </Link>
+
+        <Link
+          href="/settings/billing-info"
+          className="rounded-2xl border border-[#E2EBE4] bg-white p-6 hover:border-[#52B788] hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(45,106,79,0.08)] transition-all"
+        >
+          <div className="w-10 h-10 rounded-lg bg-[#F0FAF4] border border-[#52B788]/20 flex items-center justify-center mb-4 text-[#2D6A4F]">
+            <Receipt className="w-5 h-5" strokeWidth={1.75} />
+          </div>
+          <h2 className="font-semibold text-[#1A2E22]">Billing info</h2>
+          <p className="mt-2 text-sm text-[#6B8C74]">Remit-to address, EIN, ACH/wire details printed on every invoice.</p>
         </Link>
 
         <Link
