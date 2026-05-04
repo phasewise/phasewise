@@ -30,6 +30,9 @@ function normalizePolicy(p: LeavePolicy | null | undefined): LeavePolicy {
     out[t] = {
       annualHours: p?.[t]?.annualHours ?? 0,
       rolloverCap: p?.[t]?.rolloverCap ?? 0,
+      mode: p?.[t]?.mode ?? "FRONTLOAD",
+      monthlyAccrual: p?.[t]?.monthlyAccrual ?? 0,
+      cap: p?.[t]?.cap ?? 0,
     };
   }
   return out;
@@ -49,19 +52,39 @@ export default function LeaveAdminClient({ orgPolicy, users, balancesByUser }: P
   function updatePolicyField(
     target: "org" | "override",
     type: LeaveType,
-    field: "annualHours" | "rolloverCap",
+    field: "annualHours" | "rolloverCap" | "monthlyAccrual" | "cap",
     value: string
   ) {
     const num = value === "" ? 0 : Number(value);
+    const blank = { annualHours: 0, rolloverCap: 0, mode: "FRONTLOAD" as const, monthlyAccrual: 0, cap: 0 };
     if (target === "org") {
       setPolicy((prev) => ({
         ...prev,
-        [type]: { ...(prev[type] ?? { annualHours: 0, rolloverCap: 0 }), [field]: num },
+        [type]: { ...(prev[type] ?? blank), [field]: num },
       }));
     } else {
       setEditOverride((prev) => ({
         ...prev,
-        [type]: { ...(prev[type] ?? { annualHours: 0, rolloverCap: 0 }), [field]: num },
+        [type]: { ...(prev[type] ?? blank), [field]: num },
+      }));
+    }
+  }
+
+  function updatePolicyMode(
+    target: "org" | "override",
+    type: LeaveType,
+    mode: "FRONTLOAD" | "ACCRUED"
+  ) {
+    const blank = { annualHours: 0, rolloverCap: 0, mode: "FRONTLOAD" as const, monthlyAccrual: 0, cap: 0 };
+    if (target === "org") {
+      setPolicy((prev) => ({
+        ...prev,
+        [type]: { ...(prev[type] ?? blank), mode },
+      }));
+    } else {
+      setEditOverride((prev) => ({
+        ...prev,
+        [type]: { ...(prev[type] ?? blank), mode },
       }));
     }
   }
@@ -171,8 +194,10 @@ export default function LeaveAdminClient({ orgPolicy, users, balancesByUser }: P
       <div className="rounded-2xl border border-[#E2EBE4] bg-white p-6 shadow-sm mb-8">
         <h2 className="text-lg font-semibold text-[#1A2E22]">Firm-wide default policy</h2>
         <p className="mt-1 text-sm text-[#6B8C74]">
-          Annual hours granted at the start of each year. Rollover cap is the maximum unused
-          hours that carry into the next year (0 = use it or lose it).
+          <strong>Front-load</strong>: full annual hours available on day one of the year.{" "}
+          <strong>Accrued</strong>: hours added each completed month up to a cap — staff have to
+          earn it instead of taking 80h of vacation in their first month. Rollover cap = max
+          hours that carry across years (0 = use it or lose it).
         </p>
 
         <div className="mt-5 overflow-x-auto">
@@ -180,36 +205,76 @@ export default function LeaveAdminClient({ orgPolicy, users, balancesByUser }: P
             <thead className="border-b border-[#E2EBE4] text-[#6B8C74]">
               <tr>
                 <th className="px-3 py-2 font-medium">Leave type</th>
+                <th className="px-3 py-2 font-medium">Mode</th>
                 <th className="px-3 py-2 font-medium">Annual hours</th>
+                <th className="px-3 py-2 font-medium">Monthly accrual</th>
+                <th className="px-3 py-2 font-medium">Cap</th>
                 <th className="px-3 py-2 font-medium">Rollover cap</th>
               </tr>
             </thead>
             <tbody>
-              {LEAVE_TYPES.map((type) => (
-                <tr key={type} className="border-b border-[#E8EDE9] last:border-0">
-                  <td className="px-3 py-3 font-medium text-[#1A2E22]">{LEAVE_TYPE_LABELS[type]}</td>
-                  <td className="px-3 py-3">
-                    <input
-                      type="number"
-                      min="0"
-                      step="1"
-                      value={policy[type]?.annualHours ?? 0}
-                      onChange={(e) => updatePolicyField("org", type, "annualHours", e.target.value)}
-                      className="w-28 rounded-lg border border-[#E2EBE4] bg-[#F7F9F7] px-3 py-2 text-sm focus:outline-none focus:border-[#52B788] focus:bg-white"
-                    />
-                  </td>
-                  <td className="px-3 py-3">
-                    <input
-                      type="number"
-                      min="-1"
-                      step="1"
-                      value={policy[type]?.rolloverCap ?? 0}
-                      onChange={(e) => updatePolicyField("org", type, "rolloverCap", e.target.value)}
-                      className="w-28 rounded-lg border border-[#E2EBE4] bg-[#F7F9F7] px-3 py-2 text-sm focus:outline-none focus:border-[#52B788] focus:bg-white"
-                    />
-                  </td>
-                </tr>
-              ))}
+              {LEAVE_TYPES.map((type) => {
+                const isAccrued = policy[type]?.mode === "ACCRUED";
+                return (
+                  <tr key={type} className="border-b border-[#E8EDE9] last:border-0">
+                    <td className="px-3 py-3 font-medium text-[#1A2E22]">{LEAVE_TYPE_LABELS[type]}</td>
+                    <td className="px-3 py-3">
+                      <select
+                        value={policy[type]?.mode ?? "FRONTLOAD"}
+                        onChange={(e) =>
+                          updatePolicyMode("org", type, e.target.value as "FRONTLOAD" | "ACCRUED")
+                        }
+                        className="w-32 rounded-lg border border-[#E2EBE4] bg-[#F7F9F7] px-3 py-2 text-sm focus:outline-none focus:border-[#52B788] focus:bg-white"
+                      >
+                        <option value="FRONTLOAD">Front-load</option>
+                        <option value="ACCRUED">Accrued</option>
+                      </select>
+                    </td>
+                    <td className="px-3 py-3">
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={policy[type]?.annualHours ?? 0}
+                        onChange={(e) => updatePolicyField("org", type, "annualHours", e.target.value)}
+                        className="w-24 rounded-lg border border-[#E2EBE4] bg-[#F7F9F7] px-3 py-2 text-sm focus:outline-none focus:border-[#52B788] focus:bg-white"
+                      />
+                    </td>
+                    <td className="px-3 py-3">
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={policy[type]?.monthlyAccrual ?? 0}
+                        disabled={!isAccrued}
+                        onChange={(e) => updatePolicyField("org", type, "monthlyAccrual", e.target.value)}
+                        className="w-24 rounded-lg border border-[#E2EBE4] bg-[#F7F9F7] px-3 py-2 text-sm focus:outline-none focus:border-[#52B788] focus:bg-white disabled:bg-[#F0F2F0] disabled:text-[#A3BEA9]"
+                      />
+                    </td>
+                    <td className="px-3 py-3">
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={policy[type]?.cap ?? 0}
+                        disabled={!isAccrued}
+                        onChange={(e) => updatePolicyField("org", type, "cap", e.target.value)}
+                        className="w-24 rounded-lg border border-[#E2EBE4] bg-[#F7F9F7] px-3 py-2 text-sm focus:outline-none focus:border-[#52B788] focus:bg-white disabled:bg-[#F0F2F0] disabled:text-[#A3BEA9]"
+                      />
+                    </td>
+                    <td className="px-3 py-3">
+                      <input
+                        type="number"
+                        min="-1"
+                        step="1"
+                        value={policy[type]?.rolloverCap ?? 0}
+                        onChange={(e) => updatePolicyField("org", type, "rolloverCap", e.target.value)}
+                        className="w-24 rounded-lg border border-[#E2EBE4] bg-[#F7F9F7] px-3 py-2 text-sm focus:outline-none focus:border-[#52B788] focus:bg-white"
+                      />
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

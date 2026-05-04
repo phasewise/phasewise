@@ -1,9 +1,22 @@
 import type { LeaveType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
+// Two ways to grant leave:
+// - FRONTLOAD (default, legacy): the full annualHours is available
+//   on day one of the year. Simple, common at small firms, but lets
+//   a new hire burn 80 hours of vacation in their first month.
+// - ACCRUED: monthlyAccrual hours are added to the balance at the
+//   start of each completed month. Caps at `cap`. Rollover at year
+//   change is still governed by rolloverCap. Matches what most
+//   payroll providers (Gusto, ADP, QuickBooks Payroll) use.
+export type LeaveMode = "FRONTLOAD" | "ACCRUED";
+
 export type LeavePolicyEntry = {
-  annualHours: number; // hours granted per year
+  annualHours: number; // hours granted per year (FRONTLOAD) or annual target (ACCRUED display)
   rolloverCap: number; // max hours that carry across years; 0 = none, -1 = unlimited
+  mode?: LeaveMode; // defaults to FRONTLOAD if missing
+  monthlyAccrual?: number; // hours added per completed month when mode=ACCRUED
+  cap?: number; // max balance an employee can hold when mode=ACCRUED; 0 = no cap
 };
 
 export type LeavePolicy = Partial<Record<LeaveType, LeavePolicyEntry>>;
@@ -59,8 +72,19 @@ function coercePolicy(raw: unknown): LeavePolicy | null {
       const e = entry as Record<string, unknown>;
       const annualHours = Number(e.annualHours ?? 0);
       const rolloverCap = Number(e.rolloverCap ?? 0);
+      const modeRaw = typeof e.mode === "string" ? (e.mode as string).toUpperCase() : undefined;
+      const mode: LeaveMode | undefined =
+        modeRaw === "ACCRUED" || modeRaw === "FRONTLOAD" ? (modeRaw as LeaveMode) : undefined;
+      const monthlyAccrual = Number(e.monthlyAccrual ?? 0);
+      const cap = Number(e.cap ?? 0);
       if (!Number.isNaN(annualHours) && !Number.isNaN(rolloverCap)) {
-        out[type] = { annualHours, rolloverCap };
+        out[type] = {
+          annualHours,
+          rolloverCap,
+          mode,
+          monthlyAccrual: Number.isNaN(monthlyAccrual) ? 0 : monthlyAccrual,
+          cap: Number.isNaN(cap) ? 0 : cap,
+        };
       }
     }
   }
@@ -72,7 +96,25 @@ export type LeaveBalance = {
   annualHours: number;
   usedHours: number;
   remainingHours: number;
+  // Resolved mode + the hours actually accrued so far this year (only
+  // meaningful when mode=ACCRUED — for FRONTLOAD this equals annualHours).
+  mode: LeaveMode;
+  accruedHours: number;
 };
+
+// Accrued hours so far in the year, as of `date`. Counts COMPLETED
+// months only — Jan 15 with monthlyAccrual=10 yields 10 (just January
+// counts; Feb hasn't completed yet). Capped at `cap` if set.
+export function computeAccruedHours(
+  monthlyAccrual: number,
+  cap: number,
+  date: Date = new Date()
+): number {
+  const completedMonths = date.getMonth(); // 0..11; Jan=0 means 0 months completed
+  const accrued = monthlyAccrual * completedMonths;
+  if (cap > 0) return Math.min(accrued, cap);
+  return accrued;
+}
 
 export async function computeUserLeaveBalances(
   userId: string,
@@ -111,13 +153,21 @@ export async function computeUserLeaveBalances(
   }
 
   return LEAVE_TYPES.map((type) => {
-    const annualHours = policy[type]?.annualHours ?? 0;
+    const entry = policy[type];
+    const annualHours = entry?.annualHours ?? 0;
     const usedHours = usedByType.get(type) ?? 0;
+    const mode: LeaveMode = entry?.mode === "ACCRUED" ? "ACCRUED" : "FRONTLOAD";
+    const accruedHours =
+      mode === "ACCRUED"
+        ? computeAccruedHours(entry?.monthlyAccrual ?? 0, entry?.cap ?? 0)
+        : annualHours;
     return {
       type,
       annualHours,
       usedHours,
-      remainingHours: annualHours - usedHours,
+      remainingHours: accruedHours - usedHours,
+      mode,
+      accruedHours,
     };
   });
 }
