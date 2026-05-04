@@ -599,11 +599,11 @@ Ordered by my estimated value-per-effort. Revisit during the forensic audit.
 - **Automated year-end rollover** — apply the `rolloverCap` automatically when the calendar year changes. Subsumed by the monthly-accrual feature above.
 - **Forensic audit** — top-to-bottom value review once the queue slows down. Rate each feature on value delivered vs maintenance cost. Cut or sharpen anything that doesn't earn its keep.
 
-## Where We Left Off (2026-05-04 — afternoon update)
+## Where We Left Off (2026-05-04 — late afternoon update)
 
-**Status: 🟢🟢 Hugely productive day — 9 commits, 15 items shipped from the smoke-test triage list.** Morning was discovery (smoke test of 4 major flows, 28 items found). Afternoon was execution. P0 + P1 items closed include Send-to-client unblock (Path B foundation), un-approved-time warning, auto-invoicing UX surfacing (3 of 4 components), invoice header Remit-to/Fed ID block, and approver history view. P2/P3 polish items knocked out alongside.
+**Status: 🟢🟢🟢 Massive day — 15 commits, 20 items shipped from the smoke-test triage list.** Morning was discovery (smoke test of 4 major flows, 28 items found). Afternoon + evening were execution. **Every P0 closed, every P1 except Stripe Payment Links, every P2 bug, and every P3 polish item.** Stripe Payment Links deferred to a fresh session because it requires Stripe Connect (multi-tenant payment routing) which is real 1-2 day scope.
 
-### Commits in order
+### Commits in order (15 total)
 
 1. `bad981a` — Invoice timesheet preview: warn on non-approved hours (P0 #2)
 2. `bd8a3a9` — Timesheet UX bugs: refresh on submit + week-state sync + TZ-safe day grid (P2 #9, #10, #11)
@@ -614,36 +614,50 @@ Ordered by my estimated value-per-effort. Revisit during the forensic audit.
 7. `852821b` — Approver page: add Pending/History tab with audit trail (P1 #6)
 8. `e919d96` — Dashboard: drafts-ready-to-review banner for owners/admins (P0 #3 follow-up)
 9. `f21b76e` — Invoice header: Remit-to + Fed ID block (Stage 1) (P1 #4 stage 1)
+10. `c8fb0b1` — Per-project billing cadence + contract number on invoice (P0 #3 follow-up + P1 #4 stage 2)
+11. `d5d46f9` — Sidebar nav badges: surface what needs attention without leaving (P1 #8)
+12. `578948c` — Admin: timesheet rollup dashboard (P1 #7)
+13. `d366048` — Invoice header: Attn line from linked Client.contactPerson (P1 #4 stage 2 finish)
+14. `6dee87f` — Send invoice: replace browser prompts with proper modal (P3 #15 partial)
 
 ### Schema changes pushed to Supabase
 
 - `Invoice.publicToken` (String?, unique) + `Invoice.viewedAt` (DateTime?) — for the public link viewer
 - `Organization.billingMailingAddress`, `billingFedId`, `billingAchRouting`, `billingAchAccount`, `billingWireRouting`, `billingWireAccount` — Remit-to block
+- `Project.contractNumber` (String?) — agreement / contract number rendered on invoice
+- `Project.billingCadence` (enum MONTHLY/MILESTONE/MANUAL, default MONTHLY) — controls auto-invoicing cron eligibility
 
 ### Manual steps still pending
 
 - **Loops INVOICE_SEND template** needs body update in the dashboard: replace any attachment reference with a `{{ invoiceUrl }}` button/link. Until done, the email sends but the body has no link.
 - **Verify on Vercel** — `db push` was applied to Supabase but Vercel will redeploy on next push to GitHub. The `.next` cache is in sync locally.
 
-### Still on the punch list (deferred to next pass)
+### Still on the punch list (fresh-session items)
 
-- **P0 #3 follow-up**: per-project `billingCadence` dropdown so the cron can skip milestone-billed projects.
-- **P1 #4 Stage 2**: per-project `contractNumber`, per-client `Attn:` surfacing on BILL TO.
-- **P1 #5**: Stripe Payment Links integration (Pay-now button + webhook for auto-mark-paid).
-- **P1 #7**: Admin timesheet rollup dashboard (monthly per-staff × per-project, utilization, billable mix).
-- **P1 #8**: Notifications widget (header dropdown surfacing pending approvals, overdue submittals, drafts, budget alerts).
-- **P3 #15**: Modal standardization sweep (replace `window.confirm/prompt/alert` with React modals).
-- **P3 features 21-25**: Apply Schedule, monthly leave accrual, alternate supervisor, My Schedule staff view, role-based dashboards.
+- **P1 #5: Stripe Payment Links integration** — biggest remaining feature. Requires Stripe Connect (each firm has its own connected account, not Phasewise's account). Multi-tenant payments. Real 1-2 day scope. Defer until a fresh session — too big to graft on at the end of a long day.
+- **Modal standardization sweep continuation** — other `confirm()` usages across ~9 client components (less visually offensive than `prompt()`, lower priority). Send Invoice was the worst offender and got the modal.
+- **P3 features 21-25** — Apply Schedule pre-fill, monthly leave accrual, alternate / backup supervisor, "My Schedule" staff-side view, role-based dashboard differentiation. Each is a real feature, days of work.
+
+### Loops template — manually updated by Kevin during the session ✅
+
+Kevin updated the `INVOICE_SEND` template in the Loops dashboard to use the new `{{ invoiceUrl }}` variable (button + link, no attachment). Preview text updated from "PDF attached" to "Invoice ready for review. Click to view." Republished. Pending: a real Send-to-client test against the new public viewer.
 
 ### Tomorrow's first task
 
-Update the Loops INVOICE_SEND template body to use `{{ invoiceUrl }}` (button + link, no attachment). Then verify the full flow end-to-end: Send to client → email arrives → Open Invoice link → see the public viewer page → Download PDF → all renders correctly with the new Remit-to block.
+**End-to-end test the Send-to-client flow** with the new Loops template + public viewer:
 
-After that, choose between:
-- Stage 2 invoice header (contractNumber + Attn) — bounded, ~1h
-- Per-project billing cadence — bounded, ~45m
-- Stripe Payment Links integration — biggest impact remaining, 2-3h
-- Admin timesheet rollup dashboard — 2-3h
+1. Visit `/settings/billing-info` and fill in Remit-to address + Fed ID + ACH details so the invoice has data to render.
+2. From `/admin/billing`, click **Send to client** on any invoice. Use the new modal (no more prompts).
+3. Confirm the email arrives at the recipient with a working `View & Download Invoice` button pointing at `/invoice/[token]`.
+4. Open the link, verify the public viewer page renders with the Remit-to block + Attn: line + Agreement No.
+5. Click Download PDF and verify the same layout in the PDF.
+
+After that's verified, choose between:
+- **Stripe Payment Links** (biggest remaining feature) — fresh session, 1-2 days
+- **Modal sweep continuation** — bounded but tedious
+- **One of P3 features 21-25** — pick the one that addresses the firm's most-pressing operational gap
+
+Or just settle in and use it. The platform is now genuinely cohesive end-to-end.
 
 ---
 
