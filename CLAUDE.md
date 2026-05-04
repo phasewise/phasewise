@@ -683,7 +683,7 @@ All entries are captured in the **Product Wishlist** section above with full det
 5. **Stripe Payment Links integration** (Stage 1 of the broader payments work) — bundles with #1 above.
 6. ✅ **Approver page history view** (shipped 2026-05-04) — added a Pending / History tab toggle on `/time/approve`. History tab lists the most recent 50 past decisions (APPROVED rows + DRAFT rows with `reviewComment` set, i.e. sent-back). Each row shows user, week, hours, decision badge (Approved / Sent back), reviewer name + date. APPROVED rows have a Reopen action (with confirm dialog) that calls `/api/timesheets` with `action: "reopen"` + the timesheet owner's `userId`. Sent-back rows display the reviewer's comment inline.
 7. **Admin timesheet rollup dashboard** → monthly per-staff × per-project with utilization and billable mix.
-8. **Notifications widget** → header dropdown surfacing pending approvals, overdue submittals, draft invoices, budget alerts.
+8. ✅ **Notifications widget** (shipped 2026-05-04 — sidebar badge variant) — instead of a separate dropdown, badges live directly on the existing nav items where the user can already act. **Time Sheets** badge counts pending approvals in the user's approver scope (role-approvers see all-of-org, supervisors see direct reports only). **Submittals** badge counts overdue items where the user is `assignedToId`. **Admin** badge (OWNER/ADMIN only) counts DRAFT invoices ready to review. Mobile hamburger button gets a small rose dot when any badge is non-zero so users know there's something inside the drawer. Counts computed server-side in `app/(app)/layout.tsx` and passed through to the sidebar — re-runs on every navigation so they stay fresh.
 
 #### 🟡 P2 — clean up bugs
 

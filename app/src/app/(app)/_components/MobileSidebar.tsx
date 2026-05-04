@@ -45,6 +45,11 @@ type Props = {
     photoUrl?: string | null;
     organization?: { name: string } | null;
   };
+  notifications?: {
+    pendingApprovals: number;
+    draftInvoices: number;
+    overdueSubmittals: number;
+  };
 };
 
 function PhaseLogo() {
@@ -82,9 +87,42 @@ function Avatar({ name, photoUrl }: { name: string; photoUrl?: string | null }) 
   );
 }
 
-function SidebarContent({ user, onNavigate }: Props & { onNavigate?: () => void }) {
+function NavBadge({ count, tone = "alert" }: { count: number; tone?: "alert" | "info" }) {
+  if (count <= 0) return null;
+  const toneClasses =
+    tone === "alert"
+      ? "bg-rose-500/90 text-white"
+      : "bg-[#52B788] text-[#0D2218]";
+  return (
+    <span
+      className={`ml-auto inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 rounded-full text-[10px] font-semibold ${toneClasses}`}
+      title={`${count} item${count === 1 ? "" : "s"} need attention`}
+    >
+      {count > 99 ? "99+" : count}
+    </span>
+  );
+}
+
+function SidebarContent({
+  user,
+  notifications,
+  onNavigate,
+}: Props & { onNavigate?: () => void }) {
   const pathname = usePathname();
   const isAdmin = user.role === "OWNER" || user.role === "ADMIN";
+  const counts = notifications ?? {
+    pendingApprovals: 0,
+    draftInvoices: 0,
+    overdueSubmittals: 0,
+  };
+
+  // Map nav hrefs to their relevant notification counts. Items with no
+  // applicable count just render unchanged.
+  const badgeFor = (href: string): number => {
+    if (href === "/time") return counts.pendingApprovals;
+    if (href === "/submittals") return counts.overdueSubmittals;
+    return 0;
+  };
 
   return (
     <>
@@ -99,6 +137,7 @@ function SidebarContent({ user, onNavigate }: Props & { onNavigate?: () => void 
           const isActive =
             pathname === item.href ||
             (item.href !== "/dashboard" && pathname.startsWith(item.href));
+          const badge = badgeFor(item.href);
 
           return (
             <Link
@@ -113,6 +152,7 @@ function SidebarContent({ user, onNavigate }: Props & { onNavigate?: () => void 
             >
               <item.icon className="h-4 w-4" strokeWidth={1.75} />
               {item.name}
+              <NavBadge count={badge} />
             </Link>
           );
         })}
@@ -140,6 +180,7 @@ function SidebarContent({ user, onNavigate }: Props & { onNavigate?: () => void 
                 >
                   <item.icon className="h-4 w-4" strokeWidth={1.75} />
                   {item.name}
+                  <NavBadge count={counts.draftInvoices} tone="info" />
                 </Link>
               );
             })}
@@ -174,7 +215,7 @@ function SidebarContent({ user, onNavigate }: Props & { onNavigate?: () => void 
   );
 }
 
-export default function MobileSidebar({ user }: Props) {
+export default function MobileSidebar({ user, notifications }: Props) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -184,10 +225,22 @@ export default function MobileSidebar({ user }: Props) {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="text-white/70 hover:text-white transition-colors p-1"
+          className="relative text-white/70 hover:text-white transition-colors p-1"
           aria-label="Open menu"
         >
           <Menu className="w-6 h-6" strokeWidth={1.75} />
+          {/* Dot indicator when anything needs attention — nav badges
+              live inside the drawer, but they're hidden when the menu
+              is closed. */}
+          {notifications &&
+            (notifications.pendingApprovals > 0 ||
+              notifications.draftInvoices > 0 ||
+              notifications.overdueSubmittals > 0) && (
+              <span
+                className="absolute top-1 right-1 w-2 h-2 rounded-full bg-rose-500"
+                aria-hidden="true"
+              />
+            )}
         </button>
         <PhaseLogo />
         <span className="text-[16px] font-semibold tracking-[-0.3px] text-white">
@@ -197,7 +250,7 @@ export default function MobileSidebar({ user }: Props) {
 
       {/* Desktop sidebar — always visible at lg+ */}
       <aside className="hidden lg:flex w-60 bg-[#0D2218] text-white flex-col border-r border-[#1A2E22]">
-        <SidebarContent user={user} />
+        <SidebarContent user={user} notifications={notifications} />
       </aside>
 
       {/* Mobile drawer overlay */}
@@ -219,7 +272,7 @@ export default function MobileSidebar({ user }: Props) {
             >
               <X className="w-5 h-5" />
             </button>
-            <SidebarContent user={user} onNavigate={() => setOpen(false)} />
+            <SidebarContent user={user} notifications={notifications} onNavigate={() => setOpen(false)} />
           </aside>
         </div>
       )}
