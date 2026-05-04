@@ -93,13 +93,23 @@ export default function TimeApprovalClient({ rows: initialRows }: Props) {
     setRejectComment("");
   }
 
+  // Treat the weekStart as a calendar date, not a UTC instant. Parsing
+  // an ISO with `new Date(...)` shifts the day by your timezone offset
+  // (Pacific renders Mon UTC midnight as Sun 5pm), which made the day
+  // grid render one day earlier than the period label. Since weekStart
+  // is stored as `@db.Date`, only the date portion is meaningful.
+  function parseLocalDate(iso: string): Date {
+    const [year, month, day] = iso.slice(0, 10).split("-").map(Number);
+    return new Date(year, month - 1, day);
+  }
+
   function weekDays(weekStartIso: string): string[] {
-    const start = new Date(weekStartIso);
+    const start = parseLocalDate(weekStartIso);
     return Array.from({ length: 7 }).map((_, i) => format(addDays(start, i), "yyyy-MM-dd"));
   }
 
   const dayHeaderLabel = (iso: string) => {
-    const d = new Date(iso);
+    const d = parseLocalDate(iso);
     return `${format(d, "EEE")} ${format(d, "M/d")}`;
   };
 
@@ -121,7 +131,7 @@ export default function TimeApprovalClient({ rows: initialRows }: Props) {
             {rows.map((row) => {
               const isOpen = expanded[row.id];
               const days = weekDays(row.weekStart);
-              const weekRange = `${format(new Date(row.weekStart), "MMM d")} – ${format(new Date(row.weekEnd), "MMM d, yyyy")}`;
+              const weekRange = `${format(parseLocalDate(row.weekStart), "MMM d")} – ${format(parseLocalDate(row.weekEnd), "MMM d, yyyy")}`;
               return (
                 <div key={row.id}>
                   {/* Summary row — click to expand */}

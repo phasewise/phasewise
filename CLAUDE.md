@@ -639,9 +639,9 @@ All entries are captured in the **Product Wishlist** section above with full det
 
 #### 🟡 P2 — clean up bugs
 
-9. **🐛 Reviewer comment banner persists after re-submit** → either clear on SUBMITTED transition or update modal copy. Small fix.
-10. **🐛 Week status card stuck on wrong week** → re-read currently-displayed week's record on navigation.
-11. **🐛 Approver column grid misaligned with period label** → pick Mon-Sun convention everywhere.
+9. ✅ **Reviewer comment banner persists after re-submit** (shipped 2026-05-04) — submit handler now calls `router.refresh()` so the page re-fetches the WeeklyTimesheet record and the banner clears (the API was already nulling `reviewComment` on re-submit).
+10. ✅ **Week status card stuck on wrong week** (shipped 2026-05-04) — TimesheetSubmitClient now syncs the optimistic `currentStatus` state when the `status`/`weekStart` props change via `useEffect`. Prev/Next navigation now updates the card correctly.
+11. ✅ **Approver column grid misaligned with period label** (shipped 2026-05-04) — root cause was JS Date timezone parsing. `weekStart` is stored as `@db.Date` but `new Date(isoString)` parsed UTC midnight as the previous day in west-of-UTC zones. Fixed via a `parseLocalDate` helper that extracts only the YYYY-MM-DD portion. Applied to `weekDays`, `dayHeaderLabel`, and `weekRange`.
 12. **🐛 Invoice Detailed line-item mode doesn't show staff name + rate** → bug in `lib/invoice-builder.ts` description composer.
 13. **🐛 MWELO project picker dropdown unclickable in render-back mode** → CSS/state issue confined to `?itemId=...`.
 14. **🐛 Invoice PDF cold-start timeout** → consider pre-rendering at creation + caching to Storage.

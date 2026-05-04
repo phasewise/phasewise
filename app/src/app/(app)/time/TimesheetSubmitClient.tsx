@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 type Props = {
@@ -21,6 +21,14 @@ export default function TimesheetSubmitClient({ weekStart, status, canApprove, s
   const [currentStatus, setCurrentStatus] = useState(status);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+
+  // Sync local optimistic state when the parent re-renders with a
+  // different week's status (Prev/Next navigation). Without this,
+  // submitting week A leaves the card showing SUBMITTED on week B.
+  useEffect(() => {
+    setCurrentStatus(status);
+    setMessage(null);
+  }, [status, weekStart]);
 
   async function postAction(action: "submit" | "reopen", confirmText?: string) {
     if (confirmText && !confirm(confirmText)) return;
@@ -44,6 +52,9 @@ export default function TimesheetSubmitClient({ weekStart, status, canApprove, s
     if (action === "submit") {
       setCurrentStatus("SUBMITTED");
       setMessage("Timesheet submitted for approval.");
+      // Refetch server data so the "Sent back" reviewer banner clears
+      // (reviewComment is wiped on re-submit by the API).
+      router.refresh();
     } else {
       setCurrentStatus("DRAFT");
       setMessage("Timesheet reopened — you can edit again.");
