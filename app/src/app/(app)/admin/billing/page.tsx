@@ -25,6 +25,24 @@ export default async function AdminBillingPage() {
     }),
   ]);
 
+  // Auto-invoicing surface — surfaces what the monthly cron has done so
+  // operators can see "X drafts ready" rather than having to know the
+  // job runs invisibly. Cron fires on the 5th of every month against
+  // the prior calendar month.
+  const today = new Date();
+  const fifthThisMonth = new Date(today.getFullYear(), today.getMonth(), 5);
+  const nextRunAt =
+    today < fifthThisMonth
+      ? fifthThisMonth
+      : new Date(today.getFullYear(), today.getMonth() + 1, 5);
+  // Drafts created from the most recent run — anything currently DRAFT
+  // is awaiting operator review either way.
+  const draftCount = invoices.filter((inv) => inv.status === "DRAFT").length;
+  const autoInvoicing = {
+    nextRunAt: nextRunAt.toISOString(),
+    draftCount,
+  };
+
   const serialized = invoices.map((inv) => ({
     id: inv.id,
     invoiceNumber: inv.invoiceNumber,
@@ -56,7 +74,7 @@ export default async function AdminBillingPage() {
 
   return (
     <div className="p-6 lg:p-10 max-w-7xl">
-      <AdminBillingClient invoices={serialized} projects={projects} />
+      <AdminBillingClient invoices={serialized} projects={projects} autoInvoicing={autoInvoicing} />
     </div>
   );
 }

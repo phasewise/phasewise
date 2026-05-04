@@ -51,6 +51,13 @@ type Invoice = {
 type Props = {
   invoices: Invoice[];
   projects: Array<{ id: string; name: string; projectNumber: string | null }>;
+  autoInvoicing: {
+    // ISO string of the next scheduled cron run.
+    nextRunAt: string;
+    // How many DRAFT invoices currently exist (the cron creates these
+    // on the 5th of every month for projects with billable hours).
+    draftCount: number;
+  };
 };
 
 const STATUS_COLORS: Record<string, string> = {
@@ -102,7 +109,7 @@ function deriveSectionKey(inv: Invoice): SectionKey {
   return "DRAFT";
 }
 
-export default function AdminBillingClient({ invoices: initialInvoices, projects }: Props) {
+export default function AdminBillingClient({ invoices: initialInvoices, projects, autoInvoicing }: Props) {
   const [invoices, setInvoices] = useState(initialInvoices);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -557,7 +564,7 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
         <ArrowLeft size={14} /> Admin
       </Link>
 
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
         <div>
           <h1 className="font-serif text-3xl text-[#1A2E22]">Project Billing</h1>
           <p className="mt-1 text-sm text-[#6B8C74]">
@@ -572,6 +579,51 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
           <Plus className="w-4 h-4" />
           New Invoice
         </button>
+      </div>
+
+      {/* Auto-invoicing status — surfaces the silent monthly cron so
+          operators see the work it's already doing. Without this, the
+          New Invoice flow is the most visible path and the brand
+          promise of "we'll handle everything else" gets buried. */}
+      <div className="mb-8 rounded-2xl border border-[#52B788]/30 bg-[#F0FAF4] px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-start gap-3">
+          <Sparkles className="w-5 h-5 text-[#2D6A4F] mt-0.5 flex-shrink-0" strokeWidth={1.75} />
+          <div>
+            <p className="text-sm font-medium text-[#1A2E22]">
+              Auto-invoicing — drafts every month for projects with billable hours.
+            </p>
+            <p className="text-xs text-[#3D5C48] mt-0.5">
+              Next run:{" "}
+              <strong>
+                {new Date(autoInvoicing.nextRunAt).toLocaleDateString("en-US", {
+                  month: "long",
+                  day: "numeric",
+                  year: "numeric",
+                })}
+              </strong>
+              {autoInvoicing.draftCount > 0 ? (
+                <>
+                  {" · "}
+                  <span className="text-[#2D6A4F] font-medium">
+                    {autoInvoicing.draftCount} draft{autoInvoicing.draftCount === 1 ? "" : "s"} awaiting review
+                  </span>
+                </>
+              ) : (
+                <>
+                  {" · No drafts pending review."}
+                </>
+              )}
+            </p>
+          </div>
+        </div>
+        {autoInvoicing.draftCount > 0 && (
+          <a
+            href="#draft-section"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold bg-white border border-[#52B788]/40 text-[#2D6A4F] hover:bg-[#52B788] hover:text-white transition-colors flex-shrink-0"
+          >
+            Review drafts →
+          </a>
+        )}
       </div>
 
       {/* Summary cards */}
@@ -697,6 +749,85 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
                 className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]"
               />
             </div>
+          </div>
+
+          {/* Quick-period presets — most invoicing is monthly. Clicking
+              a preset fills period start + end so the operator doesn't
+              hand-pick dates every time. */}
+          <div className="mb-2 flex flex-wrap items-center gap-2 text-xs">
+            <span className="text-[#6B8C74]">Quick period:</span>
+            <button
+              type="button"
+              onClick={() => {
+                const ymd = (d: Date) => {
+                  const y = d.getFullYear();
+                  const m = String(d.getMonth() + 1).padStart(2, "0");
+                  const day = String(d.getDate()).padStart(2, "0");
+                  return `${y}-${m}-${day}`;
+                };
+                const today = new Date();
+                const start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+                const end = new Date(today.getFullYear(), today.getMonth(), 0);
+                setFormPeriodStart(ymd(start));
+                setFormPeriodEnd(ymd(end));
+              }}
+              className="px-2.5 py-1 rounded-md border border-[#E2EBE4] bg-white text-[#3D5C48] hover:border-[#52B788] hover:text-[#2D6A4F] transition-colors"
+            >
+              Last month
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const ymd = (d: Date) => {
+                  const y = d.getFullYear();
+                  const m = String(d.getMonth() + 1).padStart(2, "0");
+                  const day = String(d.getDate()).padStart(2, "0");
+                  return `${y}-${m}-${day}`;
+                };
+                const today = new Date();
+                const start = new Date(today.getFullYear(), today.getMonth(), 1);
+                const end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+                setFormPeriodStart(ymd(start));
+                setFormPeriodEnd(ymd(end));
+              }}
+              className="px-2.5 py-1 rounded-md border border-[#E2EBE4] bg-white text-[#3D5C48] hover:border-[#52B788] hover:text-[#2D6A4F] transition-colors"
+            >
+              This month
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const ymd = (d: Date) => {
+                  const y = d.getFullYear();
+                  const m = String(d.getMonth() + 1).padStart(2, "0");
+                  const day = String(d.getDate()).padStart(2, "0");
+                  return `${y}-${m}-${day}`;
+                };
+                const today = new Date();
+                const day = today.getDay();
+                const thisMonday = new Date(today);
+                thisMonday.setDate(today.getDate() - ((day + 6) % 7));
+                const lastMonday = new Date(thisMonday);
+                lastMonday.setDate(thisMonday.getDate() - 7);
+                const lastSunday = new Date(lastMonday);
+                lastSunday.setDate(lastMonday.getDate() + 6);
+                setFormPeriodStart(ymd(lastMonday));
+                setFormPeriodEnd(ymd(lastSunday));
+              }}
+              className="px-2.5 py-1 rounded-md border border-[#E2EBE4] bg-white text-[#3D5C48] hover:border-[#52B788] hover:text-[#2D6A4F] transition-colors"
+            >
+              Last week
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setFormPeriodStart("");
+                setFormPeriodEnd("");
+              }}
+              className="px-2.5 py-1 rounded-md border border-[#E2EBE4] bg-white text-[#6B8C74] hover:border-[#52B788] hover:text-[#2D6A4F] transition-colors"
+            >
+              Clear
+            </button>
           </div>
 
           {/* Billing period — drives PDF letterhead + the timesheet pull */}
@@ -937,6 +1068,7 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
             return (
               <div
                 key={section.key}
+                id={section.key === "DRAFT" ? "draft-section" : undefined}
                 className="rounded-2xl border border-[#E2EBE4] bg-white shadow-sm overflow-hidden"
               >
                 <button
