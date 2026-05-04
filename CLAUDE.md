@@ -599,7 +599,55 @@ Ordered by my estimated value-per-effort. Revisit during the forensic audit.
 - **Automated year-end rollover** — apply the `rolloverCap` automatically when the calendar year changes. Subsumed by the monthly-accrual feature above.
 - **Forensic audit** — top-to-bottom value review once the queue slows down. Rate each feature on value delivered vs maintenance cost. Cut or sharpen anything that doesn't earn its keep.
 
-## Where We Left Off (2026-05-04)
+## Where We Left Off (2026-05-04 — afternoon update)
+
+**Status: 🟢🟢 Hugely productive day — 9 commits, 15 items shipped from the smoke-test triage list.** Morning was discovery (smoke test of 4 major flows, 28 items found). Afternoon was execution. P0 + P1 items closed include Send-to-client unblock (Path B foundation), un-approved-time warning, auto-invoicing UX surfacing (3 of 4 components), invoice header Remit-to/Fed ID block, and approver history view. P2/P3 polish items knocked out alongside.
+
+### Commits in order
+
+1. `bad981a` — Invoice timesheet preview: warn on non-approved hours (P0 #2)
+2. `bd8a3a9` — Timesheet UX bugs: refresh on submit + week-state sync + TZ-safe day grid (P2 #9, #10, #11)
+3. `e707e06` — Smoke test polish: invoice toggle re-pull, MWELO re-link, casing, naming (P2 #12, #13, P3 #16, #18, #19, #20)
+4. `cbea6ae` — Send-to-client Path B: public invoice link replaces PDF attachment (P0 #1 partial)
+5. `7bfa968` — Auto-invoicing UX: status panel + quick-period presets (P0 #3 partial)
+6. `8544ff9` — PDF maxDuration + phone format helper (P2 #14, P3 #17)
+7. `852821b` — Approver page: add Pending/History tab with audit trail (P1 #6)
+8. `e919d96` — Dashboard: drafts-ready-to-review banner for owners/admins (P0 #3 follow-up)
+9. `f21b76e` — Invoice header: Remit-to + Fed ID block (Stage 1) (P1 #4 stage 1)
+
+### Schema changes pushed to Supabase
+
+- `Invoice.publicToken` (String?, unique) + `Invoice.viewedAt` (DateTime?) — for the public link viewer
+- `Organization.billingMailingAddress`, `billingFedId`, `billingAchRouting`, `billingAchAccount`, `billingWireRouting`, `billingWireAccount` — Remit-to block
+
+### Manual steps still pending
+
+- **Loops INVOICE_SEND template** needs body update in the dashboard: replace any attachment reference with a `{{ invoiceUrl }}` button/link. Until done, the email sends but the body has no link.
+- **Verify on Vercel** — `db push` was applied to Supabase but Vercel will redeploy on next push to GitHub. The `.next` cache is in sync locally.
+
+### Still on the punch list (deferred to next pass)
+
+- **P0 #3 follow-up**: per-project `billingCadence` dropdown so the cron can skip milestone-billed projects.
+- **P1 #4 Stage 2**: per-project `contractNumber`, per-client `Attn:` surfacing on BILL TO.
+- **P1 #5**: Stripe Payment Links integration (Pay-now button + webhook for auto-mark-paid).
+- **P1 #7**: Admin timesheet rollup dashboard (monthly per-staff × per-project, utilization, billable mix).
+- **P1 #8**: Notifications widget (header dropdown surfacing pending approvals, overdue submittals, drafts, budget alerts).
+- **P3 #15**: Modal standardization sweep (replace `window.confirm/prompt/alert` with React modals).
+- **P3 features 21-25**: Apply Schedule, monthly leave accrual, alternate supervisor, My Schedule staff view, role-based dashboards.
+
+### Tomorrow's first task
+
+Update the Loops INVOICE_SEND template body to use `{{ invoiceUrl }}` (button + link, no attachment). Then verify the full flow end-to-end: Send to client → email arrives → Open Invoice link → see the public viewer page → Download PDF → all renders correctly with the new Remit-to block.
+
+After that, choose between:
+- Stage 2 invoice header (contractNumber + Attn) — bounded, ~1h
+- Per-project billing cadence — bounded, ~45m
+- Stripe Payment Links integration — biggest impact remaining, 2-3h
+- Admin timesheet rollup dashboard — 2-3h
+
+---
+
+## Where We Left Off (2026-05-04 — morning)
 
 **Status: 🟢 Big discovery session. Two GitHub admin items closed (2FA + Copilot opt-out). Smoke test verified 4 major flows end-to-end and surfaced 28 bugs/features for triage. Zero commits — entirely a testing + product-discovery day.**
 
