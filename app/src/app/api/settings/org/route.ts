@@ -16,6 +16,12 @@ export async function GET() {
       return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
     }
 
+    // Bank-sensitive billing fields are only returned to OWNER/ADMIN.
+    // Other roles can still read the rest of the org (numbering format,
+    // etc.) — they just shouldn't see the routing/account numbers or
+    // Fed ID.
+    const canSeeBilling = currentUser.role === "OWNER" || currentUser.role === "ADMIN";
+
     const org = await prisma.organization.findUnique({
       where: { id: currentUser.organizationId },
       select: {
@@ -27,12 +33,13 @@ export async function GET() {
         invoiceNumberNext: true,
         autoNumberInvoices: true,
         invoiceNumberFormat: true,
-        billingMailingAddress: true,
-        billingFedId: true,
-        billingAchRouting: true,
-        billingAchAccount: true,
-        billingWireRouting: true,
-        billingWireAccount: true,
+        billingMailingAddress: canSeeBilling,
+        billingFedId: canSeeBilling,
+        billingAchRouting: canSeeBilling,
+        billingAchAccount: canSeeBilling,
+        billingWireRouting: canSeeBilling,
+        billingWireAccount: canSeeBilling,
+        billingInfoUpdatedAt: canSeeBilling,
       },
     });
 
@@ -139,12 +146,37 @@ export async function PATCH(request: Request) {
     // cleanly.
     const cleanString = (v: string | null | undefined) =>
       v === undefined ? undefined : (v ?? "").trim() || null;
-    if (billingMailingAddress !== undefined) data.billingMailingAddress = cleanString(billingMailingAddress);
-    if (billingFedId !== undefined) data.billingFedId = cleanString(billingFedId);
-    if (billingAchRouting !== undefined) data.billingAchRouting = cleanString(billingAchRouting);
-    if (billingAchAccount !== undefined) data.billingAchAccount = cleanString(billingAchAccount);
-    if (billingWireRouting !== undefined) data.billingWireRouting = cleanString(billingWireRouting);
-    if (billingWireAccount !== undefined) data.billingWireAccount = cleanString(billingWireAccount);
+    let billingTouched = false;
+    if (billingMailingAddress !== undefined) {
+      data.billingMailingAddress = cleanString(billingMailingAddress);
+      billingTouched = true;
+    }
+    if (billingFedId !== undefined) {
+      data.billingFedId = cleanString(billingFedId);
+      billingTouched = true;
+    }
+    if (billingAchRouting !== undefined) {
+      data.billingAchRouting = cleanString(billingAchRouting);
+      billingTouched = true;
+    }
+    if (billingAchAccount !== undefined) {
+      data.billingAchAccount = cleanString(billingAchAccount);
+      billingTouched = true;
+    }
+    if (billingWireRouting !== undefined) {
+      data.billingWireRouting = cleanString(billingWireRouting);
+      billingTouched = true;
+    }
+    if (billingWireAccount !== undefined) {
+      data.billingWireAccount = cleanString(billingWireAccount);
+      billingTouched = true;
+    }
+    // Stamp a billing-specific timestamp so the form can show "Last
+    // saved" without false-refreshing whenever an unrelated org
+    // setting (project numbering, invoice format, etc.) changes.
+    if (billingTouched) {
+      data.billingInfoUpdatedAt = new Date();
+    }
 
     const updated = await prisma.organization.update({
       where: { id: currentUser.organizationId },
@@ -163,6 +195,7 @@ export async function PATCH(request: Request) {
         billingAchAccount: true,
         billingWireRouting: true,
         billingWireAccount: true,
+        billingInfoUpdatedAt: true,
       },
     });
 

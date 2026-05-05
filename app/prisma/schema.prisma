@@ -54,6 +54,11 @@ model Organization {
   // Wire transfer for high-value or international clients.
   billingWireRouting       String?             @map("billing_wire_routing")
   billingWireAccount       String?             @map("billing_wire_account")
+  // Updated whenever any of the billing-info fields above change.
+  // Surfaced on the /settings/billing-info page as a "Last saved"
+  // hint — meaningfully more accurate than the org's record-wide
+  // updatedAt, which refreshes for any unrelated org change.
+  billingInfoUpdatedAt     DateTime?           @map("billing_info_updated_at")
   createdAt                DateTime            @default(now()) @map("created_at")
   updatedAt                DateTime            @updatedAt @map("updated_at")
 
