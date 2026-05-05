@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Camera, Check, User } from "lucide-react";
 import Link from "next/link";
+import { formatPhoneInput } from "@/lib/utils";
 
 type Profile = {
   id: string;
@@ -35,7 +36,7 @@ export default function ProfilePage() {
         setProfile(data);
         setFullName(data.fullName);
         setTitle(data.title ?? "");
-        setPhone(data.phone ?? "");
+        setPhone(formatPhoneInput(data.phone ?? ""));
         setPhotoUrl(data.photoUrl ? `${data.photoUrl}?t=${Date.now()}` : "");
       });
   }, []);
@@ -237,7 +238,7 @@ export default function ProfilePage() {
             id="profile-phone"
             type="tel"
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
+            onChange={(e) => setPhone(formatPhoneInput(e.target.value))}
             autoComplete="tel"
             placeholder="(555) 123-4567"
             className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-[#1A2E22] text-sm focus:outline-none focus:border-[#52B788] focus:bg-white transition-colors"

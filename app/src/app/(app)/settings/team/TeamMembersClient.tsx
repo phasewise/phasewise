@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Plus, UserMinus, UserPlus, Pencil, Link2, Check, Send, X } from "lucide-react";
+import { formatPhoneInput } from "@/lib/utils";
 
 type TeamUser = {
   id: string;
@@ -209,7 +210,7 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
     setEditTitle(user.title || "");
     setEditTitleCustom(user.title ? !LA_TITLES.some((t) => t.value === user.title) : false);
     setEditRole(user.role);
-    setEditPhone(user.phone || "");
+    setEditPhone(formatPhoneInput(user.phone || ""));
     setEditBillingRate(user.billingRate != null ? String(user.billingRate) : "");
     setEditSalary(user.salary != null ? String(user.salary) : "");
     setEditSupervisorId(user.supervisorId || "");
@@ -723,7 +724,7 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
                     id="team-edit-phone"
                     type="tel"
                     value={editPhone}
-                    onChange={(e) => setEditPhone(e.target.value)}
+                    onChange={(e) => setEditPhone(formatPhoneInput(e.target.value))}
                     autoComplete="tel"
                     placeholder="(555) 123-4567"
                     className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788] transition-colors"

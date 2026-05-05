@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Building2, Mail, MapPin, Pencil, Phone, Plus, X } from "lucide-react";
-import { formatPhone, toTitleCase } from "@/lib/utils";
+import { formatPhone, formatPhoneInput, toTitleCase } from "@/lib/utils";
 
 type Client = {
   id: string;
@@ -43,7 +43,7 @@ export default function ClientsClient({ clients: initialClients }: Props) {
     setFormName(client.name);
     setFormContact(client.contactPerson ?? "");
     setFormEmail(client.email ?? "");
-    setFormPhone(client.phone ?? "");
+    setFormPhone(formatPhoneInput(client.phone ?? ""));
     setFormAddress(client.address ?? "");
     setFormCity(client.city ?? "");
     setFormState(client.state ?? "");
@@ -189,7 +189,7 @@ export default function ClientsClient({ clients: initialClients }: Props) {
             </div>
             <div>
               <label htmlFor="client-phone" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Phone</label>
-              <input id="client-phone" value={formPhone} onChange={(e) => setFormPhone(e.target.value)} placeholder="(559) 555-0100" autoComplete="tel" className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+              <input id="client-phone" value={formPhone} onChange={(e) => setFormPhone(formatPhoneInput(e.target.value))} placeholder="(559) 555-0100" autoComplete="tel" className="w-full bg-white border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
             </div>
           </div>
           <div className="grid sm:grid-cols-4 gap-4 mb-4">
@@ -301,7 +301,7 @@ export default function ClientsClient({ clients: initialClients }: Props) {
                 </div>
                 <div>
                   <label htmlFor="client-edit-phone" className="text-sm text-[#3D5C48] block mb-1.5 font-medium">Phone</label>
-                  <input id="client-edit-phone" value={formPhone} onChange={(e) => setFormPhone(e.target.value)} autoComplete="tel" className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
+                  <input id="client-edit-phone" value={formPhone} onChange={(e) => setFormPhone(formatPhoneInput(e.target.value))} autoComplete="tel" className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]" />
                 </div>
               </div>
               <div className="grid sm:grid-cols-4 gap-4">
