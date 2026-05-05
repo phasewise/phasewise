@@ -193,20 +193,34 @@ export default async function MySchedulePage() {
             {projectGroups.map((g) => {
               const projPct = g.plannedTotal > 0 ? (g.loggedTotal / g.plannedTotal) * 100 : 0;
               return (
-                <div
+                <details
                   key={g.projectId}
-                  className="rounded-2xl border border-[#E2EBE4] bg-white shadow-sm overflow-hidden"
+                  open
+                  className="group rounded-2xl border border-[#E2EBE4] bg-white shadow-sm overflow-hidden"
                 >
-                  <div className="px-6 py-4 border-b border-[#E2EBE4] flex flex-wrap items-center justify-between gap-3">
-                    <div className="min-w-0">
+                  <summary className="px-6 py-4 border-b border-[#E2EBE4] flex flex-wrap items-center justify-between gap-3 cursor-pointer list-none hover:bg-[#F7F9F7] transition-colors">
+                    <div className="flex items-center gap-2 min-w-0">
+                      {/* Disclosure chevron — rotates 90° via CSS when
+                          the <details> is open. Native triangle is
+                          hidden by list-none on summary. */}
+                      <svg
+                        className="w-4 h-4 text-[#6B8C74] flex-shrink-0 transition-transform group-open:rotate-90"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                      </svg>
                       <Link
                         href={`/projects/${g.projectId}`}
                         className="font-semibold text-[#1A2E22] hover:text-[#2D6A4F] transition-colors"
+                        onClick={(e) => e.stopPropagation()}
                       >
                         {g.projectName}
                       </Link>
                       {g.projectNumber && (
-                        <span className="ml-2 text-xs text-[#6B8C74] font-mono">
+                        <span className="text-xs text-[#6B8C74] font-mono">
                           {g.projectNumber}
                         </span>
                       )}
@@ -224,7 +238,7 @@ export default async function MySchedulePage() {
                         </span>
                       )}
                     </div>
-                  </div>
+                  </summary>
                   <div className="divide-y divide-[#F0F2F0]">
                     {g.rows.map((r) => {
                       const remaining = r.plannedHours - r.loggedHours;
@@ -275,7 +289,7 @@ export default async function MySchedulePage() {
                       );
                     })}
                   </div>
-                </div>
+                </details>
               );
             })}
           </div>
