@@ -57,15 +57,28 @@ export default function LeaveAdminClient({ orgPolicy, users, balancesByUser }: P
   ) {
     const num = value === "" ? 0 : Number(value);
     const blank = { annualHours: 0, rolloverCap: 0, mode: "FRONTLOAD" as const, monthlyAccrual: 0, cap: 0 };
+
+    // Auto-sync Annual ↔ Monthly so the user only types one and the
+    // other updates. Annual rounds to whole numbers (people think in
+    // whole annual hours); Monthly keeps 2 decimals (80/12 = 6.67).
+    // The freshly-typed field stays exact; only the computed field
+    // gets the linked update.
+    const linked: Record<string, number> = {};
+    if (field === "annualHours") {
+      linked.monthlyAccrual = Math.round((num / 12) * 100) / 100;
+    } else if (field === "monthlyAccrual") {
+      linked.annualHours = Math.round(num * 12);
+    }
+
     if (target === "org") {
       setPolicy((prev) => ({
         ...prev,
-        [type]: { ...(prev[type] ?? blank), [field]: num },
+        [type]: { ...(prev[type] ?? blank), [field]: num, ...linked },
       }));
     } else {
       setEditOverride((prev) => ({
         ...prev,
-        [type]: { ...(prev[type] ?? blank), [field]: num },
+        [type]: { ...(prev[type] ?? blank), [field]: num, ...linked },
       }));
     }
   }
