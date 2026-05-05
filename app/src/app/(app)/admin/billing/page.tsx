@@ -29,17 +29,26 @@ export default async function AdminBillingPage() {
   // operators can see "X drafts ready" rather than having to know the
   // job runs invisibly. Cron fires on the 5th of every month against
   // the prior calendar month.
+  // Server-format the date as a string to avoid timezone shifting on
+  // the client. `new Date(year, month, day)` creates a Date in the
+  // server's local TZ (UTC on Vercel), which when sent over the wire
+  // and re-parsed in Pacific renders as the previous day.
   const today = new Date();
-  const fifthThisMonth = new Date(today.getFullYear(), today.getMonth(), 5);
-  const nextRunAt =
-    today < fifthThisMonth
-      ? fifthThisMonth
-      : new Date(today.getFullYear(), today.getMonth() + 1, 5);
+  const day = today.getDate();
+  const nextRunYear =
+    day < 5 ? today.getFullYear() : today.getMonth() === 11 ? today.getFullYear() + 1 : today.getFullYear();
+  const nextRunMonthIdx =
+    day < 5 ? today.getMonth() : (today.getMonth() + 1) % 12;
+  const nextRunLabel = new Date(nextRunYear, nextRunMonthIdx, 5).toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
   // Drafts created from the most recent run — anything currently DRAFT
   // is awaiting operator review either way.
   const draftCount = invoices.filter((inv) => inv.status === "DRAFT").length;
   const autoInvoicing = {
-    nextRunAt: nextRunAt.toISOString(),
+    nextRunLabel,
     draftCount,
   };
 

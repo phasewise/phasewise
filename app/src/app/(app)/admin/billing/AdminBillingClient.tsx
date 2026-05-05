@@ -53,8 +53,10 @@ type Props = {
   invoices: Invoice[];
   projects: Array<{ id: string; name: string; projectNumber: string | null }>;
   autoInvoicing: {
-    // ISO string of the next scheduled cron run.
-    nextRunAt: string;
+    // Pre-formatted "Month D, YYYY" string for the next scheduled run.
+    // Pre-formatted server-side to avoid TZ shifting (UTC server →
+    // Pacific client renders one day earlier).
+    nextRunLabel: string;
     // How many DRAFT invoices currently exist (the cron creates these
     // on the 5th of every month for projects with billable hours).
     draftCount: number;
@@ -612,13 +614,7 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
             </p>
             <p className="text-xs text-[#3D5C48] mt-0.5">
               Next run:{" "}
-              <strong>
-                {new Date(autoInvoicing.nextRunAt).toLocaleDateString("en-US", {
-                  month: "long",
-                  day: "numeric",
-                  year: "numeric",
-                })}
-              </strong>
+              <strong>{autoInvoicing.nextRunLabel}</strong>
               {autoInvoicing.draftCount > 0 ? (
                 <>
                   {" · "}
