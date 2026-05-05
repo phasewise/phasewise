@@ -135,6 +135,13 @@ export async function POST(
   const fmtMoney = (n: number) =>
     `$${Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
+  // Loops treats empty-string merge variables as "missing" and rejects
+  // the send with a 400. For variables that may legitimately be empty
+  // (projectNumber, customMessage, periodStart/End), substitute a
+  // single space so Loops sees a value but the email body renders
+  // effectively blank.
+  const blankSafe = (v: string | null | undefined) => (v && v.trim().length > 0 ? v : " ");
+
   const sendResult = await sendTransactional({
     email: recipient,
     transactionalId: LOOPS_TEMPLATES.INVOICE_SEND,
@@ -143,14 +150,14 @@ export async function POST(
       clientName: overrideToName || invoice.project.clientName || "there",
       invoiceNumber: invoice.invoiceNumber,
       projectName: invoice.project.name,
-      projectNumber: invoice.project.projectNumber || "",
+      projectNumber: blankSafe(invoice.project.projectNumber),
       total: fmtMoney(Number(invoice.total)),
       issueDate: fmtDate(invoice.issueDate),
       dueDate: fmtDate(invoice.dueDate),
-      periodStart: invoice.periodStart ? fmtDate(invoice.periodStart) : "",
-      periodEnd: invoice.periodEnd ? fmtDate(invoice.periodEnd) : "",
-      phases: phaseLabels.join(", "),
-      customMessage: customMessage || "",
+      periodStart: blankSafe(invoice.periodStart ? fmtDate(invoice.periodStart) : null),
+      periodEnd: blankSafe(invoice.periodEnd ? fmtDate(invoice.periodEnd) : null),
+      phases: blankSafe(phaseLabels.join(", ")),
+      customMessage: blankSafe(customMessage),
       invoiceUrl,
     },
   });
