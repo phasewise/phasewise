@@ -65,15 +65,20 @@ export default async function PublicInvoicePage({
   }
 
   // Stamp the first time the client opens the link. Lets the firm see
-  // "client viewed at HH:MM" on /admin/billing later. Don't fail the
-  // render if the update errors — the view itself is the user need.
+  // "client viewed at HH:MM" on /admin/billing later. Awaited so the
+  // write actually completes before the response streams (fire-and-
+  // forget promises don't reliably persist in Next.js server
+  // components — they get cancelled when the response closes).
+  // Catches errors so a write hiccup doesn't break the render.
   if (!invoice.viewedAt) {
-    prisma.invoice
-      .update({
+    try {
+      await prisma.invoice.update({
         where: { id: invoice.id },
         data: { viewedAt: new Date() },
-      })
-      .catch(() => {});
+      });
+    } catch {
+      // Swallow — the user need is to see the invoice, not to log views.
+    }
   }
 
   const subtotal = Number(invoice.subtotal);
