@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2, CalendarDays, Copy, Briefcase, Sparkles, Save } from "lucide-react";
 import { LEAVE_TYPE_LABELS, LEAVE_TYPES } from "@/lib/leave";
@@ -80,6 +80,20 @@ export default function TimeSheetClient({
   const [saving, setSaving] = useState<Record<string, boolean>>({});
   const [error, setError] = useState<string | null>(null);
   const [templateBusy, setTemplateBusy] = useState(false);
+
+  // Sync rows + entries when the parent re-renders with a different
+  // week (Prev/Next navigation). useState only seeds on mount, so
+  // without this the client would keep showing whichever week's data
+  // was loaded first. Same bug class as the Week-status-card fix
+  // shipped 2026-05-04 in TimesheetSubmitClient.
+  // Keyed on weekStart so we only resync when the user actually
+  // navigates — pure parent re-renders for save responses won't blow
+  // away in-flight edits.
+  useEffect(() => {
+    setRows(initialRows.length > 0 ? initialRows : []);
+    setEntries(initialEntries);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weekStart]);
 
   async function saveWeekAsTemplate() {
     if (!weekStart || !canManageTemplate || templateBusy) return;
