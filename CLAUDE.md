@@ -600,6 +600,73 @@ Ordered by my estimated value-per-effort. Revisit during the forensic audit.
 - **Automated year-end rollover** — apply the `rolloverCap` automatically when the calendar year changes. Subsumed by the monthly-accrual feature above.
 - **Forensic audit** — top-to-bottom value review once the queue slows down. Rate each feature on value delivered vs maintenance cost. Cut or sharpen anything that doesn't earn its keep.
 
+## Where We Left Off (2026-05-05)
+
+**Status: 🟢 Verification day — all 10 checklist items from yesterday's EOD verified end-to-end. 9 commits, every one a real bug fix or polish improvement caught while clicking through the flows.** Push to production at start of session pushed yesterday's 22 commits live; this morning's 9 went up incrementally as caught.
+
+### Verification checklist results (10 of 10 complete)
+
+| Item | Verified | Issues found and fixed |
+|---|---|---|
+| 1. Billing info | ✅ | Page page now redirects non-OWNER/ADMIN; GET API gates billing fields by role; security disclosure block added; tradeoff note re: printing bank details on invoices; BTTF placeholders replacing personal info; new `Organization.billingInfoUpdatedAt` field stamped only when billing fields change; "Last saved" timestamp surfaced |
+| 2. Send-to-client | ✅ | Loops template `{{#if}}` blocks were misparsed as merge variables — Kevin manually rebuilt the template with single-brace placeholders + the var picker; my API patched to send single-space fallback for empty optional vars (Loops 400s on empty strings). Public viewer's `viewedAt` update was a fire-and-forget — switched to awaited so it actually persists |
+| 3. Auto-invoicing UX surfacing | ✅ | "Next run" date was off by one in Pacific — server-side `new Date(year, month, 5)` on UTC Vercel rendered as previous day in Pacific. Pre-formatted the date as a string server-side. |
+| 4. Approver History | ✅ | Timesheet grid showed empty cells (or wrong rows from a different week) when navigating to past weeks. Same useState-from-prop bug class as yesterday's TimesheetSubmitClient fix. Added `useEffect` keyed on `weekStart` to re-sync `rows` + `entries` |
+| 5. Sidebar badges | ✅ | Empty state confirmed; populated state confirmed organically when Kevin's submitted week put a "1" badge on Time Sheets |
+| 6. Admin timesheet rollup | ✅ | — |
+| 7. Backup supervisor | ✅ | — |
+| 8. My Schedule | ✅ | Added collapsible `<details>` blocks per Kevin's request — projects collapse to header-only when there are many to scan |
+| 9. Apply Schedule | ✅ | Save + apply both verified via DB. Future-week submit-gate (shipped 2026-04-30) caught Kevin during the test — working as designed |
+| 10. Accrued leave | ✅ | Added auto-sync between Annual hours and Monthly accrual (type one, the other updates) per Kevin's request |
+
+### Bonus fixes / polish landed today
+
+- Phone inputs across team / client / profile now format as you type (`5591234567` → `(559) 123-4567`)
+- All 6 schema fields persisted to Supabase (no migrations needed beyond `Organization.billingInfoUpdatedAt`)
+
+### Commits in order (9 total)
+
+1. `923b381` — Billing info: role-gated GET, security disclosure, last-saved timestamp
+2. `8391c0e` — Send invoice: blank-safe Loops merge variables
+3. `e634cd0` — Public invoice viewer: await viewedAt update so it persists
+4. `ecbc8c6` — Auto-invoicing panel: pre-format next-run date server-side
+5. `22bdc0c` — Timesheet: sync rows + entries when navigating between weeks
+6. `58da69b` — Phone inputs: progressive formatting on every keystroke
+7. `3a429b1` — My Schedule: project cards collapsible
+8. `f89ba4e` — Leave admin: auto-sync Annual ↔ Monthly accrual
+
+### Schema changes pushed to Supabase
+
+- `Organization.billingInfoUpdatedAt` (DateTime?, nullable) — stamped only when billing fields change
+
+### Manual change Kevin did
+
+Loops Invoice Send template body — replaced the `{{#if}}` conditionals with bare `{{ variableName }}` references using the variable picker. Saved + republished. Verified working with a real send test.
+
+### Next session
+
+**Tomorrow's first task: Stripe Connect / Payment Links integration.** Last big remaining feature from the 28-item triage list. Three natural stages:
+
+- **Stage A** (~2h): Stripe Connect onboarding (`/settings/payments`, OAuth, store account ID on `Organization`)
+- **Stage B** (~2h): Payment Link creation at invoice creation + "Pay now" button on `/invoice/[token]`
+- **Stage C** (~1h): Stripe webhook handler for `checkout.session.completed` → auto-mark invoice PAID + record `paymentReference` from session ID
+
+Each stage is meaningful alone. Stage A unblocks B unblocks C.
+
+Decisions to confirm at Stage A:
+- Connect type: **Express** (lightest, 5-10 min onboarding for the firm if they have bank info handy)
+- Fee model v1: **firm absorbs** (2.9% + 30¢ card / 0.8% capped at $5 ACH). Surcharge optional later.
+- Card vs ACH: **ACH-default, cards optional** if Stripe Payment Links supports the toggle
+- Live mode from day one (each firm onboards their own real bank account)
+
+Other items still on the deferred / wishlist list (none blocking):
+- Per-firm "Skip printing bank details on invoice" toggle (Kevin asked) — natural fit alongside Stripe Payment Links since the Pay-now button is the privacy-preserving alternative
+- Per-user override editor for accrued-leave fields (org-default works; per-user shape still uses legacy 2-field UI)
+- Apply Schedule Phase 2 — separate template editor UI for tweaking without re-saving from a real week
+- Year-end leave rollover automation
+
+---
+
 ## Where We Left Off (2026-05-04 — final EOD)
 
 **Status: 🟢🟢🟢🟢 Historic day — 21 commits, 25 items shipped from the 28-item smoke-test triage list.** Morning was discovery (smoke test of 4 major flows, 28 items found). Afternoon + evening were execution. **Every wishlist item is now shipped except Stripe Payment Links** — deferred to a fresh session because it requires Stripe Connect (multi-tenant payment routing), which is real 1-2 day scope. The platform is now genuinely cohesive end-to-end across every workflow we tested.
