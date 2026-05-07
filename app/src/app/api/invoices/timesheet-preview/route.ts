@@ -87,19 +87,26 @@ export async function GET(request: Request) {
   // Filter to entries whose week is APPROVED. We do this in memory to
   // avoid a complex SQL — the typical period is ~4 weeks × team size,
   // so the row count is small.
+  //
+  // Important: WeeklyTimesheet.weekStart is Sunday-anchored AND stored
+  // as @db.Date (which Prisma surfaces as UTC midnight). So we compute
+  // the week-start using UTC-day operations, not local. Earlier
+  // implementations used Monday + local midnight, which never matched
+  // any stored row because of (a) the wrong day-of-week anchor and (b)
+  // a 7-8 hour drift in Pacific. The result was every billable entry
+  // being flagged as "not approved" even when the WeeklyTimesheet was
+  // APPROVED — which is the bug Kevin caught on the New Invoice form.
   const weekStartCache = new Map<string, Date>();
   const approvedWeekKeys = new Set<string>();
   function weekStartOf(d: Date): Date {
     const key = d.toISOString().slice(0, 10);
     const cached = weekStartCache.get(key);
     if (cached) return cached;
-    const monday = new Date(d);
-    const day = monday.getDay();
-    const diff = (day + 6) % 7;
-    monday.setDate(monday.getDate() - diff);
-    monday.setHours(0, 0, 0, 0);
-    weekStartCache.set(key, monday);
-    return monday;
+    const sunday = new Date(
+      Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - d.getUTCDay())
+    );
+    weekStartCache.set(key, sunday);
+    return sunday;
   }
 
   const weekKeysNeeded = new Set<string>();
