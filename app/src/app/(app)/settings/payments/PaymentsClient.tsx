@@ -187,19 +187,31 @@ export default function PaymentsClient({
       </div>
 
       {!chargesEnabled && (
-        <div className="mb-5 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-900">
-          Stripe is still verifying your account. Pay-now buttons on invoices will activate once
-          verification completes — usually a few minutes to a few hours after onboarding. You can
-          check progress at{" "}
-          <a
-            href="https://dashboard.stripe.com/account"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline font-medium"
+        <div className="mb-5 rounded-lg bg-amber-50 border border-amber-200 px-3 py-3 text-xs text-amber-900">
+          <p>
+            Stripe is still verifying your account. Pay-now buttons on invoices will activate once
+            verification completes — usually a few minutes to a few hours after onboarding. You can
+            check progress at{" "}
+            <a
+              href="https://dashboard.stripe.com/account"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline font-medium"
+            >
+              dashboard.stripe.com
+            </a>
+            .
+          </p>
+          <p className="mt-2">
+            If Stripe is asking for additional information, click below to finish onboarding.
+          </p>
+          <button
+            type="button"
+            onClick={handleConnect}
+            className="mt-2 inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-semibold bg-amber-600 text-white hover:bg-amber-700 transition-colors"
           >
-            dashboard.stripe.com
-          </a>
-          .
+            Continue verification
+          </button>
         </div>
       )}
 

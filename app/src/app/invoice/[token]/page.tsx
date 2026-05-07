@@ -348,7 +348,7 @@ export default async function PublicInvoicePage({
               )}
               <div className="flex justify-between pt-2 mt-2 border-t border-[#E8EDE9] text-[#1A2E22] font-semibold text-base">
                 <span>{paidAmount > 0 ? "Balance Due" : "Total"}</span>
-                <span>{formatMoney(balanceDue > 0 ? balanceDue : total)}</span>
+                <span>{formatMoney(paidAmount > 0 ? Math.max(0, balanceDue) : total)}</span>
               </div>
             </div>
           </div>

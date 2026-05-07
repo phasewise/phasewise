@@ -1198,6 +1198,26 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
                                 >
                                   {inv.status.replace("_", " ")}
                                 </span>
+                                {/* Status-relevant timestamp under the badge.
+                                    PAID / PARTIALLY_PAID → paid date.
+                                    SENT → sent date. Others stay clean. */}
+                                {(inv.status === "PAID" || inv.status === "PARTIALLY_PAID") && inv.paidDate && (
+                                  <div className="mt-1 text-[10px] text-[#6B8C74]">
+                                    on {new Date(inv.paidDate).toLocaleDateString(undefined, {
+                                      month: "short",
+                                      day: "numeric",
+                                      year: "numeric",
+                                    })}
+                                  </div>
+                                )}
+                                {inv.status === "SENT" && inv.sentAt && (
+                                  <div className="mt-1 text-[10px] text-[#6B8C74]">
+                                    sent {new Date(inv.sentAt).toLocaleDateString(undefined, {
+                                      month: "short",
+                                      day: "numeric",
+                                    })}
+                                  </div>
+                                )}
                               </td>
                               <td className="px-4 sm:px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
                                 <div className="inline-flex items-center gap-2">
