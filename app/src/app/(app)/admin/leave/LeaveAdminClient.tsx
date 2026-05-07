@@ -370,6 +370,11 @@ export default function LeaveAdminClient({ orgPolicy, users, balancesByUser }: P
                           {b.remainingHours.toFixed(0)}h
                           <span className="text-[#A3BEA9] font-normal"> / {b.annualHours}h</span>
                         </div>
+                        {b.carryoverHours > 0 && (
+                          <div className="mt-0.5 text-[10px] text-[#6B8C74]">
+                            +{b.carryoverHours.toFixed(0)}h carried over
+                          </div>
+                        )}
                       </div>
                     );
                   })}

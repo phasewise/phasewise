@@ -100,6 +100,10 @@ export type LeaveBalance = {
   // meaningful when mode=ACCRUED — for FRONTLOAD this equals annualHours).
   mode: LeaveMode;
   accruedHours: number;
+  // Hours carried over from last year, clamped to rolloverCap. 0 when
+  // rolloverCap is 0 (use-it-or-lose-it). The remainingHours number
+  // already includes this carryover.
+  carryoverHours: number;
 };
 
 // Accrued hours so far in the year, as of `date`. Counts COMPLETED
@@ -133,41 +137,67 @@ export async function computeUserLeaveBalances(
 
   const yearStart = new Date(year, 0, 1);
   const yearEnd = new Date(year + 1, 0, 1);
+  const prevYearStart = new Date(year - 1, 0, 1);
 
+  // Pull the current year and the prior year together so we can compute
+  // year-end rollover. Filtering by `gte: prevYearStart` keeps it to one
+  // round-trip; we bucket on the JS side.
   const entries = await prisma.timeEntry.findMany({
     where: {
       userId,
       leaveType: { not: null },
-      date: { gte: yearStart, lt: yearEnd },
+      date: { gte: prevYearStart, lt: yearEnd },
     },
-    select: { leaveType: true, hours: true },
+    select: { leaveType: true, hours: true, date: true },
   });
 
   const usedByType = new Map<LeaveType, number>();
+  const usedPrevByType = new Map<LeaveType, number>();
   for (const entry of entries) {
     if (!entry.leaveType) continue;
-    usedByType.set(
+    const bucket = entry.date >= yearStart ? usedByType : usedPrevByType;
+    bucket.set(
       entry.leaveType,
-      (usedByType.get(entry.leaveType) ?? 0) + Number(entry.hours)
+      (bucket.get(entry.leaveType) ?? 0) + Number(entry.hours)
     );
   }
 
   return LEAVE_TYPES.map((type) => {
     const entry = policy[type];
     const annualHours = entry?.annualHours ?? 0;
+    const rolloverCap = entry?.rolloverCap ?? 0;
     const usedHours = usedByType.get(type) ?? 0;
     const mode: LeaveMode = entry?.mode === "ACCRUED" ? "ACCRUED" : "FRONTLOAD";
     const accruedHours =
       mode === "ACCRUED"
         ? computeAccruedHours(entry?.monthlyAccrual ?? 0, entry?.cap ?? 0)
         : annualHours;
+
+    // Year-end rollover: take whatever was unused last year, clamp it
+    // to rolloverCap, and add it to this year's pool. rolloverCap of 0
+    // means use-it-or-lose-it (HOLIDAY default). rolloverCap of -1
+    // means unlimited carryover. For ACCRUED policies, the prior-year
+    // ceiling is its own annualHours target (we don't re-compute the
+    // monthly accrual for a closed year — by Dec 31 the full annual
+    // amount has been accrued, capped if a `cap` was set).
+    const usedPrev = usedPrevByType.get(type) ?? 0;
+    const grantedPrev = annualHours;
+    const remainingPrev = Math.max(0, grantedPrev - usedPrev);
+    let carryoverHours = 0;
+    if (rolloverCap === -1) {
+      carryoverHours = remainingPrev;
+    } else if (rolloverCap > 0) {
+      carryoverHours = Math.min(remainingPrev, rolloverCap);
+    }
+
     return {
       type,
       annualHours,
       usedHours,
-      remainingHours: accruedHours - usedHours,
+      remainingHours: accruedHours + carryoverHours - usedHours,
       mode,
       accruedHours,
+      carryoverHours,
     };
   });
 }

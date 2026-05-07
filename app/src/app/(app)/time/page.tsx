@@ -375,6 +375,11 @@ export default async function TimePage({
                     />
                   </div>
                 )}
+                {b.carryoverHours > 0 && (
+                  <div className="mt-1 text-[10px] text-[#6B8C74]">
+                    +{b.carryoverHours.toFixed(0)}h carried over
+                  </div>
+                )}
               </div>
             );
           })}
