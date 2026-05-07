@@ -26,10 +26,14 @@ function formatMoney(n: number): string {
 
 export default async function PublicInvoicePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ token: string }>;
+  searchParams: Promise<{ paid?: string }>;
 }) {
   const { token } = await params;
+  const { paid } = await searchParams;
+  const justPaidQs = paid === "1";
 
   const invoice = await prisma.invoice.findUnique({
     where: { publicToken: token },
@@ -60,6 +64,7 @@ export default async function PublicInvoicePage({
       lineItems: true,
     },
   });
+
 
   if (!invoice) {
     notFound();
@@ -102,6 +107,12 @@ export default async function PublicInvoicePage({
       !!org.billingWireAccount ||
       !!org.billingFedId);
 
+  const showPayNow =
+    !isPaid &&
+    invoice.status !== "VOID" &&
+    !!invoice.stripePaymentLinkUrl &&
+    balanceDue > 0;
+
   return (
     <div className="min-h-screen bg-[#F7F9F7] py-12 px-4">
       <div className="max-w-3xl mx-auto">
@@ -111,6 +122,20 @@ export default async function PublicInvoicePage({
             Powered by Phasewise
           </p>
         </div>
+
+        {/* Just-paid banner: shown when the client returns from the
+            Stripe Payment Link redirect. The webhook may not have
+            arrived yet so the invoice can still read as SENT — this
+            reassures them their payment went through. */}
+        {justPaidQs && !isPaid && (
+          <div className="mb-6 rounded-2xl border border-[#52B788]/40 bg-[#F0FAF4] px-5 py-4 text-sm text-[#1A2E22]">
+            <p className="font-semibold mb-1">Payment received — thank you.</p>
+            <p className="text-xs text-[#3D5C48]">
+              We&apos;re processing your payment. The invoice status will update
+              within a few minutes.
+            </p>
+          </div>
+        )}
 
         <div className="bg-white rounded-2xl shadow-sm border border-[#E2EBE4] p-8 sm:p-12">
           {/* Header */}
@@ -350,8 +375,15 @@ export default async function PublicInvoicePage({
             >
               Download PDF
             </a>
-            {/* Pay-now button placeholder — wires up to Stripe Payment
-                Links in a follow-up. Hidden until integration ships. */}
+            {showPayNow && (
+              <a
+                href={invoice.stripePaymentLinkUrl!}
+                className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg text-sm font-semibold bg-[#635BFF] text-white hover:bg-[#5851DB] hover:-translate-y-px transition-all"
+              >
+                Pay {formatMoney(balanceDue)} now
+                <span aria-hidden>→</span>
+              </a>
+            )}
           </div>
         </div>
 

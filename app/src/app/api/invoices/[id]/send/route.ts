@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/supabase/auth";
 import { sendTransactional, LOOPS_TEMPLATES } from "@/lib/loops";
 import { PHASE_LABELS } from "@/lib/constants";
+import { createPaymentLinkForInvoice } from "@/lib/stripe-payment-link";
 
 export const dynamic = "force-dynamic";
 
@@ -73,7 +74,13 @@ export async function POST(
           organizationId: true,
         },
       },
-      organization: { select: { name: true } },
+      organization: {
+        select: {
+          name: true,
+          stripeConnectedAccountId: true,
+          stripeConnectChargesEnabled: true,
+        },
+      },
       lineItems: true,
       timeEntries: {
         include: {
@@ -128,6 +135,50 @@ export async function POST(
   const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || "https://phasewise.io").replace(/\/$/, "");
   const invoiceUrl = `${baseUrl}/invoice/${publicToken}`;
 
+  // Lazy-create a Stripe Payment Link if the firm has Connect onboarded
+  // and this invoice doesn't have one yet. The link goes on the public
+  // viewer + into the email so the client can pay with one click.
+  // Skipped silently if Connect isn't ready, charges aren't enabled,
+  // or the invoice is already paid/voided — the email still works,
+  // it just won't include a Pay-now button.
+  let payNowUrl = invoice.stripePaymentLinkUrl ?? "";
+  const balanceDueCents = Math.round(
+    (Number(invoice.total) - Number(invoice.paidAmount)) * 100
+  );
+  const canCreatePayLink =
+    !payNowUrl &&
+    invoice.organization.stripeConnectedAccountId &&
+    invoice.organization.stripeConnectChargesEnabled &&
+    invoice.status !== "PAID" &&
+    invoice.status !== "VOID" &&
+    balanceDueCents > 0;
+
+  if (canCreatePayLink) {
+    try {
+      const link = await createPaymentLinkForInvoice({
+        invoiceId: invoice.id,
+        invoiceNumber: invoice.invoiceNumber,
+        projectName: invoice.project.name,
+        amountDueCents: balanceDueCents,
+        connectedAccountId: invoice.organization.stripeConnectedAccountId!,
+        publicToken,
+      });
+      await prisma.invoice.update({
+        where: { id: invoice.id },
+        data: {
+          stripePaymentLinkId: link.id,
+          stripePaymentLinkUrl: link.url,
+        },
+      });
+      payNowUrl = link.url;
+    } catch (err) {
+      // Non-fatal — log and continue without a Pay-now button. The
+      // email still goes out; the client can still pay via the
+      // remit-to block printed on the invoice.
+      console.warn("Stripe Payment Link create failed (continuing send):", err);
+    }
+  }
+
   // Format dates + total for the email body. Loops dataVariables only
   // accept strings + numbers, so we pre-format here.
   const fmtDate = (d: Date) =>
@@ -159,6 +210,7 @@ export async function POST(
       phases: blankSafe(phaseLabels.join(", ")),
       customMessage: blankSafe(customMessage),
       invoiceUrl,
+      payNowUrl: blankSafe(payNowUrl),
     },
   });
 
@@ -191,5 +243,6 @@ export async function POST(
     status: updated.status,
     recipient,
     invoiceUrl,
+    payNowUrl: payNowUrl || null,
   });
 }

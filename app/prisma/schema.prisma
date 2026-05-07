@@ -605,6 +605,13 @@ model Invoice {
   // Set the first time the public link is opened. Useful for "client
   // viewed your invoice" surfacing on the firm side.
   viewedAt        DateTime?     @map("viewed_at")
+  // Stripe Payment Link, created lazily on first send when the firm
+  // has Stripe Connect onboarded. The URL gets embedded as the
+  // "Pay now" button on the public viewer page; the ID lets us
+  // deactivate the link if the invoice is voided. Both null when
+  // Connect isn't set up — the viewer just hides the button.
+  stripePaymentLinkId  String?  @map("stripe_payment_link_id")
+  stripePaymentLinkUrl String?  @map("stripe_payment_link_url")
   notes           String?
   createdAt       DateTime      @default(now()) @map("created_at")
   updatedAt       DateTime      @updatedAt @map("updated_at")
