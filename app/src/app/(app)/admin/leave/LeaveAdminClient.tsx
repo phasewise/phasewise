@@ -387,7 +387,7 @@ export default function LeaveAdminClient({ orgPolicy, users, balancesByUser }: P
           onClick={closeOverride}
         >
           <div
-            className="w-full max-w-lg rounded-2xl bg-white shadow-xl"
+            className="w-full max-w-3xl rounded-2xl bg-white shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="px-6 py-5 border-b border-[#E2EBE4]">
@@ -399,42 +399,89 @@ export default function LeaveAdminClient({ orgPolicy, users, balancesByUser }: P
               </p>
             </div>
             <div className="px-6 py-5">
-              <table className="min-w-full text-left text-sm">
-                <thead className="border-b border-[#E2EBE4] text-[#6B8C74]">
-                  <tr>
-                    <th className="px-2 py-2 font-medium">Type</th>
-                    <th className="px-2 py-2 font-medium">Annual</th>
-                    <th className="px-2 py-2 font-medium">Rollover cap</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {LEAVE_TYPES.map((type) => (
-                    <tr key={type} className="border-b border-[#E8EDE9] last:border-0">
-                      <td className="px-2 py-2 text-[#1A2E22]">{LEAVE_TYPE_LABELS[type]}</td>
-                      <td className="px-2 py-2">
-                        <input
-                          type="number"
-                          min="0"
-                          step="1"
-                          value={editOverride[type]?.annualHours ?? 0}
-                          onChange={(e) => updatePolicyField("override", type, "annualHours", e.target.value)}
-                          className="w-24 rounded-lg border border-[#E2EBE4] bg-[#F7F9F7] px-3 py-2 text-sm focus:outline-none focus:border-[#52B788] focus:bg-white"
-                        />
-                      </td>
-                      <td className="px-2 py-2">
-                        <input
-                          type="number"
-                          min="-1"
-                          step="1"
-                          value={editOverride[type]?.rolloverCap ?? 0}
-                          onChange={(e) => updatePolicyField("override", type, "rolloverCap", e.target.value)}
-                          className="w-24 rounded-lg border border-[#E2EBE4] bg-[#F7F9F7] px-3 py-2 text-sm focus:outline-none focus:border-[#52B788] focus:bg-white"
-                        />
-                      </td>
+              <p className="text-xs text-[#6B8C74] mb-3">
+                Same shape as the firm default — Mode (Front-load /
+                Accrued), Annual hours, Monthly accrual, Cap, Rollover
+                cap. Anything left at 0 falls back to the firm value.
+              </p>
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-left text-sm">
+                  <thead className="border-b border-[#E2EBE4] text-[#6B8C74]">
+                    <tr>
+                      <th className="px-2 py-2 font-medium">Type</th>
+                      <th className="px-2 py-2 font-medium">Mode</th>
+                      <th className="px-2 py-2 font-medium">Annual</th>
+                      <th className="px-2 py-2 font-medium">Monthly</th>
+                      <th className="px-2 py-2 font-medium">Cap</th>
+                      <th className="px-2 py-2 font-medium">Rollover</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {LEAVE_TYPES.map((type) => {
+                      const isAccrued = editOverride[type]?.mode === "ACCRUED";
+                      return (
+                        <tr key={type} className="border-b border-[#E8EDE9] last:border-0">
+                          <td className="px-2 py-2 text-[#1A2E22]">{LEAVE_TYPE_LABELS[type]}</td>
+                          <td className="px-2 py-2">
+                            <select
+                              value={editOverride[type]?.mode ?? "FRONTLOAD"}
+                              onChange={(e) =>
+                                updatePolicyMode("override", type, e.target.value as "FRONTLOAD" | "ACCRUED")
+                              }
+                              className="w-28 rounded-lg border border-[#E2EBE4] bg-[#F7F9F7] px-2 py-2 text-sm focus:outline-none focus:border-[#52B788] focus:bg-white"
+                            >
+                              <option value="FRONTLOAD">Front-load</option>
+                              <option value="ACCRUED">Accrued</option>
+                            </select>
+                          </td>
+                          <td className="px-2 py-2">
+                            <input
+                              type="number"
+                              min="0"
+                              step="1"
+                              value={editOverride[type]?.annualHours ?? 0}
+                              onChange={(e) => updatePolicyField("override", type, "annualHours", e.target.value)}
+                              className="w-20 rounded-lg border border-[#E2EBE4] bg-[#F7F9F7] px-2 py-2 text-sm focus:outline-none focus:border-[#52B788] focus:bg-white"
+                            />
+                          </td>
+                          <td className="px-2 py-2">
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={editOverride[type]?.monthlyAccrual ?? 0}
+                              disabled={!isAccrued}
+                              onChange={(e) => updatePolicyField("override", type, "monthlyAccrual", e.target.value)}
+                              className="w-20 rounded-lg border border-[#E2EBE4] bg-[#F7F9F7] px-2 py-2 text-sm focus:outline-none focus:border-[#52B788] focus:bg-white disabled:bg-[#F0F2F0] disabled:text-[#A3BEA9]"
+                            />
+                          </td>
+                          <td className="px-2 py-2">
+                            <input
+                              type="number"
+                              min="0"
+                              step="1"
+                              value={editOverride[type]?.cap ?? 0}
+                              disabled={!isAccrued}
+                              onChange={(e) => updatePolicyField("override", type, "cap", e.target.value)}
+                              className="w-20 rounded-lg border border-[#E2EBE4] bg-[#F7F9F7] px-2 py-2 text-sm focus:outline-none focus:border-[#52B788] focus:bg-white disabled:bg-[#F0F2F0] disabled:text-[#A3BEA9]"
+                            />
+                          </td>
+                          <td className="px-2 py-2">
+                            <input
+                              type="number"
+                              min="-1"
+                              step="1"
+                              value={editOverride[type]?.rolloverCap ?? 0}
+                              onChange={(e) => updatePolicyField("override", type, "rolloverCap", e.target.value)}
+                              className="w-20 rounded-lg border border-[#E2EBE4] bg-[#F7F9F7] px-2 py-2 text-sm focus:outline-none focus:border-[#52B788] focus:bg-white"
+                            />
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
             <div className="px-6 py-4 border-t border-[#E2EBE4] flex items-center justify-end gap-3">
               <button
