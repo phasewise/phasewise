@@ -242,7 +242,7 @@ All variables are set in **Vercel project Settings → Environment Variables** A
 | `LOOPS_TEMPLATE_BUDGET_ALERT` | ✅ | `cmo1ywy7r074g0iuqkp0yntnw` (branded 2026-04-16) |
 | `LOOPS_TEMPLATE_INVITE` | ✅ | `cmonelbq000qv0izk52er5uom` (created 2026-05-01) |
 | `LOOPS_TEMPLATE_INVOICE_SEND` | ✅ | `cmond6ahz02pu0i107sqfg8cz` (created 2026-05-01) |
-| `LOOPS_TEMPLATE_TIMESHEET_NUDGE` | ⏳ | Create in Loops dashboard. Vars: `recipientName`, `senderName`, `firmName`, `weekLabel`, `timesheetUrl`. Used by `/api/timesheets/nudge` to remind staff to submit a DRAFT week. |
+| `LOOPS_TEMPLATE_TIMESHEET_NUDGE` | ✅ | `cmovy41sk00uk0iykpd580404` (created 2026-05-07) |
 
 **Brand sender update — 2026-05-01:** all transactional templates migrated from `kgallo22@mail.phasewise.io` (personal-feeling) to `hello@mail.phasewise.io` (brand-aligned, matches Workspace alias). Reply-To changed from `kgallo22@gmail.com` to `hello@phasewise.io`. Maintains anonymity-of-brand for invoice + invite recipients. Loops has no global default-sender setting; each template was edited individually. Templates updated: Welcome, Trial Started (branded), Subscription Canceled (branded), Payment Failed (branded), Submittal Reminder (branded), Budget Alert (branded), Invite, Invoice Send.
 
@@ -601,7 +601,105 @@ Ordered by my estimated value-per-effort. Revisit during the forensic audit.
 - ✅ **Automated year-end rollover** (shipped 2026-05-07, commit `d831e5e`) — `computeUserLeaveBalances` pulls leave entries for `[prevYearStart, yearEnd)` in one query, buckets by year on the JS side, and adds `min(remainingPrev, rolloverCap)` to this year's available pool. New `LeaveBalance.carryoverHours` field surfaces the amount; admin leave page + timesheet balance widget render "+Xh carried over" beneath the balance number. `rolloverCap=0` keeps use-it-or-lose-it (HOLIDAY default), `>0` clamps, `-1` is unlimited. ACCRUED policies use their own annualHours as the prior-year ceiling — by Dec 31 the full annual amount has been accrued (capped if a `cap` was set), so the formula works for both modes without re-running month-by-month accrual against a closed year. New Year's Day flips and the rollover computes itself off the prior year's actual usage.
 - **Forensic audit** — top-to-bottom value review once the queue slows down. Rate each feature on value delivered vs maintenance cost. Cut or sharpen anything that doesn't earn its keep.
 
-## Where We Left Off (2026-05-07)
+## Where We Left Off (2026-05-07 EOD — manual session)
+
+**Status: 🟢🟢 Marathon day — picked up where the morning's autonomous session left off. 7 more commits, full E2E test of Stripe Connect on local sandbox, Account Links rewrite (Stripe gates Express OAuth for new platforms), Nudge-to-submit feature shipped, and four bug fixes caught while clicking through the new flows.** Live mode Stripe Connect activation deferred — Stripe's wizard gates it behind unrelated platform setup (Tax registration, Recurring payments, Invoices wizard). No urgency since we have no current users.
+
+### Commits in order (7 today, on top of morning's 6)
+
+7. `dd97ab5` — **Stripe Connect: switch to Express OAuth endpoint.** Caught after the legacy `/oauth/authorize` URL returned "Cannot onboard via express oauth due to gated access." (Later replaced — see #8.)
+8. `9f69454` — **Stripe Connect: rewrite OAuth → Account Links API.** Sandbox onboarding still failed with the gated-access error. Stripe deprecated Express OAuth for platforms created post-2024. Modern flow is `stripe.accounts.create({type: "express"})` + `stripe.accountLinks.create()`. Three route rewrites:
+   - `/api/stripe/connect/start`: creates an Express account (storing `acct_*` on org so onboarding can resume), then mints a one-shot AccountLink and redirects to Stripe's hosted onboarding.
+   - `/api/stripe/connect/callback`: no more code exchange. Refetches the stored account, updates `chargesEnabled`, stamps `connectedAt` first time charges go live.
+   - `/api/stripe/connect/disconnect`: drops `stripe.oauth.deauthorize()` (only valid for OAuth). Just clears local fields.
+   - The Stripe dashboard's OAuth redirect-URI whitelist is no longer load-bearing but harmless to leave in place.
+9. `8523312` — **Billing + invoice viewer polish.** Three small but meaningful fixes:
+   - `/admin/billing`: status badge now has a date chip beneath it. PAID → "on May 7, 2026" (paidDate). SENT → "sent May 7" (sentAt). DRAFT/OVERDUE/VOID stay clean.
+   - `/invoice/[token]`: fix Balance Due showing the full total instead of $0 when paid in full. Math was `balanceDue > 0 ? balanceDue : total` which falls through to `total` when balance is exactly 0. Now uses `Math.max(0, balanceDue)`.
+   - `/settings/payments`: "Continue verification" button when `chargesEnabled = false`. Sends user back through `/api/stripe/connect/start` which mints a fresh AccountLink for the existing `acct_*`. Closes the UX dead-end where incomplete onboarding had no recovery path.
+10. `4672f76` — **Invoice timesheet warning: split DRAFT vs SUBMITTED.** Old copy said "X timesheets aren't approved yet" with a single "Review pending timesheets" link. Misleading — DRAFT rows can't be approved (the staff member hasn't submitted yet). New copy splits the count: "Y not yet submitted by their owner — ask them to submit..." vs "Z waiting for your review at /time/approve...".
+11. `5b14152` — **Invoice timesheet preview: fix week-start anchor + UTC drift (attempt 1).** Discovered the warning was firing for already-approved timesheets. Root cause: `weekStartOf` used Monday-anchored + `setHours(0,0,0,0)` (local midnight). But `WeeklyTimesheet.weekStart` is `@db.Date` (UTC midnight). 7-8 hour drift in Pacific killed every join. First attempt mistakenly anchored Sunday.
+12. `abaa911` — **Invoice timesheet warning: Monday anchor + UTC display (correct fix).** Approver History clearly shows Monday-Sunday weeks ("Mar 30 – Apr 5"). Fixed `weekStartOf` to compute Monday in UTC. Also fixed display TZ shift: `new Date("2026-04-06").toLocaleDateString()` in Pacific renders as "Apr 5" because JS parses bare ISO date strings as UTC midnight. Added `timeZone: "UTC"` to the formatter.
+13. `79565b8` — **Nudge to submit: one-click reminder for unsubmitted timesheets.** Closes the operator workflow on New Invoice form. New `POST /api/timesheets/nudge` validates org + role (OWNER/ADMIN/SUPERVISOR), sends Loops email with `recipientName`, `senderName`, `firmName`, `weekLabel`, `timesheetUrl`. Email deep-links to `/time?week=YYYY-MM-DD`. UI: "Nudge to submit" button next to each DRAFT warning row. Inline state per row keyed on `userId|weekStart`. Sticky "✓ Nudge sent" after success. New `LOOPS_TEMPLATE_TIMESHEET_NUDGE` env var (`cmovy41sk00uk0iykpd580404`) — set on All Environments. No cooldown / dedup yet.
+
+### Stripe Connect — what's live RIGHT NOW vs deferred
+
+**Live in Production for ALL users (auto-deployed via main):**
+- All Account Links code paths (`/api/stripe/connect/{start,callback,disconnect,webhook}`)
+- `/settings/payments` page (renders gracefully without env vars — shows setup-required warning)
+- Pay-now button on public invoice viewer (renders only when invoice has a `stripePaymentLinkUrl`)
+- All today's bug fixes (date chip, balance fix, warning split, week-start anchor, Nudge feature)
+- Loops Nudge template — fully working in Production (template ID set on All Environments)
+
+**Sandbox-only (NOT live for real customers):**
+- `STRIPE_CONNECT_CLIENT_ID` (`ca_UTQgVeNXhh4n9v7KYC659NttqsHufaZO`) — Pre-Production only
+- `STRIPE_CONNECT_WEBHOOK_SECRET` (`whsec_GYSI...`) — Pre-Production only
+- Production env vars for live mode are **NOT SET**. A real user visiting https://phasewise.io/settings/payments will see the setup-required warning.
+
+**Why live activation was deferred:** Stripe's live-mode Connect setup wizard gates activation behind completing the entire Setup guide — Tax registration ($/per-transaction fees), Recurring payments wizard (irrelevant to our model), Invoices wizard, Stripe profile (would expose Kevin's residential address publicly), and "Go live" review. None of these are technically required for Connect to function, but Stripe blocks the OAuth client ID and webhook setup until they're done. Decided to defer rather than fill placeholder data dishonestly. No urgency since we have no current customers — can revisit when there's a real first user lined up.
+
+### Today's full E2E test (sandbox, on localhost)
+
+Verified working end-to-end:
+1. ✅ `/settings/payments` → Connect Stripe button → Account Links onboarding (after rewrite)
+2. ✅ Express account onboarding (filled with test data; needed `000000000` SSN test value to clear Stripe identity verification)
+3. ✅ Charges enabled in sandbox
+4. ✅ Send invoice → Stripe Payment Link auto-created on connected account
+5. ✅ Loops email arrived with both Pay-now (Stripe purple) and View & Download (black) buttons
+6. ✅ Test card `4242 4242 4242 4242` paid through Stripe Checkout
+7. ✅ Webhook fired (`stripe listen --forward-connect-to localhost:3000/api/stripe/connect/webhook`)
+8. ✅ Invoice auto-flipped to PAID with `paidAmount`, `paymentMethod`, `paymentReference` populated
+9. ✅ Idempotency dedup confirmed (Stripe retried; `ProcessedStripeEvent` constraint caught it)
+
+### Bonus catches worth remembering
+
+- The **timesheet preview week-start bug** had been silently broken since day one. Any firm that ever used "Pull from timesheets" would have seen ghost warnings urging them to chase already-approved timesheets — eroding trust in the warning system specifically.
+- **Stripe deprecated Express OAuth** for platforms created post-2024. The error message ("Cannot onboard via express oauth due to gated access") is the only surface signal. Worth documenting for any future Connect work.
+- The **display TZ shift** affecting "Week of {date}" rendering was a JS Date-parsing gotcha — bare ISO date strings are parsed as UTC midnight, then `toLocaleDateString` shifts to local. Fix was `timeZone: "UTC"`.
+
+### Operational reminders for tomorrow
+
+**Stripe CLI session:** auth expires in 90 days from 2026-05-07. CLI alias is per-session — to use `stripe` again, run:
+
+```powershell
+Set-Alias -Name stripe -Value "C:\Users\Gallo Beelink 1\AppData\Local\Microsoft\WinGet\Packages\Stripe.StripeCli_Microsoft.Winget.Source_8wekyb3d8bbwe\stripe.exe"
+```
+
+To resume webhook forwarding for sandbox testing:
+
+```powershell
+stripe listen --events checkout.session.completed --forward-connect-to localhost:3000/api/stripe/connect/webhook
+```
+
+Webhook signing secret is deterministic per CLI auth — `whsec_b5db53101f3a183941196188fef3a4163837ca8a7086c014d7cc729cc5c7684c` (already in local `.env`). PATH still not permanently fixed.
+
+**Stripe sandbox redirects:** OAuth redirect URI whitelist now includes BOTH `https://phasewise.io/api/stripe/connect/callback` AND `http://localhost:3000/api/stripe/connect/callback`. Account Links don't actually use the whitelist, but it's harmless to keep.
+
+**G2 Digital Markets rejection:** listing was rejected today with the boilerplate "doesn't currently meet our Product Listing Guidelines" — no specific reason given. Action: click the "Contact Us" link in the rejection email and ask which guideline specifically failed. Fix and resubmit when known.
+
+### Tomorrow's options
+
+**1. Live mode Stripe Connect activation (continued).** If you want to push through Stripe's setup wizard, plan to:
+- Register a CA tax registration with placeholder info (or skip if Stripe Tax has a "monitoring only" option)
+- Walk through the recurring payments wizard with Phasewise's existing $99/$199/$349 tiers
+- Skip the Stripe profile (would expose residential address — defer until PO Box / virtual mailbox in place)
+- Hit "Go live" — may trigger 1-3 business day Stripe review of the Connect platform
+
+**2. Loops "payment received" template (Stage D polish).** Mirror today's Nudge template work. Vars: `firmOwnerName`, `firmName`, `clientName`, `invoiceNumber`, `amountPaid`, `paymentMethod`, `paidDate`. Sent to firm OWNER when their connected account receives a payment. Add `LOOPS_TEMPLATE_PAYMENT_RECEIVED` env var, extend `/api/stripe/connect/webhook` to fire it after the PAID flip.
+
+**3. Modal sweep.** Replace remaining `confirm()` / `prompt()` / `alert()` calls site-wide with branded React modals. ~9 files, ~1-2 hr.
+
+**4. Apply Schedule Phase 2.** Standalone editor UI for the saved weekly template (vs. current "save current week as template" capture-only flow).
+
+**5. Send-invoice default message copy fix.** Modal default still says "is attached" but the new flow sends a link. 1-line fix: `Hi — invoice for last month is ready for review.`
+
+**6. Forensic audit.** Top-to-bottom feature review.
+
+Recommended order: #2 (Loops payment-received) since it's the natural completion of Stripe Connect work and uses the same Loops template-creation muscle memory you exercised today with Nudge. Then any of the others as time permits.
+
+---
+
+## Where We Left Off (2026-05-07 — autonomous morning session)
 
 **Status: 🟢 Autonomous solo session — 5 commits shipped covering the entire Stripe Connect arc + the last two leave-rollover follow-ups. Kevin was AFK; the queue was bounded to "things that don't need user input or external dashboard access."** Today closed out 4 of the 6 items on yesterday's "deferred / wishlist" list.
 
