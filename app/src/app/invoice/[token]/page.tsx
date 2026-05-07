@@ -54,6 +54,7 @@ export default async function PublicInvoicePage({
           billingAchAccount: true,
           billingWireRouting: true,
           billingWireAccount: true,
+          printPaymentDetailsOnInvoice: true,
         },
       },
       lineItems: true,
@@ -90,13 +91,16 @@ export default async function PublicInvoicePage({
   const isPaid = invoice.status === "PAID" || balanceDue <= 0;
 
   const org = invoice.organization;
+  // Same gate as the PDF renderer — show the remit-to block only when
+  // configured AND the firm hasn't opted out via the toggle.
   const hasRemit =
-    !!org.billingMailingAddress ||
-    !!org.billingAchRouting ||
-    !!org.billingAchAccount ||
-    !!org.billingWireRouting ||
-    !!org.billingWireAccount ||
-    !!org.billingFedId;
+    org.printPaymentDetailsOnInvoice !== false &&
+    (!!org.billingMailingAddress ||
+      !!org.billingAchRouting ||
+      !!org.billingAchAccount ||
+      !!org.billingWireRouting ||
+      !!org.billingWireAccount ||
+      !!org.billingFedId);
 
   return (
     <div className="min-h-screen bg-[#F7F9F7] py-12 px-4">

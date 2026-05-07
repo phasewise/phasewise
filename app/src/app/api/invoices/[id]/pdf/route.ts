@@ -47,6 +47,7 @@ export async function GET(
           billingAchAccount: true,
           billingWireRouting: true,
           billingWireAccount: true,
+          printPaymentDetailsOnInvoice: true,
         },
       },
       lineItems: true,
@@ -116,6 +117,7 @@ export async function GET(
       billingAchAccount: invoice.organization.billingAchAccount,
       billingWireRouting: invoice.organization.billingWireRouting,
       billingWireAccount: invoice.organization.billingWireAccount,
+      printPaymentDetailsOnInvoice: invoice.organization.printPaymentDetailsOnInvoice,
     },
   });
 

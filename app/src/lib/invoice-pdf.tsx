@@ -52,12 +52,16 @@ type InvoicePdfInput = {
     // Remit-to block — all optional. Whatever's set renders. Renders
     // a "Please Remit Payment Via" section in the upper-right of the
     // header, matching the Blankinship/Bowman LA invoice convention.
+    // Skipped entirely when printPaymentDetailsOnInvoice is false
+    // (firm has opted for the privacy-preserving "hosted Pay-now"
+    // pattern — Stripe Payment Links, etc.).
     billingMailingAddress?: string | null;
     billingFedId?: string | null;
     billingAchRouting?: string | null;
     billingAchAccount?: string | null;
     billingWireRouting?: string | null;
     billingWireAccount?: string | null;
+    printPaymentDetailsOnInvoice?: boolean;
   };
 };
 
@@ -232,16 +236,18 @@ function InvoiceDocument({ data }: { data: InvoicePdfInput }) {
   const balanceDue = Math.max(0, data.total - data.paidAmount);
 
   // Build the remit-to block once — only render the section if at
-  // least one of mailing/ach/wire is configured. Fed ID rides along
+  // least one of mailing/ach/wire is configured AND the firm hasn't
+  // opted out via the print-on-invoice toggle. Fed ID rides along
   // in the same block since clients reference it together when
   // setting up payment.
   const hasRemit =
-    !!data.organization.billingMailingAddress ||
-    !!data.organization.billingAchRouting ||
-    !!data.organization.billingAchAccount ||
-    !!data.organization.billingWireRouting ||
-    !!data.organization.billingWireAccount ||
-    !!data.organization.billingFedId;
+    data.organization.printPaymentDetailsOnInvoice !== false &&
+    (!!data.organization.billingMailingAddress ||
+      !!data.organization.billingAchRouting ||
+      !!data.organization.billingAchAccount ||
+      !!data.organization.billingWireRouting ||
+      !!data.organization.billingWireAccount ||
+      !!data.organization.billingFedId);
 
   return (
     <Document>

@@ -40,6 +40,7 @@ export async function GET() {
         billingWireRouting: canSeeBilling,
         billingWireAccount: canSeeBilling,
         billingInfoUpdatedAt: canSeeBilling,
+        printPaymentDetailsOnInvoice: canSeeBilling,
       },
     });
 
@@ -88,6 +89,7 @@ export async function PATCH(request: Request) {
       billingAchAccount,
       billingWireRouting,
       billingWireAccount,
+      printPaymentDetailsOnInvoice,
     } = body as {
       projectNumberPrefix?: string;
       projectNumberNext?: number;
@@ -102,6 +104,7 @@ export async function PATCH(request: Request) {
       billingAchAccount?: string | null;
       billingWireRouting?: string | null;
       billingWireAccount?: string | null;
+      printPaymentDetailsOnInvoice?: boolean;
     };
 
     const data: Record<string, unknown> = {};
@@ -171,6 +174,10 @@ export async function PATCH(request: Request) {
       data.billingWireAccount = cleanString(billingWireAccount);
       billingTouched = true;
     }
+    if (printPaymentDetailsOnInvoice !== undefined) {
+      data.printPaymentDetailsOnInvoice = !!printPaymentDetailsOnInvoice;
+      billingTouched = true;
+    }
     // Stamp a billing-specific timestamp so the form can show "Last
     // saved" without false-refreshing whenever an unrelated org
     // setting (project numbering, invoice format, etc.) changes.
@@ -196,6 +203,7 @@ export async function PATCH(request: Request) {
         billingWireRouting: true,
         billingWireAccount: true,
         billingInfoUpdatedAt: true,
+        printPaymentDetailsOnInvoice: true,
       },
     });
 

@@ -15,6 +15,10 @@ type Props = {
     // ISO string of when these fields were last touched, or null if
     // never set.
     billingInfoUpdatedAt: string | null;
+    // Whether the Mail/ACH/Wire/Fed-ID block prints on invoices.
+    // Default is true (industry-standard B2B); flip off when paired
+    // with a hosted "Pay now" link so bank details stay private.
+    printPaymentDetailsOnInvoice: boolean;
   };
 };
 
@@ -37,6 +41,7 @@ export default function BillingInfoForm({ initial }: Props) {
   const [achAccount, setAchAccount] = useState(initial.billingAchAccount);
   const [wireRouting, setWireRouting] = useState(initial.billingWireRouting);
   const [wireAccount, setWireAccount] = useState(initial.billingWireAccount);
+  const [printOnInvoice, setPrintOnInvoice] = useState(initial.printPaymentDetailsOnInvoice);
   const [lastSavedIso, setLastSavedIso] = useState(initial.billingInfoUpdatedAt);
 
   const [saving, setSaving] = useState(false);
@@ -58,6 +63,7 @@ export default function BillingInfoForm({ initial }: Props) {
         billingAchAccount: achAccount,
         billingWireRouting: wireRouting,
         billingWireAccount: wireAccount,
+        printPaymentDetailsOnInvoice: printOnInvoice,
       }),
     });
 
@@ -136,6 +142,37 @@ export default function BillingInfoForm({ initial }: Props) {
             </p>
           </div>
         </div>
+      </div>
+
+      {/* Print-on-invoice toggle. Default ON keeps current behaviour;
+          firms paired with a hosted Pay-now link (Stripe Payment Links,
+          coming soon) can flip it off so the invoice doesn't carry
+          their bank info. The toggle still saves; the rendering
+          downstream (PDF + public viewer) reads the flag. */}
+      <div className="mb-6 rounded-2xl border border-[#E2EBE4] bg-white p-5 flex items-start justify-between gap-4">
+        <div className="flex-1">
+          <p className="text-sm font-semibold text-[#1A2E22]">
+            Print payment details on every invoice
+          </p>
+          <p className="text-xs text-[#6B8C74] mt-1 leading-relaxed">
+            When ON (default), the Mail/ACH/Wire/Fed-ID block above renders on every invoice PDF and the public invoice page. When OFF, the invoice shows no bank info — pair with a hosted Pay-now link (Stripe Payment Links, coming soon) so clients still have a way to pay.
+          </p>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={printOnInvoice}
+          onClick={() => setPrintOnInvoice((v) => !v)}
+          className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors flex-shrink-0 ${
+            printOnInvoice ? "bg-[#2D6A4F]" : "bg-[#E2EBE4]"
+          }`}
+        >
+          <span
+            className={`inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
+              printOnInvoice ? "translate-x-6" : "translate-x-1"
+            }`}
+          />
+        </button>
       </div>
 
       <div className="space-y-6">

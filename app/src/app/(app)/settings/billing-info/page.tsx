@@ -26,6 +26,7 @@ export default async function BillingInfoPage() {
       billingWireRouting: true,
       billingWireAccount: true,
       billingInfoUpdatedAt: true,
+      printPaymentDetailsOnInvoice: true,
     },
   });
 
@@ -39,6 +40,7 @@ export default async function BillingInfoPage() {
         billingWireRouting: org?.billingWireRouting ?? "",
         billingWireAccount: org?.billingWireAccount ?? "",
         billingInfoUpdatedAt: org?.billingInfoUpdatedAt?.toISOString() ?? null,
+        printPaymentDetailsOnInvoice: org?.printPaymentDetailsOnInvoice ?? true,
       }}
     />
   );

@@ -59,6 +59,13 @@ model Organization {
   // hint — meaningfully more accurate than the org's record-wide
   // updatedAt, which refreshes for any unrelated org change.
   billingInfoUpdatedAt     DateTime?           @map("billing_info_updated_at")
+  // Whether the Mail/ACH/Wire/Fed-ID block prints on the invoice PDF
+  // and renders on the public /invoice/[token] page. Default ON for
+  // backward compatibility (industry-standard B2B behaviour). Firms
+  // who'd rather keep bank details private can flip this off — best
+  // paired with Stripe Payment Links so clients still have a way to
+  // pay without seeing routing/account numbers on the invoice.
+  printPaymentDetailsOnInvoice Boolean         @default(true) @map("print_payment_details_on_invoice")
   createdAt                DateTime            @default(now()) @map("created_at")
   updatedAt                DateTime            @updatedAt @map("updated_at")
 
