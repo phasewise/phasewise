@@ -936,40 +936,53 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
               {pullSummary}
             </div>
           )}
-          {pullWarnings.length > 0 && (
-            <div className="mb-4 rounded-lg bg-amber-50 border border-amber-300 p-3 text-xs text-amber-900">
-              <div className="font-semibold mb-1.5">
-                ⚠ {pullWarnings.length} timesheet{pullWarnings.length === 1 ? "" : "s"} in this period {pullWarnings.length === 1 ? "isn't" : "aren't"} approved yet
+          {pullWarnings.length > 0 && (() => {
+            // Split warnings by state so we can phrase the headline + CTA
+            // honestly. DRAFT rows can't be approved — they're waiting on
+            // the staff member. Only SUBMITTED / SENT_BACK actually land
+            // on the approver's page.
+            const draftRows = pullWarnings.filter((w) => w.status === "DRAFT");
+            const submittedRows = pullWarnings.filter(
+              (w) => w.status === "SUBMITTED" || w.status === "SENT_BACK"
+            );
+            return (
+              <div className="mb-4 rounded-lg bg-amber-50 border border-amber-300 p-3 text-xs text-amber-900">
+                <div className="font-semibold mb-1.5">
+                  ⚠ {pullWarnings.length} timesheet{pullWarnings.length === 1 ? "" : "s"} in this period need attention before invoicing
+                </div>
+                <div className="text-amber-800 mb-2 space-y-0.5">
+                  {draftRows.length > 0 && (
+                    <div>
+                      <strong>{draftRows.length} not yet submitted</strong> by their owner — ask them to submit so the hours can be approved and invoiced.
+                    </div>
+                  )}
+                  {submittedRows.length > 0 && (
+                    <div>
+                      <strong>{submittedRows.length} waiting for your review</strong> — approve them at <Link href="/time/approve" className="underline hover:text-amber-700">/time/approve</Link> before invoicing.
+                    </div>
+                  )}
+                </div>
+                <ul className="space-y-1">
+                  {pullWarnings.map((w) => (
+                    <li key={`${w.userId}|${w.weekStart}`} className="flex items-baseline gap-2">
+                      <span className="font-medium">{w.userName}</span>
+                      <span className="text-amber-700">
+                        — Week of {new Date(w.weekStart).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+                      </span>
+                      <span className="rounded-full px-1.5 py-0.5 bg-amber-100 border border-amber-300 text-amber-900 font-mono text-[10px]">
+                        {w.status === "SUBMITTED"
+                          ? "SUBMITTED — waiting for review"
+                          : w.status === "SENT_BACK"
+                          ? "SENT BACK — awaiting re-submission"
+                          : "DRAFT — not yet submitted"}
+                      </span>
+                      <span className="text-amber-700">· {w.hours.toFixed(2)} hrs</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <div className="text-amber-800 mb-2">
-                Their hours weren&apos;t added to the line items. Review these before invoicing to avoid missing billable hours.
-              </div>
-              <ul className="space-y-1">
-                {pullWarnings.map((w) => (
-                  <li key={`${w.userId}|${w.weekStart}`} className="flex items-baseline gap-2">
-                    <span className="font-medium">{w.userName}</span>
-                    <span className="text-amber-700">
-                      — Week of {new Date(w.weekStart).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
-                    </span>
-                    <span className="rounded-full px-1.5 py-0.5 bg-amber-100 border border-amber-300 text-amber-900 font-mono text-[10px]">
-                      {w.status === "SUBMITTED"
-                        ? "SUBMITTED — waiting for review"
-                        : w.status === "SENT_BACK"
-                        ? "SENT BACK — awaiting re-submission"
-                        : "DRAFT — not yet submitted"}
-                    </span>
-                    <span className="text-amber-700">· {w.hours.toFixed(2)} hrs</span>
-                  </li>
-                ))}
-              </ul>
-              <Link
-                href="/time/approve"
-                className="inline-block mt-2 text-amber-900 underline hover:text-amber-700"
-              >
-                Review pending timesheets →
-              </Link>
-            </div>
-          )}
+            );
+          })()}
 
           {/* Line items */}
           <div className="mb-4">
