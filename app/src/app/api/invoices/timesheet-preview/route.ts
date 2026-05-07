@@ -88,25 +88,26 @@ export async function GET(request: Request) {
   // avoid a complex SQL — the typical period is ~4 weeks × team size,
   // so the row count is small.
   //
-  // Important: WeeklyTimesheet.weekStart is Sunday-anchored AND stored
-  // as @db.Date (which Prisma surfaces as UTC midnight). So we compute
-  // the week-start using UTC-day operations, not local. Earlier
-  // implementations used Monday + local midnight, which never matched
-  // any stored row because of (a) the wrong day-of-week anchor and (b)
-  // a 7-8 hour drift in Pacific. The result was every billable entry
-  // being flagged as "not approved" even when the WeeklyTimesheet was
-  // APPROVED — which is the bug Kevin caught on the New Invoice form.
+  // Important: WeeklyTimesheet.weekStart is Monday-anchored (visible in
+  // the approver History — "Mar 30 - Apr 5", "Apr 6 - Apr 12", etc.)
+  // AND stored as @db.Date which Prisma surfaces as UTC midnight. We
+  // compute using UTC-day operations to match the stored format byte-
+  // for-byte. The original implementation used local-midnight Monday,
+  // which differed from the stored UTC midnight by 7-8 hours in Pacific
+  // and silently failed every join.
   const weekStartCache = new Map<string, Date>();
   const approvedWeekKeys = new Set<string>();
   function weekStartOf(d: Date): Date {
     const key = d.toISOString().slice(0, 10);
     const cached = weekStartCache.get(key);
     if (cached) return cached;
-    const sunday = new Date(
-      Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - d.getUTCDay())
+    const day = d.getUTCDay(); // 0=Sun ... 6=Sat
+    const diff = (day + 6) % 7; // days back to Monday
+    const monday = new Date(
+      Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - diff)
     );
-    weekStartCache.set(key, sunday);
-    return sunday;
+    weekStartCache.set(key, monday);
+    return monday;
   }
 
   const weekKeysNeeded = new Set<string>();

@@ -967,7 +967,7 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
                     <li key={`${w.userId}|${w.weekStart}`} className="flex items-baseline gap-2">
                       <span className="font-medium">{w.userName}</span>
                       <span className="text-amber-700">
-                        — Week of {new Date(w.weekStart).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+                        — Week of {new Date(w.weekStart).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })}
                       </span>
                       <span className="rounded-full px-1.5 py-0.5 bg-amber-100 border border-amber-300 text-amber-900 font-mono text-[10px]">
                         {w.status === "SUBMITTED"
