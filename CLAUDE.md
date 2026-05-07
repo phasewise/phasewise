@@ -242,6 +242,7 @@ All variables are set in **Vercel project Settings → Environment Variables** A
 | `LOOPS_TEMPLATE_BUDGET_ALERT` | ✅ | `cmo1ywy7r074g0iuqkp0yntnw` (branded 2026-04-16) |
 | `LOOPS_TEMPLATE_INVITE` | ✅ | `cmonelbq000qv0izk52er5uom` (created 2026-05-01) |
 | `LOOPS_TEMPLATE_INVOICE_SEND` | ✅ | `cmond6ahz02pu0i107sqfg8cz` (created 2026-05-01) |
+| `LOOPS_TEMPLATE_TIMESHEET_NUDGE` | ⏳ | Create in Loops dashboard. Vars: `recipientName`, `senderName`, `firmName`, `weekLabel`, `timesheetUrl`. Used by `/api/timesheets/nudge` to remind staff to submit a DRAFT week. |
 
 **Brand sender update — 2026-05-01:** all transactional templates migrated from `kgallo22@mail.phasewise.io` (personal-feeling) to `hello@mail.phasewise.io` (brand-aligned, matches Workspace alias). Reply-To changed from `kgallo22@gmail.com` to `hello@phasewise.io`. Maintains anonymity-of-brand for invoice + invite recipients. Loops has no global default-sender setting; each template was edited individually. Templates updated: Welcome, Trial Started (branded), Subscription Canceled (branded), Payment Failed (branded), Submittal Reminder (branded), Budget Alert (branded), Invite, Invoice Send.
 

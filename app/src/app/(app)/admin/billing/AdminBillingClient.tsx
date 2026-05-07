@@ -181,6 +181,13 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
   // an invoice they send to a client. Detailed shows one line per
   // (phase, person) for T&M billing where transparency matters.
   const [lineItemMode, setLineItemMode] = useState<"summary" | "detailed">("summary");
+  // Per-row nudge state on the timesheet warning. Keyed by
+  // `${userId}|${weekStart}` so multiple nudges in flight don't clobber
+  // each other. "sending" = in-flight, "sent" = success (sticky), or
+  // an error string. Cleared when the warning list refreshes.
+  const [nudgeState, setNudgeState] = useState<
+    Record<string, "sending" | "sent" | string>
+  >({});
 
   // Edit modal state
   const [editStatus, setEditStatus] = useState("");
@@ -292,6 +299,29 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
       setError("Network error pulling timesheet entries.");
     } finally {
       setPulling(false);
+    }
+  }
+
+  async function handleNudge(userId: string, weekStart: string) {
+    const key = `${userId}|${weekStart}`;
+    setNudgeState((prev) => ({ ...prev, [key]: "sending" }));
+    try {
+      const res = await fetch("/api/timesheets/nudge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, weekStart }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setNudgeState((prev) => ({
+          ...prev,
+          [key]: data.error ?? "Failed to send",
+        }));
+        return;
+      }
+      setNudgeState((prev) => ({ ...prev, [key]: "sent" }));
+    } catch {
+      setNudgeState((prev) => ({ ...prev, [key]: "Network error" }));
     }
   }
 
@@ -963,22 +993,49 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
                   )}
                 </div>
                 <ul className="space-y-1">
-                  {pullWarnings.map((w) => (
-                    <li key={`${w.userId}|${w.weekStart}`} className="flex items-baseline gap-2">
-                      <span className="font-medium">{w.userName}</span>
-                      <span className="text-amber-700">
-                        — Week of {new Date(w.weekStart).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })}
-                      </span>
-                      <span className="rounded-full px-1.5 py-0.5 bg-amber-100 border border-amber-300 text-amber-900 font-mono text-[10px]">
-                        {w.status === "SUBMITTED"
-                          ? "SUBMITTED — waiting for review"
-                          : w.status === "SENT_BACK"
-                          ? "SENT BACK — awaiting re-submission"
-                          : "DRAFT — not yet submitted"}
-                      </span>
-                      <span className="text-amber-700">· {w.hours.toFixed(2)} hrs</span>
-                    </li>
-                  ))}
+                  {pullWarnings.map((w) => {
+                    const key = `${w.userId}|${w.weekStart}`;
+                    const nudge = nudgeState[key];
+                    return (
+                      <li key={key} className="flex items-baseline gap-2 flex-wrap">
+                        <span className="font-medium">{w.userName}</span>
+                        <span className="text-amber-700">
+                          — Week of {new Date(w.weekStart).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })}
+                        </span>
+                        <span className="rounded-full px-1.5 py-0.5 bg-amber-100 border border-amber-300 text-amber-900 font-mono text-[10px]">
+                          {w.status === "SUBMITTED"
+                            ? "SUBMITTED — waiting for review"
+                            : w.status === "SENT_BACK"
+                            ? "SENT BACK — awaiting re-submission"
+                            : "DRAFT — not yet submitted"}
+                        </span>
+                        <span className="text-amber-700">· {w.hours.toFixed(2)} hrs</span>
+                        {/* Nudge button only for DRAFT — SUBMITTED and
+                            SENT_BACK are on the operator/manager side, not
+                            the staff member. */}
+                        {w.status === "DRAFT" && (
+                          nudge === "sent" ? (
+                            <span className="text-[11px] font-medium text-emerald-700">
+                              ✓ Nudge sent
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleNudge(w.userId, w.weekStart)}
+                              disabled={nudge === "sending"}
+                              className="text-[11px] font-medium text-amber-900 underline hover:text-amber-700 disabled:opacity-60"
+                              title={`Email ${w.userName} a reminder to submit this week`}
+                            >
+                              {nudge === "sending" ? "Sending..." : "Nudge to submit"}
+                            </button>
+                          )
+                        )}
+                        {nudge && nudge !== "sending" && nudge !== "sent" && (
+                          <span className="text-[11px] text-rose-700">{nudge}</span>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             );

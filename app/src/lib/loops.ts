@@ -29,6 +29,7 @@ export const LOOPS_TEMPLATES = {
   INVITE: process.env.LOOPS_TEMPLATE_INVITE ?? "",
   PASSWORD_CHANGED: process.env.LOOPS_TEMPLATE_PASSWORD_CHANGED ?? "",
   INVOICE_SEND: process.env.LOOPS_TEMPLATE_INVOICE_SEND ?? "",
+  TIMESHEET_NUDGE: process.env.LOOPS_TEMPLATE_TIMESHEET_NUDGE ?? "",
 } as const;
 
 type LoopsAttachment = {
