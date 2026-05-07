@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/supabase/auth";
 import { prisma } from "@/lib/prisma";
-import { stripe } from "@/lib/stripe";
 
 export const dynamic = "force-dynamic";
 
@@ -41,23 +40,13 @@ export async function POST() {
     );
   }
 
-  const clientId = process.env.STRIPE_CONNECT_CLIENT_ID;
-
-  // Best-effort deauth on Stripe's side. If the call fails (e.g. the
-  // account was already removed manually), we still want to clear the
-  // local fields — leaving them set would mean the firm sees "Connected"
-  // but can't actually charge anything.
-  if (clientId) {
-    try {
-      await stripe.oauth.deauthorize({
-        client_id: clientId,
-        stripe_user_id: org.stripeConnectedAccountId,
-      });
-    } catch (err) {
-      console.warn("Stripe Connect deauthorize failed (continuing):", err);
-    }
-  }
-
+  // Account Links flow: there's no "deauthorize" call — the connected
+  // account exists under our platform until we delete it or the firm
+  // requests deletion. For our use case "disconnect" just means: this
+  // firm no longer wants to use this account for Phasewise invoicing.
+  // Clear the local fields and we're done. If they reconnect later we
+  // can either reuse the account or create a new one (the old account
+  // stays orphaned under the platform until a manual cleanup).
   await prisma.organization.update({
     where: { id: currentUser.organizationId },
     data: {

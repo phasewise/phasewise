@@ -1,23 +1,33 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/supabase/auth";
+import { stripe } from "@/lib/stripe";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
 /**
  * GET /api/stripe/connect/start
  *
- * Initiates the Stripe Connect OAuth flow for the current firm. Builds
- * the authorize URL with our connect client_id and the firm's id as
- * `state` (so we can verify on callback that the response belongs to
- * the same firm that initiated).
+ * Initiates the modern Account Links onboarding flow for Stripe Connect
+ * Express. Replaces the legacy OAuth flow which Stripe gates for new
+ * platforms ("Cannot onboard via express oauth due to gated access").
  *
- * Required env var:
- *   - STRIPE_CONNECT_CLIENT_ID — get from Stripe Dashboard → Connect →
- *     Settings → "OAuth integration" panel. Format: ca_XXX. Phasewise's
- *     existing STRIPE_SECRET_KEY doubles as the OAuth client_secret.
+ * Flow:
+ *   1. If we don't already have an account ID for this org, create a new
+ *      Express account via stripe.accounts.create. Store the acct_* ID on
+ *      the Organization immediately so we can reuse it if onboarding is
+ *      interrupted.
+ *   2. Mint a one-shot AccountLink (account_onboarding type) — this is
+ *      a Stripe-hosted URL that walks the firm through KYC, bank, and
+ *      identity. Links expire after a few minutes.
+ *   3. Redirect the firm to that URL.
  *
- * Permissions: OWNER and ADMIN only — connecting a Stripe account is a
- * real financial integration, not a routine setting.
+ * Note on redirect URI whitelisting: Account Links don't use the OAuth
+ * redirect URI whitelist in Stripe Dashboard. The return_url passed to
+ * accountLinks.create is what Stripe redirects to. Whitelist entries
+ * for the legacy OAuth flow are harmless — they just don't apply here.
+ *
+ * Permissions: OWNER and ADMIN only.
  */
 export async function GET() {
   const currentUser = await getCurrentUser();
@@ -31,41 +41,65 @@ export async function GET() {
     );
   }
 
-  const clientId = process.env.STRIPE_CONNECT_CLIENT_ID;
-  if (!clientId) {
-    return NextResponse.json(
-      {
-        error:
-          "Stripe Connect isn't configured yet. Set STRIPE_CONNECT_CLIENT_ID in Vercel env vars (find it in Stripe Dashboard → Connect → Settings).",
-      },
-      { status: 503 }
-    );
+  const org = await prisma.organization.findUnique({
+    where: { id: currentUser.organizationId },
+    select: { id: true, name: true, stripeConnectedAccountId: true },
+  });
+  if (!org) {
+    return NextResponse.json({ error: "Organization not found." }, { status: 404 });
   }
 
   const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || "https://phasewise.io").replace(/\/$/, "");
-  const redirectUri = `${baseUrl}/api/stripe/connect/callback`;
 
-  // `state` carries the firm's id so we can verify on callback that the
-  // OAuth response is for the same firm that initiated. Stripe forwards
-  // it back unchanged.
-  const state = currentUser.organizationId;
+  // Reuse an existing pending account if this isn't the first attempt —
+  // lets the firm pick up where they left off if they bailed mid-flow.
+  let accountId = org.stripeConnectedAccountId;
+  if (!accountId) {
+    try {
+      const account = await stripe.accounts.create({
+        type: "express",
+        country: "US",
+        email: currentUser.email ?? undefined,
+        business_profile: {
+          name: org.name,
+        },
+        capabilities: {
+          card_payments: { requested: true },
+          transfers: { requested: true },
+        },
+        metadata: {
+          phasewiseOrgId: org.id,
+        },
+      });
+      accountId = account.id;
+      await prisma.organization.update({
+        where: { id: org.id },
+        data: { stripeConnectedAccountId: accountId },
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "account_create_failed";
+      return NextResponse.redirect(
+        `${baseUrl}/settings/payments?status=error&reason=${encodeURIComponent(message)}`
+      );
+    }
+  }
 
-  // Express-specific OAuth endpoint — lighter onboarding (email +
-  // country + bank, no full Stripe Dashboard access for the firm).
-  // The plain /oauth/authorize endpoint creates Standard accounts
-  // which is more weight than we need here.
-  const authorizeUrl = new URL("https://connect.stripe.com/express/oauth/authorize");
-  authorizeUrl.searchParams.set("response_type", "code");
-  authorizeUrl.searchParams.set("client_id", clientId);
-  authorizeUrl.searchParams.set("scope", "read_write");
-  authorizeUrl.searchParams.set("redirect_uri", redirectUri);
-  authorizeUrl.searchParams.set("state", state);
-  // Prefill what we know about the firm so the operator types less
-  // during onboarding. All optional — Stripe ignores unknown fields.
-  authorizeUrl.searchParams.set("stripe_user[business_type]", "company");
-
-  // Browser-redirect — this isn't a JSON API for the client; clicking
-  // the "Connect Stripe" button on /settings/payments hits this URL
-  // and we send the user straight to Stripe.
-  return NextResponse.redirect(authorizeUrl.toString());
+  try {
+    const accountLink = await stripe.accountLinks.create({
+      account: accountId,
+      // refresh_url is hit when a link expires before the firm finishes —
+      // we just bounce them back through /start to mint a fresh link.
+      refresh_url: `${baseUrl}/api/stripe/connect/start`,
+      // return_url is hit when the firm clicks "Done" (or "Save and exit")
+      // on Stripe's hosted onboarding. Our /callback verifies status.
+      return_url: `${baseUrl}/api/stripe/connect/callback`,
+      type: "account_onboarding",
+    });
+    return NextResponse.redirect(accountLink.url);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "account_link_failed";
+    return NextResponse.redirect(
+      `${baseUrl}/settings/payments?status=error&reason=${encodeURIComponent(message)}`
+    );
+  }
 }
