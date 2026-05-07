@@ -8,6 +8,7 @@ import { NextResponse, type NextRequest } from "next/server";
 // invitation-acceptance flows are legitimately invoked cross-origin.
 const CSRF_BYPASS = [
   "/api/stripe/webhook",
+  "/api/stripe/connect/webhook",
   "/api/cron/",
   // Public invitation accept can be hit without an origin if the user
   // pastes the link; rate-limit (Med #11/#12) already covers brute-force.
@@ -60,6 +61,6 @@ export const config = {
     // Match all paths except static assets and API routes that handle their
     // own auth (Stripe webhook needs raw body, auth/setup is called right
     // after signup before the session cookie is set).
-    "/((?!_next/static|_next/image|favicon.ico|api/stripe/webhook|api/auth/setup|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|api/stripe/webhook|api/stripe/connect/webhook|api/auth/setup|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
