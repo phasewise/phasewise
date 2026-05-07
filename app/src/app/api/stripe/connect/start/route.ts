@@ -50,7 +50,11 @@ export async function GET() {
   // it back unchanged.
   const state = currentUser.organizationId;
 
-  const authorizeUrl = new URL("https://connect.stripe.com/oauth/authorize");
+  // Express-specific OAuth endpoint — lighter onboarding (email +
+  // country + bank, no full Stripe Dashboard access for the firm).
+  // The plain /oauth/authorize endpoint creates Standard accounts
+  // which is more weight than we need here.
+  const authorizeUrl = new URL("https://connect.stripe.com/express/oauth/authorize");
   authorizeUrl.searchParams.set("response_type", "code");
   authorizeUrl.searchParams.set("client_id", clientId);
   authorizeUrl.searchParams.set("scope", "read_write");
@@ -58,8 +62,6 @@ export async function GET() {
   authorizeUrl.searchParams.set("state", state);
   // Prefill what we know about the firm so the operator types less
   // during onboarding. All optional — Stripe ignores unknown fields.
-  // (We could add more here later: business_type, country, etc.)
-  // Use Express type for the lightest-weight onboarding flow.
   authorizeUrl.searchParams.set("stripe_user[business_type]", "company");
 
   // Browser-redirect — this isn't a JSON API for the client; clicking
