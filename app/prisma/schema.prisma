@@ -66,6 +66,14 @@ model Organization {
   // paired with Stripe Payment Links so clients still have a way to
   // pay without seeing routing/account numbers on the invoice.
   printPaymentDetailsOnInvoice Boolean         @default(true) @map("print_payment_details_on_invoice")
+  // Stripe Connect — populated when the firm completes OAuth onboarding
+  // at /settings/payments. The connected account ID (acct_*) routes
+  // future Payment Link payments directly to the firm's bank, not
+  // Phasewise's. Phasewise stays out of the money path; Stripe
+  // handles KYC + fund flow.
+  stripeConnectedAccountId   String?           @unique @map("stripe_connected_account_id")
+  stripeConnectChargesEnabled Boolean          @default(false) @map("stripe_connect_charges_enabled")
+  stripeConnectConnectedAt   DateTime?         @map("stripe_connect_connected_at")
   createdAt                DateTime            @default(now()) @map("created_at")
   updatedAt                DateTime            @updatedAt @map("updated_at")
 
