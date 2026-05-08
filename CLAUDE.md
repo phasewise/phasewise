@@ -601,6 +601,50 @@ Ordered by my estimated value-per-effort. Revisit during the forensic audit.
 - ✅ **Automated year-end rollover** (shipped 2026-05-07, commit `d831e5e`) — `computeUserLeaveBalances` pulls leave entries for `[prevYearStart, yearEnd)` in one query, buckets by year on the JS side, and adds `min(remainingPrev, rolloverCap)` to this year's available pool. New `LeaveBalance.carryoverHours` field surfaces the amount; admin leave page + timesheet balance widget render "+Xh carried over" beneath the balance number. `rolloverCap=0` keeps use-it-or-lose-it (HOLIDAY default), `>0` clamps, `-1` is unlimited. ACCRUED policies use their own annualHours as the prior-year ceiling — by Dec 31 the full annual amount has been accrued (capped if a `cap` was set), so the formula works for both modes without re-running month-by-month accrual against a closed year. New Year's Day flips and the rollover computes itself off the prior year's actual usage.
 - **Forensic audit** — top-to-bottom value review once the queue slows down. Rate each feature on value delivered vs maintenance cost. Cut or sharpen anything that doesn't earn its keep.
 
+## Where We Left Off (2026-05-08 — Stripe Connect live mode activated)
+
+**Status: 🟢 Stripe Connect is now fully live in Production.** Pushed through Stripe's Setup guide gauntlet that we deferred yesterday — completed Branding, Recurring payments, Payments, Invoices, Identity verification, and Integration choices steps. Kevin's KYC info passed Stripe's review during the session. New live `ca_*` and `whsec_*` are wired into Vercel Production env vars (Production-only, leaving Pre-Production sandbox values intact). Verified on https://phasewise.io/settings/payments — setup-required warning is gone, status shows "Not connected", Connect Stripe button enabled.
+
+### What changed
+
+**Stripe Dashboard (live mode):**
+- Connect enabled with Platform model (matches sandbox decision yesterday)
+- Branding configured: Phasewise green (`#2D6A4F` brand, `#52B788` accent), full Phasewise wordmark logo, phase-bars logomark icon, "Prefer logo over icon" enabled. PNG of the wordmark generated via Sharp (`brand_v2/exports/phasewise-logo-primary-800.png`, 800×160 transparent).
+- Subscription billing: Flat rate, Prebuilt checkout form (matches existing $99/$199/$349 tier integration)
+- Identity verification: passed (Stripe's manual review cleared during the session, faster than the 1-3 business day estimate)
+- Integration choices confirmed: Sellers collect payments directly, Stripe-hosted onboarding, Stripe Dashboard for account management, Stripe-managed risk and loss liability
+- Live Connect webhook endpoint at `https://phasewise.io/api/stripe/connect/webhook`, scoped to **Connected accounts** (not Your account — first attempt missed this; deleted and recreated correctly), single event `checkout.session.completed`
+
+**Stripe items deliberately skipped:**
+- **Stripe profile creation** — would publicly list `670 E Utah Ave, FRESNO, CA 93720` in Stripe's business directory. Defer until PO Box / virtual mailbox is set up.
+- **Tax registration** — Phasewise has no actual seller's permits anywhere; SaaS is generally not taxable in CA. Will revisit when customers in tax-collecting states actually appear.
+
+**Vercel Production env vars (NEW — Production-only):**
+- `STRIPE_CONNECT_CLIENT_ID=ca_UToajG1MuupX5KEuOomDqIthflRaCNr8` (live)
+- `STRIPE_CONNECT_WEBHOOK_SECRET=whsec_***` (live, sensitive flag on)
+
+Pre-Production env vars unchanged — sandbox `ca_UTQg...` and `whsec_GYSI...` still in place for branch deploys + local testing.
+
+**Database hygiene:** disconnected the leftover sandbox connected account ID (`acct_1TU...tiJc`) from the Gallo Designs org row via the Disconnect Stripe button on production. Without that step, production reads from the same Supabase DB as sandbox, so the org would have shown as connected with a sandbox account ID — which would fail any live-mode API call. Now cleared, ready for fresh real onboarding when needed.
+
+### What's NOT done (still applies)
+
+- **No real Stripe account onboarded** for Phasewise itself yet. Today's verification confirmed the wiring works; actual Connect onboarding would create a real `acct_live_*` against Kevin's personal/business info and is only worth doing when Phasewise will actually invoice clients with real Pay-now flows. Click Connect Stripe on /settings/payments when ready.
+- **No live webhook test yet.** The `whsec_*` is in place but no event has fired against it. First real `checkout.session.completed` from a paying client invoice will be the actual proof. Sandbox flow was fully E2E-tested yesterday so the code is verified.
+
+### Tomorrow's options
+
+The Stripe Connect arc is now genuinely complete. Remaining items:
+
+1. **Loops "payment received" template (Stage D polish)** — when a client pays via Pay-now, send the firm OWNER a notification email. Vars: `firmOwnerName`, `firmName`, `clientName`, `invoiceNumber`, `amountPaid`, `paymentMethod`, `paidDate`. Add `LOOPS_TEMPLATE_PAYMENT_RECEIVED` env var, extend `/api/stripe/connect/webhook` to fire after the PAID flip.
+2. **Modal sweep** — replace remaining `confirm()` / `prompt()` / `alert()` site-wide.
+3. **Apply Schedule Phase 2** — standalone editor UI for the saved weekly template.
+4. **Send-invoice default message copy fix** — modal default still says "is attached" but the new flow sends a link.
+5. **Forensic audit.**
+6. **G2 Digital Markets resubmission** — email their support for the rejection reason from yesterday.
+
+---
+
 ## Where We Left Off (2026-05-07 EOD — manual session)
 
 **Status: 🟢🟢 Marathon day — picked up where the morning's autonomous session left off. 7 more commits, full E2E test of Stripe Connect on local sandbox, Account Links rewrite (Stripe gates Express OAuth for new platforms), Nudge-to-submit feature shipped, and four bug fixes caught while clicking through the new flows.** Live mode Stripe Connect activation deferred — Stripe's wizard gates it behind unrelated platform setup (Tax registration, Recurring payments, Invoices wizard). No urgency since we have no current users.
