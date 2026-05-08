@@ -70,28 +70,31 @@ export async function GET(request: Request) {
         (now.getTime() - (submittal.dueDate?.getTime() ?? now.getTime())) / (1000 * 60 * 60 * 24)
       );
 
-      // Prefer the dedicated Submittal Reminder template; fall back to
-      // PAYMENT_FAILED if the env var hasn't been set yet (keeps
-      // reminders flowing even before the template is installed).
-      const templateId =
-        LOOPS_TEMPLATES.SUBMITTAL_REMINDER || LOOPS_TEMPLATES.PAYMENT_FAILED;
+      // Skip silently when the dedicated Submittal Reminder template
+      // isn't configured. The previous fallback piggy-backed on the
+      // PAYMENT_FAILED template and stuffed the entire submittal prose
+      // into its `firmName` merge variable — which renders as garbled
+      // "Hi <recipient>, <prose>" in the wrong template's body. Better
+      // to skip than to send a confusing email; an unset template ID
+      // is an admin-config issue, not an end-user-facing one.
+      if (!LOOPS_TEMPLATES.SUBMITTAL_REMINDER) {
+        console.warn(
+          "Submittal reminders cron: LOOPS_TEMPLATE_SUBMITTAL_REMINDER not set — skipping send."
+        );
+        continue;
+      }
 
       await sendTransactional({
         email: recipient.email,
-        transactionalId: templateId,
-        dataVariables: LOOPS_TEMPLATES.SUBMITTAL_REMINDER
-          ? {
-              recipientName: firstName,
-              submittalNumber: submittal.number,
-              subject: submittal.subject,
-              projectName: submittal.project.name,
-              daysOverdue: String(daysOverdue),
-              ballInCourt: submittal.ballInCourt ?? "Unassigned",
-            }
-          : {
-              recipientName: firstName,
-              firmName: `${submittal.number} "${submittal.subject}" on ${submittal.project.name} is ${daysOverdue} day${daysOverdue === 1 ? "" : "s"} overdue.${submittal.ballInCourt ? ` Ball in court: ${submittal.ballInCourt}.` : ""} Please review and update the status at https://phasewise.io/submittals`,
-            },
+        transactionalId: LOOPS_TEMPLATES.SUBMITTAL_REMINDER,
+        dataVariables: {
+          recipientName: firstName,
+          submittalNumber: submittal.number,
+          subject: submittal.subject,
+          projectName: submittal.project.name,
+          daysOverdue: String(daysOverdue),
+          ballInCourt: submittal.ballInCourt ?? "Unassigned",
+        },
       });
 
       sentCount++;

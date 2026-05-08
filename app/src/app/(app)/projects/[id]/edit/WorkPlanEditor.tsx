@@ -41,6 +41,13 @@ export default function WorkPlanEditor({ projectId, phases, teamMembers, onSaved
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  // Set when the initial GET of the existing work plan fails. We
+  // intentionally render an empty editor as a fallback (so the user
+  // can still see the phase rows), but disable Save and surface a
+  // refresh-required banner. Without this, a transient 500 during the
+  // initial fetch would let the user click Save and overwrite their
+  // real work plan with all-zero rows.
+  const [loadError, setLoadError] = useState(false);
   // Tracks whether the user has made edits since the last save. The
   // outer edit form reads this via onDirtyChange to warn the user before
   // a top-level "Save all changes" if the work plan was never saved
@@ -65,11 +72,19 @@ export default function WorkPlanEditor({ projectId, phases, teamMembers, onSaved
   // → setPlan clobbers the new empty row → row vanishes.
   const phaseIdsKey = phases.map((p) => p.id).join(",");
 
-  // Load existing work plan
+  // Load existing work plan. Treats both network errors and non-OK
+  // responses as load failures — both flip loadError so Save is gated
+  // until the user refreshes. Previously a fetch failure silently
+  // initialized empty rows; clicking Save would overwrite real data.
   useEffect(() => {
+    setLoadError(false);
+    setLoading(true);
     fetch(`/api/projects/${projectId}/work-plan`)
-      .then((res) => res.json())
-      .then((data) => {
+      .then(async (res) => {
+        if (!res.ok) {
+          throw new Error(`work-plan fetch returned ${res.status}`);
+        }
+        const data = await res.json();
         if (data.phases) {
           setPlan(
             phases.map((p) => {
@@ -93,8 +108,11 @@ export default function WorkPlanEditor({ projectId, phases, teamMembers, onSaved
         }
         setLoading(false);
       })
-      .catch(() => {
-        // Initialize with empty plan
+      .catch((err) => {
+        console.warn("WorkPlanEditor: failed to load existing work plan", err);
+        // Render empty rows so the user can see the phase structure,
+        // but loadError gates Save so they can't accidentally clobber
+        // their real plan with zeros.
         setPlan(
           phases.map((p) => ({
             phaseId: p.id,
@@ -104,6 +122,7 @@ export default function WorkPlanEditor({ projectId, phases, teamMembers, onSaved
             staff: [],
           }))
         );
+        setLoadError(true);
         setLoading(false);
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -238,13 +257,26 @@ export default function WorkPlanEditor({ projectId, phases, teamMembers, onSaved
         <button
           type="button"
           onClick={saveWorkPlan}
-          disabled={saving}
+          disabled={saving || loadError}
           className={saveButtonClass}
         >
           <Save className="w-4 h-4" />
           {saveLabel}
         </button>
       </div>
+
+      {loadError && (
+        <div className="mb-4 bg-rose-50 border border-rose-300 rounded-xl p-3 text-sm text-rose-900 flex items-start gap-2">
+          <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="font-semibold">Couldn&apos;t load existing Work Plan.</p>
+            <p className="mt-1 text-xs leading-relaxed">
+              Refresh the page before editing — saving from this state would
+              overwrite your real plan with empty rows.
+            </p>
+          </div>
+        </div>
+      )}
 
       {dirty && (
         <div className="mb-4 bg-amber-50 border border-amber-300 rounded-xl p-3 text-sm text-amber-900 flex items-start gap-2">
@@ -279,7 +311,7 @@ export default function WorkPlanEditor({ projectId, phases, teamMembers, onSaved
                   <button
                     type="button"
                     onClick={saveWorkPlan}
-                    disabled={saving}
+                    disabled={saving || loadError}
                     className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors disabled:opacity-50 ${
                       dirty
                         ? "bg-amber-500 text-white hover:bg-amber-600"
@@ -395,7 +427,7 @@ export default function WorkPlanEditor({ projectId, phases, teamMembers, onSaved
           <button
             type="button"
             onClick={saveWorkPlan}
-            disabled={saving}
+            disabled={saving || loadError}
             className={saveButtonClass}
           >
             <Save className="w-4 h-4" />
