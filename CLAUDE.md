@@ -564,7 +564,7 @@ Ordered by my estimated value-per-effort. Revisit during the forensic audit.
 - **Leave request/approval workflow** — employee requests → manager approves → auto-adds to timesheet. Currently leave is entered directly; this adds a real approval step like vacation requests in most HRIS systems.
 - ✅ **Per-firm "Skip printing bank details on invoice" toggle** (shipped 2026-05-07) — `Organization.printPaymentDetailsOnInvoice Boolean @default(true)`. Toggle on `/settings/billing-info` between "Print on every invoice" (default) and "Don't print — Pay-now button only" (rendered with `<details>` collapse on the form sections). Server-side gate in `lib/invoice-pdf.tsx` and the public viewer's `hasRemit` check both honor the boolean, so the Remit-To block disappears from PDF + viewer when toggled off. Public viewer still falls back to the Pay-now button when Stripe Connect is wired.
 - ✅ **🚨 P1: Stripe Connect Stages A+B+C** (shipped 2026-05-07) — full multi-tenant payment flow, three commits. **Stage A (`95c4f48`)**: `/settings/payments` + OAuth start/callback/disconnect (`/api/stripe/connect/{start,callback,disconnect}`). Schema: `Organization.stripeConnectedAccountId @unique` + `stripeConnectChargesEnabled` + `stripeConnectConnectedAt`. State param verified against `currentUser.organizationId` to prevent cross-firm OAuth. Disconnect best-effort deauth + always clears local fields. **Stage B (`cc1a05d`)**: `lib/stripe-payment-link.ts` calls `stripe.paymentLinks.create` with `{ stripeAccount: connectedAccountId }`. `/api/invoices/[id]/send` lazily creates a link on first send (when Connect is onboarded + charges_enabled + balance > 0) and stores it on `Invoice.stripePaymentLinkId`/`stripePaymentLinkUrl`. Public viewer at `/invoice/[token]` renders a Stripe-purple "Pay $X now →" button when a link exists. Loops `INVOICE_SEND` template gets `{{ payNowUrl }}`. Failures non-fatal — email still sends, viewer just falls back to remit-to block. **Stage C (`376139e`)**: new `/api/stripe/connect/webhook` endpoint with separate `STRIPE_CONNECT_WEBHOOK_SECRET`. Listens for `checkout.session.completed`, reads `metadata.phasewiseInvoiceId`, auto-flips invoice to PAID with paidDate, paidAmount, paymentMethod ("Stripe (card, ...)"), and paymentReference (PaymentIntent ID). Defense-in-depth: refuses to update if event's connected-account ID doesn't match the invoice's org. Shares `ProcessedStripeEvent` table with platform webhook for idempotency. Shipped without Loops "payment received" template (Stage 2 polish). **Required env vars** (NOT yet set on Vercel — code degrades gracefully): `STRIPE_CONNECT_CLIENT_ID` (ca_*) + `STRIPE_CONNECT_WEBHOOK_SECRET` (whsec_*). **Required Stripe dashboard config**: enable Connect with Express type, register `https://phasewise.io/api/stripe/connect/callback` as redirect URI, register `https://phasewise.io/api/stripe/connect/webhook` as a Connect webhook endpoint listening to `checkout.session.completed`.
-- **Standardize confirmation/input modals across the app (smoke test 2026-05-04)** — Send-to-client uses a browser `prompt()` (looks like "phasewise.io says"); Mark paid uses a proper React modal (Update Payment). Sweep through and replace all `confirm()` / `prompt()` / `alert()` usage with a consistent modal component. Browser prompts are visually inconsistent with the brand and limit input options (no datepickers, no multi-field forms, no styling). Audit codebase for `window.confirm`, `window.prompt`, `window.alert` usages.
+- ✅ **Standardize confirmation/input modals across the app** (shipped 2026-05-08, commit `c4e5e5d`) — new `components/confirm-provider.tsx` mounts a single shared branded modal in the (app) layout. `useConfirm()` hook returns async function returning Promise<bool>. Options: title, message, confirmText, cancelText, destructive (rose-600), hideCancel (info-only). Keyboard support (Escape cancels, Enter confirms). 13 files changed, all 14 native `confirm()` / `alert()` call sites converted.
 - **🐛 MWELO project picker dropdown unclickable in render-back mode only (smoke test 2026-05-04)** — On `/tools/mwelo-calculator?itemId=...` (View calc render-back), clicking the Project dropdown does nothing. On the standalone `/tools/mwelo-calculator` (no itemId), the dropdown opens correctly and selection works. Bug scope is confined to render-back mode. Suspects: (1) the "Editing saved calculation for X" banner overlay is intercepting clicks above the dropdown, (2) the select has a `disabled` attribute conditionally set when itemId is present, (3) the dropdown is being conditionally hidden behind the read-only project name text input. Fix path: open the calculator component, find the conditional render around the picker, ensure the dropdown stays interactive even when an itemId is present. The dropdown should also auto-select the saved `projectId` (related bug below).
 - **MWELO render-back: project picker dropdown not auto-selected (smoke test 2026-05-04)** — when loading a saved MWELO calc via View calc, the project name text field pre-fills correctly but the project picker dropdown stays at "— Pick a project —". Likely because pre-2026-05-01 saved calcs have no `projectId` linkage (the dropdown was added on 2026-05-01 in commit `1a635b4`). Two fixes: (1) when saving from the dropdown, store both `projectId` and the project's name in the calculation JSON; (2) on render-back, if `projectId` exists, set the dropdown selection. Existing saved calcs will degrade gracefully (text-only) until re-saved.
 - **Auto-clear stale error banners on next successful action (smoke test 2026-05-04)** — the "Failed to send invoice email" banner persisted after a successful Mark sent action. Error banners should fade out or clear when the user takes another action against the same row.
@@ -602,47 +602,69 @@ Ordered by my estimated value-per-effort. Revisit during the forensic audit.
 - ✅ **Automated year-end rollover** (shipped 2026-05-07, commit `d831e5e`) — `computeUserLeaveBalances` pulls leave entries for `[prevYearStart, yearEnd)` in one query, buckets by year on the JS side, and adds `min(remainingPrev, rolloverCap)` to this year's available pool. New `LeaveBalance.carryoverHours` field surfaces the amount; admin leave page + timesheet balance widget render "+Xh carried over" beneath the balance number. `rolloverCap=0` keeps use-it-or-lose-it (HOLIDAY default), `>0` clamps, `-1` is unlimited. ACCRUED policies use their own annualHours as the prior-year ceiling — by Dec 31 the full annual amount has been accrued (capped if a `cap` was set), so the formula works for both modes without re-running month-by-month accrual against a closed year. New Year's Day flips and the rollover computes itself off the prior year's actual usage.
 - **Forensic audit** — top-to-bottom value review once the queue slows down. Rate each feature on value delivered vs maintenance cost. Cut or sharpen anything that doesn't earn its keep.
 
-## Where We Left Off (2026-05-08 — Stripe Connect live mode activated)
+## Where We Left Off (2026-05-08 EOD)
 
-**Status: 🟢 Stripe Connect is now fully live in Production.** Pushed through Stripe's Setup guide gauntlet that we deferred yesterday — completed Branding, Recurring payments, Payments, Invoices, Identity verification, and Integration choices steps. Kevin's KYC info passed Stripe's review during the session. New live `ca_*` and `whsec_*` are wired into Vercel Production env vars (Production-only, leaving Pre-Production sandbox values intact). Verified on https://phasewise.io/settings/payments — setup-required warning is gone, status shows "Not connected", Connect Stripe button enabled.
+**Status: 🟢🟢 Massive day. 7 commits + Stripe live activation + ops fixes.** Today closed out the entire Stripe Connect arc (live mode + Stage D notification email), shipped a long-overdue UX cleanup (modal sweep + Apply Schedule Phase 2), ran a forensic audit and shipped its three Critical fixes, fixed an SEO duplicate-canonical issue (Cloudflare redirect on getphasewise.com), and diagnosed a real welcome-email-to-spam incident with a concrete remediation plan. G2 listing resubmission email sent (auto-reply: 72 business-hour SLA).
 
-### What changed
+### Commits in order (7 today)
 
-**Stripe Dashboard (live mode):**
-- Connect enabled with Platform model (matches sandbox decision yesterday)
-- Branding configured: Phasewise green (`#2D6A4F` brand, `#52B788` accent), full Phasewise wordmark logo, phase-bars logomark icon, "Prefer logo over icon" enabled. PNG of the wordmark generated via Sharp (`brand_v2/exports/phasewise-logo-primary-800.png`, 800×160 transparent).
-- Subscription billing: Flat rate, Prebuilt checkout form (matches existing $99/$199/$349 tier integration)
-- Identity verification: passed (Stripe's manual review cleared during the session, faster than the 1-3 business day estimate)
-- Integration choices confirmed: Sellers collect payments directly, Stripe-hosted onboarding, Stripe Dashboard for account management, Stripe-managed risk and loss liability
-- Live Connect webhook endpoint at `https://phasewise.io/api/stripe/connect/webhook`, scoped to **Connected accounts** (not Your account — first attempt missed this; deleted and recreated correctly), single event `checkout.session.completed`
+1. `eb2a736` — **CLAUDE.md: live mode Stripe Connect activated.** Walked through Stripe's Setup guide gauntlet (Branding, Recurring payments, Payments, Invoices, Identity verification, Integration choices). Identity verification cleared during the session, faster than the 1-3 day estimate. New live `ca_UToajG1MuupX5KEuOomDqIthflRaCNr8` + `whsec_***` set on Vercel Production-only. Live Connect webhook scoped to **Connected accounts** at `https://phasewise.io/api/stripe/connect/webhook` (took 2 tries — first attempt got Your-account scope wrong, deleted + recreated). Stripe profile + Tax registration deliberately skipped (residential address exposure, no actual seller's permits respectively). Database hygiene: disconnected leftover sandbox `acct_1TU...tiJc` from Gallo Designs org row.
+2. `37a97e9` — **Stripe Connect Stage D: payment-received email to firm OWNERs.** When a client pays via Pay-now, the webhook now sends a notification email to every active OWNER on the org. Vars: `recipientName`, `firmName`, `clientName`, `projectName`, `invoiceNumber`, `amountPaid`, `paymentMethod`, `paidDate`. Fire-and-forget via `Promise.allSettled` — Loops failures NEVER make the webhook return non-200 (would cause Stripe to retry + dedup-swallow). Skips silently when `LOOPS_TEMPLATE_PAYMENT_RECEIVED` isn't set.
+3. `c3b7e95` — **CLAUDE.md: payment-received Loops template ID.** Template `cmox8srpe009l0ixf1il6gfsg` published in Loops dashboard, set on Vercel All Environments + local `.env`. Stripe-receipt-style summary block (Amount / Method / Date), green CTA button to `/admin/billing`.
+4. `c60c54b` — **Send-invoice modal copy fix.** Default placeholder said "invoice for last month is attached" — leftover from before the 2026-05-04 Path-B link migration. Updated to "your invoice is ready for review. Click the link in the email to view, download, or pay online."
+5. `c4e5e5d` — **Modal sweep: replace native `confirm`/`alert` with branded React modal.** New `components/confirm-provider.tsx` mounts a single shared modal in the (app) layout. `useConfirm()` hook returns async function returning Promise<bool>. Options: title, message, confirmText, cancelText, destructive (rose-600), hideCancel (info-only). Keyboard support (Escape cancels, Enter confirms). 13 files changed, 14 call sites converted. All destructive actions get danger styling. Killed the visually-jarring "phasewise.io says" browser-native dialogs across the app.
+6. `bf08dbb` — **Apply Schedule Phase 2: standalone editor UI for weekly template.** New `ScheduleTemplateEditor.tsx` modal — table with project + phase dropdowns, 7 hour inputs (Mon-Sun) per row, day totals + weekly total in footer, per-row totals, add/delete row. "Edit template" button on the timesheet header next to "Save week as schedule" / "Apply schedule". New `update-template` API action validates each row's projectId + phaseId belong to user's org (defense against cross-tenant pollution), validates per-day hours 0-24, drops zero-total rows. Empty templates clear the saved schedule entirely. Same template shape as Phase 1's saveWeekAsTemplate, so apply-template keeps working unchanged.
+7. `e968112` — **Audit fixes: error boundary, work-plan load error, cron firmName.** Three Critical-tier items from today's forensic audit. **(a)** New `(app)/error.tsx` per-segment React error boundary — without it, any uncaught render error in `/admin/billing` etc. fell through to the top-level `global-error.tsx` and replaced the ENTIRE app shell with a bare error page. Now keeps sidebar visible + offers Try-again / Back-to-Dashboard. Sentry capture wired with `boundary: app-segment` tag. **(b)** WorkPlanEditor's silent swallow-and-render-empty pattern fixed — previous `.catch()` initialized empty staff arrays on fetch failure; user clicking Save would have overwritten real plan with all-zero rows. Now flips a `loadError` state that surfaces a rose banner ("Couldn't load existing Work Plan — refresh before editing") AND disables all three Save buttons. Also catches non-OK responses (previously only caught network errors). **(c)** Cron submittal-reminders had a brittle PAYMENT_FAILED fallback when `LOOPS_TEMPLATE_SUBMITTAL_REMINDER` was unset — stuffed the entire submittal prose into PAYMENT_FAILED's `firmName` merge variable, rendering garbled "Hi {recipient}, {prose}" emails. Now skips silently with a `console.warn` instead.
 
-**Stripe items deliberately skipped:**
-- **Stripe profile creation** — would publicly list `670 E Utah Ave, FRESNO, CA 93720` in Stripe's business directory. Defer until PO Box / virtual mailbox is set up.
-- **Tax registration** — Phasewise has no actual seller's permits anywhere; SaaS is generally not taxable in CA. Will revisit when customers in tax-collecting states actually appear.
+### Plus dashboard work (no commits)
 
-**Vercel Production env vars (NEW — Production-only):**
-- `STRIPE_CONNECT_CLIENT_ID=ca_UToajG1MuupX5KEuOomDqIthflRaCNr8` (live)
-- `STRIPE_CONNECT_WEBHOOK_SECRET=whsec_***` (live, sensitive flag on)
+- **Stripe live mode activation** — full Setup guide walkthrough (yesterday's gated work cleared today)
+- **Branding upload** to Stripe — Phasewise green palette + wordmark logo + phase-bars icon. PNG generated via Sharp from `brand_v2/phasewise-logo-primary.svg` (Stripe rejected SVG for the Logo field but accepted it for the Icon field).
+- **Cloudflare Single Redirect** for `getphasewise.com` → `https://phasewise.io` with path preservation, 301 status. Created proxied A record (192.0.2.1 documentation IP) + www CNAME, both with orange-cloud proxy ON. Verified all three URL variants redirect correctly. **Closes the "Duplicate without user-selected canonical" Search Console issue for phasewise.io.**
+- **G2 Digital Markets resubmission email sent** to `listings@g2digitalmarkets.com` requesting specific feedback on yesterday's rejection. Auto-reply: response within 72 business hours.
 
-Pre-Production env vars unchanged — sandbox `ca_UTQg...` and `whsec_GYSI...` still in place for branch deploys + local testing.
+### Operational diagnoses (issues surfaced + remediation plans)
 
-**Database hygiene:** disconnected the leftover sandbox connected account ID (`acct_1TU...tiJc`) from the Gallo Designs org row via the Disconnect Stripe button on production. Without that step, production reads from the same Supabase DB as sandbox, so the org would have shown as connected with a sandbox account ID — which would fail any live-mode API call. Now cleared, ready for fresh real onboarding when needed.
+**Welcome email going to spam.** Brian (Kevin's friend testing the signup flow) got "Welcome to Phasewise, Brian." in Gmail spam with the "similar to messages identified as spam in the past" warning. DNS setup is correct (SPF, DKIM, DMARC all in place from the original Loops setup). Issue is **domain reputation**, not config. Remediation:
 
-### What's NOT done (still applies)
+1. **Brian marks "Not spam"** — strongest individual signal, worth weeks of organic warmup.
+2. **Sign up for Google Postmaster Tools** (`postmaster.google.com`) to monitor reputation, spam rate, authentication results. Free, 5 min.
+3. **Audit Welcome template** for spam-trigger patterns (excessive CTAs, ALL CAPS, "free"/"guaranteed"/"act now" phrasing).
+4. **Tighten DMARC over time** — currently `p=none`, leave for 2-3 more weeks while monitoring Postmaster, then upgrade gradually to `p=quarantine` with `pct=10` → `pct=50` → `pct=100`.
+5. **Don't switch sending providers** — Loops is fine. The issue is domain age + low send volume, not their infrastructure.
 
-- **No real Stripe account onboarded** for Phasewise itself yet. Today's verification confirmed the wiring works; actual Connect onboarding would create a real `acct_live_*` against Kevin's personal/business info and is only worth doing when Phasewise will actually invoice clients with real Pay-now flows. Click Connect Stripe on /settings/payments when ready.
-- **No live webhook test yet.** The `whsec_*` is in place but no event has fired against it. First real `checkout.session.completed` from a paying client invoice will be the actual proof. Sandbox flow was fully E2E-tested yesterday so the code is verified.
+Realistic timeline: 1-2 weeks of consistent sending + recipient engagement to lift out of spam-by-default.
+
+**Google Search Console indexing.** 11 indexed, 9 not indexed across 4 reasons. Today's work fixed the most actionable one ("Duplicate without user-selected canonical" — getphasewise.com redirect). Remaining issues:
+- **Page with redirect (1 page)** — likely a sitemap entry that points to a redirect target. Click into the report on Search Console to identify, then fix the source.
+- **Discovered - currently not indexed (6 pages)** — normal for new sites with low authority. Resolves over time as the n8n weekly content pipeline keeps shipping articles + internal linking improves.
+- **Crawled - currently not indexed (1 page)** — quality/uniqueness signal. Click into the URL on Search Console; if it's a low-value page (privacy, terms) it's expected. If a blog post, the article needs more depth.
+
+### Forensic audit findings — what's still on the punch list
+
+Three Critical items shipped this evening (commit `e968112`). Remaining items, prioritized:
+
+**Worth fixing this sprint:**
+- **AdminBillingClient.tsx is 1,662 lines** — refactor into `<NewInvoiceForm>` + `<PaymentUpdateModal>` + `<SendInvoiceModal>` siblings. Will become unmaintainable if not done before next round of billing features. ~1-2 hr.
+- **Stripe webhook untyped casts** at `lib/stripe.ts` and `webhook/route.ts` lines 102/106/168/218/223. Bypasses Stripe's typed event union to read `previous_attributes` and `current_period_end`. Breaks silently if Stripe API version drifts. Pin via Zod schema or typed event expander. ~30 min.
+- **Leave policy `as unknown as Prisma.InputJsonValue` casts** at `api/leave/policy/route.ts:78,91,97`. Drifted request body silently persists garbage. Add Zod schema. ~20 min.
+- **`console.log` in `lib/budget-alerts.ts:121`** — wrap in `process.env.NODE_ENV !== "production"` guard or remove. Will flood Vercel logs at scale.
+- **`PricingButton.tsx:49` `console.error`** on public landing — replace with `Sentry.captureException` since Sentry is wired.
+
+**Strategic gaps (won't break, but matter for first customers):**
+- No customer-facing help / support surface. No `/help` route, no in-app support widget. `kevin@phasewise.io` is the only support channel and it's not advertised inside the app.
+- No in-app onboarding tour for first-time users (the 3-step checklist exists but is shallow).
+- No status page / uptime communication.
+- Account deletion flow may not exist (GDPR/CCPA — verify).
 
 ### Tomorrow's options
 
-The Stripe Connect arc is now genuinely complete. Remaining items:
-
-1. **Loops "payment received" template (Stage D polish)** — when a client pays via Pay-now, send the firm OWNER a notification email. Vars: `firmOwnerName`, `firmName`, `clientName`, `invoiceNumber`, `amountPaid`, `paymentMethod`, `paidDate`. Add `LOOPS_TEMPLATE_PAYMENT_RECEIVED` env var, extend `/api/stripe/connect/webhook` to fire after the PAID flip.
-2. **Modal sweep** — replace remaining `confirm()` / `prompt()` / `alert()` site-wide.
-3. **Apply Schedule Phase 2** — standalone editor UI for the saved weekly template.
-4. **Send-invoice default message copy fix** — modal default still says "is attached" but the new flow sends a link.
-5. **Forensic audit.**
-6. **G2 Digital Markets resubmission** — email their support for the rejection reason from yesterday.
+1. **AdminBillingClient refactor** — preempts unmaintainability before more billing features land. Top of the audit's "worth fixing this sprint" list.
+2. **`/help` index + sidebar Help link** — cheapest customer-facing trust signal you can ship. ~1 hr.
+3. **Stripe webhook + Leave policy Zod schemas** — kills the typed-cast risks. ~50 min combined.
+4. **First real Stripe Connect onboarding** — click Connect Stripe on production `/settings/payments`, complete real Express onboarding against your real personal/business info. Worth doing if you want to use Phasewise to invoice your own clients with Pay-now flows.
+5. **Cold-email outreach** — n8n content is autonomous but cold email isn't. Wishlist flag: skip-2-weeks is the most common solo-founder failure mode. Make sure the 5/week cadence is going.
+6. **Customer acquisition focus** — the audit's bottom line: Phasewise is technically ready, the build has outpaced demand. Time to focus today's free hours on customer acquisition, not more features.
 
 ---
 
@@ -1834,7 +1856,7 @@ After a strategy discussion this session, Kevin confirmed that his top prioritie
 - [ ] **File USPTO trademark for "Phasewise"** — protect the name before significant marketing push (~$350)
 - [ ] Upload v2 PNG logos to LinkedIn, X/Twitter, GitHub profiles
 - [ ] Claim @phasewise on Instagram (was blocked by SMS verification — try again)
-- [ ] Set up getphasewise.com redirect to phasewise.io in Cloudflare
+- [x] **Set up getphasewise.com redirect to phasewise.io in Cloudflare** ✅ 2026-05-08 — Cloudflare Single Redirect Rule on `getphasewise.com` zone, dynamic 301 with path preservation to `https://phasewise.io`, matches both apex + www. Created proxied A record + www CNAME (192.0.2.1 docs IP, orange cloud ON). Verified all three URL variants redirect. Closes the "Duplicate without user-selected canonical" Search Console issue.
 - [ ] Remove duplicate `google-site-verification` TXT record from Cloudflare
 - [ ] **Auto-post blog articles to socials** — extend n8n pipeline. Blocked on social accounts being claimed + API credentials in n8n
 - [ ] Create Loops INVITE template (optional — link sharing works without it)
