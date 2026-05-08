@@ -16,6 +16,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import { useConfirm } from "@/components/confirm-provider";
 
 type LineItem = {
   id: string;
@@ -113,6 +114,7 @@ function deriveSectionKey(inv: Invoice): SectionKey {
 }
 
 export default function AdminBillingClient({ invoices: initialInvoices, projects, autoInvoicing }: Props) {
+  const confirm = useConfirm();
   const [invoices, setInvoices] = useState(initialInvoices);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -328,9 +330,11 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     if (pullWarnings.length > 0) {
-      const ok = window.confirm(
-        `${pullWarnings.length} timesheet${pullWarnings.length === 1 ? " in this period isn't" : "s in this period aren't"} approved yet. Their hours aren't on this invoice. Create the invoice anyway?`
-      );
+      const ok = await confirm({
+        title: "Some timesheets aren't approved",
+        message: `${pullWarnings.length} timesheet${pullWarnings.length === 1 ? " in this period isn't" : "s in this period aren't"} approved yet. Their hours aren't on this invoice. Create the invoice anyway?`,
+        confirmText: "Create anyway",
+      });
       if (!ok) return;
     }
     setError(null);
@@ -440,9 +444,15 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
   async function handleDelete(invoice: Invoice) {
     const isPaid = invoice.status === "PAID" || invoice.status === "PARTIALLY_PAID";
     const message = isPaid
-      ? `Delete ${invoice.invoiceNumber}? This invoice has $${invoice.paidAmount.toLocaleString()} recorded as paid — deleting it removes that payment record. You'll need to re-create the invoice if you delete by mistake. Continue?`
-      : `Delete ${invoice.invoiceNumber}? Source time entries (if any) will be untagged so they can be billed on a future invoice.`;
-    if (!confirm(message)) return;
+      ? `This invoice has $${invoice.paidAmount.toLocaleString()} recorded as paid — deleting it removes that payment record. You'll need to re-create the invoice if you delete by mistake.`
+      : `Source time entries (if any) will be untagged so they can be billed on a future invoice.`;
+    const ok = await confirm({
+      title: `Delete ${invoice.invoiceNumber}?`,
+      message,
+      confirmText: "Delete",
+      destructive: true,
+    });
+    if (!ok) return;
 
     setError(null);
     const res = await fetch(`/api/invoices?id=${invoice.id}`, { method: "DELETE" });
@@ -513,9 +523,12 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
   // One-click "Mark as Sent" — records sentAt + flips DRAFT to SENT.
   // No modal because there's nothing to ask the user about.
   async function quickMarkAsSent(invoice: Invoice) {
-    if (!confirm(`Mark ${invoice.invoiceNumber} as sent? This records today as the send date and changes status to SENT.`)) {
-      return;
-    }
+    const ok = await confirm({
+      title: `Mark ${invoice.invoiceNumber} as sent?`,
+      message: "This records today as the send date and changes status to SENT.",
+      confirmText: "Mark sent",
+    });
+    if (!ok) return;
     setError(null);
     const res = await fetch("/api/invoices", {
       method: "PATCH",

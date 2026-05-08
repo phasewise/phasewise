@@ -10,6 +10,7 @@ import {
   type LeavePolicy,
   type LeaveBalance,
 } from "@/lib/leave";
+import { useConfirm } from "@/components/confirm-provider";
 
 type UserRow = {
   id: string;
@@ -39,6 +40,7 @@ function normalizePolicy(p: LeavePolicy | null | undefined): LeavePolicy {
 }
 
 export default function LeaveAdminClient({ orgPolicy, users, balancesByUser }: Props) {
+  const confirm = useConfirm();
   const [policy, setPolicy] = useState<LeavePolicy>(normalizePolicy(orgPolicy));
   const [savingOrg, setSavingOrg] = useState(false);
   const [savingUser, setSavingUser] = useState<string | null>(null);
@@ -153,7 +155,13 @@ export default function LeaveAdminClient({ orgPolicy, users, balancesByUser }: P
   }
 
   async function removeOverride(userId: string) {
-    if (!confirm("Remove this override? The employee will revert to the firm-wide policy.")) return;
+    const ok = await confirm({
+      title: "Remove this override?",
+      message: "The employee will revert to the firm-wide policy.",
+      confirmText: "Remove",
+      destructive: true,
+    });
+    if (!ok) return;
     setSavingUser(userId);
     setError("");
     const res = await fetch("/api/leave/policy", {

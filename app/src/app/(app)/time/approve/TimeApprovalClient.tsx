@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { addDays, format } from "date-fns";
 import { Check, ChevronDown, ChevronRight, MessageSquareWarning, X } from "lucide-react";
+import { useConfirm } from "@/components/confirm-provider";
 
 export type ApprovalRow = {
   id: string;
@@ -42,6 +43,7 @@ type Props = {
 };
 
 export default function TimeApprovalClient({ rows: initialRows, history }: Props) {
+  const confirm = useConfirm();
   const router = useRouter();
   const [rows, setRows] = useState(initialRows);
   const [savingId, setSavingId] = useState<string | null>(null);
@@ -132,13 +134,13 @@ export default function TimeApprovalClient({ rows: initialRows, history }: Props
   };
 
   async function reopenFromHistory(weekStartIso: string, userId: string) {
-    if (
-      !confirm(
-        "Reopen this approved timesheet for editing? It will move back to draft and need to be re-submitted and re-approved."
-      )
-    ) {
-      return;
-    }
+    const ok = await confirm({
+      title: "Reopen this approved timesheet?",
+      message:
+        "It will move back to draft and need to be re-submitted and re-approved.",
+      confirmText: "Reopen",
+    });
+    if (!ok) return;
     setError(null);
     const response = await fetch("/api/timesheets", {
       method: "POST",

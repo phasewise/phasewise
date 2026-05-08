@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2, CalendarDays, Copy, Briefcase, Sparkles, Save } from "lucide-react";
 import { LEAVE_TYPE_LABELS, LEAVE_TYPES } from "@/lib/leave";
+import { useConfirm } from "@/components/confirm-provider";
 
 const OVERHEAD_CATEGORIES = [
   "GENERAL_ADMIN",
@@ -73,6 +74,7 @@ export default function TimeSheetClient({
   readOnly = false,
 }: Props) {
   const router = useRouter();
+  const confirm = useConfirm();
   const [rows, setRows] = useState<Row[]>(
     initialRows.length > 0 ? initialRows : []
   );
@@ -97,13 +99,13 @@ export default function TimeSheetClient({
 
   async function saveWeekAsTemplate() {
     if (!weekStart || !canManageTemplate || templateBusy) return;
-    if (
-      !confirm(
-        "Save this week as your schedule template? Next time you click 'Apply schedule' on a draft week, it'll fill in this same Mon-Sun grid of project hours. Doesn't include leave or overhead."
-      )
-    ) {
-      return;
-    }
+    const ok = await confirm({
+      title: "Save this week as your schedule template?",
+      message:
+        "Next time you click 'Apply schedule' on a draft week, it'll fill in this same Mon-Sun grid of project hours. Doesn't include leave or overhead.",
+      confirmText: "Save template",
+    });
+    if (!ok) return;
     setError(null);
     setTemplateBusy(true);
     try {
@@ -127,13 +129,13 @@ export default function TimeSheetClient({
 
   async function applyScheduleTemplate() {
     if (!weekStart || !canManageTemplate || templateBusy) return;
-    if (
-      !confirm(
-        "Apply your saved schedule template to this week? Existing draft project entries for this week will be replaced by the template. Leave and overhead entries are kept."
-      )
-    ) {
-      return;
-    }
+    const ok = await confirm({
+      title: "Apply your saved schedule template?",
+      message:
+        "Existing draft project entries for this week will be replaced by the template. Leave and overhead entries are kept.",
+      confirmText: "Apply",
+    });
+    if (!ok) return;
     setError(null);
     setTemplateBusy(true);
     try {

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ChevronDown, ChevronRight, FolderPlus, Search, X } from "lucide-react";
 import { PHASE_SHORT_LABELS, STATUS_COLORS } from "@/lib/constants";
 import { toTitleCase } from "@/lib/utils";
+import { useConfirm } from "@/components/confirm-provider";
 
 type Phase = { phaseType: string; status: string; budgetedFee: number; budgetedHours: number };
 
@@ -53,6 +54,7 @@ const SECTION_ORDER: Array<{
 ];
 
 export default function ProjectsClient({ projects: initialProjects }: Props) {
+  const confirm = useConfirm();
   const router = useRouter();
   const [projects, setProjects] = useState(initialProjects);
   const [search, setSearch] = useState("");
@@ -173,7 +175,12 @@ export default function ProjectsClient({ projects: initialProjects }: Props) {
         prev.map((p) => (p.id === projectId ? { ...p, status: prevStatus ?? p.status } : p))
       );
       const data = await res.json().catch(() => ({}));
-      alert(data.error || "Failed to update project status.");
+      await confirm({
+        title: "Couldn't update project status",
+        message: data.error || "Failed to update project status.",
+        confirmText: "OK",
+        hideCancel: true,
+      });
       return;
     }
     // Trigger a server refresh so dependent surfaces (e.g. dashboard) pick

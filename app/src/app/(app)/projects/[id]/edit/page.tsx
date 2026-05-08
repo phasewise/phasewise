@@ -6,6 +6,7 @@ import { useRouter, useParams } from "next/navigation";
 import { AlertCircle, ArrowLeft, Plus, Save, Trash2 } from "lucide-react";
 import { PHASE_LABELS, PHASE_ORDER } from "@/lib/constants";
 import WorkPlanEditor from "./WorkPlanEditor";
+import { useConfirm } from "@/components/confirm-provider";
 
 type PhaseRow = {
   id?: string; // undefined = new phase
@@ -18,6 +19,7 @@ type PhaseRow = {
 };
 
 export default function EditProjectPage() {
+  const confirm = useConfirm();
   const router = useRouter();
   const params = useParams();
   const projectId = params.id as string;
@@ -167,11 +169,14 @@ export default function EditProjectPage() {
     // "Save all changes" without saving the work plan first, those
     // edits are silently lost.
     if (workPlanDirty) {
-      const proceed = confirm(
-        "Your Work Plan has unsaved changes that will be LOST if you continue.\n\n" +
-        "Click Cancel, then click 'Save Work Plan' first to keep those edits.\n\n" +
-        "Continue anyway and discard Work Plan changes?"
-      );
+      const proceed = await confirm({
+        title: "Discard unsaved Work Plan changes?",
+        message:
+          "Your Work Plan has unsaved changes that will be LOST if you continue.\n\n" +
+          "Click Cancel, then click 'Save Work Plan' first to keep those edits.",
+        confirmText: "Discard & continue",
+        destructive: true,
+      });
       if (!proceed) return;
     }
 

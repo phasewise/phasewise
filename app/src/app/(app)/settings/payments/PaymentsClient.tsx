@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Zap, Unplug, AlertTriangle } from "lucide-react";
+import { useConfirm } from "@/components/confirm-provider";
 
 type Props = {
   // True when STRIPE_CONNECT_CLIENT_ID env var is set on the server.
@@ -29,6 +30,7 @@ export default function PaymentsClient({
   accountIdMasked,
 }: Props) {
   const router = useRouter();
+  const confirm = useConfirm();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -47,13 +49,14 @@ export default function PaymentsClient({
   }
 
   async function handleDisconnect() {
-    if (
-      !confirm(
-        "Disconnect Stripe? Future invoices won't include a Pay-now button until you reconnect. Your Stripe account stays intact at dashboard.stripe.com."
-      )
-    ) {
-      return;
-    }
+    const ok = await confirm({
+      title: "Disconnect Stripe?",
+      message:
+        "Future invoices won't include a Pay-now button until you reconnect. Your Stripe account stays intact at dashboard.stripe.com.",
+      confirmText: "Disconnect",
+      destructive: true,
+    });
+    if (!ok) return;
     setError(null);
     setBusy(true);
     try {

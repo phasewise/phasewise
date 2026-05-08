@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useConfirm } from "@/components/confirm-provider";
 
 type User = {
   id: string;
@@ -35,6 +36,7 @@ const rolesAllowedToManage = ["OWNER", "ADMIN", "PM", "SUPERVISOR"];
 const taskStatuses = ["NOT_STARTED", "IN_PROGRESS", "COMPLETE"] as const;
 
 export default function ProjectTasksClient({ projectId, currentUserRole, users, assignments, tasks }: Props) {
+  const confirm = useConfirm();
   const [projectAssignments, setProjectAssignments] = useState(assignments);
   const [taskList, setTaskList] = useState(tasks);
   const [selectedAssignee, setSelectedAssignee] = useState(users[0]?.id ?? "");
@@ -104,7 +106,13 @@ export default function ProjectTasksClient({ projectId, currentUserRole, users, 
 
   async function deleteTask() {
     if (!editingTask) return;
-    if (!confirm(`Delete task "${editingTask.name}"? This can't be undone.`)) return;
+    const ok = await confirm({
+      title: `Delete task "${editingTask.name}"?`,
+      message: "This can't be undone.",
+      confirmText: "Delete",
+      destructive: true,
+    });
+    if (!ok) return;
     setEditSaving(true);
     const res = await fetch(
       `/api/projects/${projectId}/tasks?taskId=${editingTask.id}`,

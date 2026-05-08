@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/supabase/auth";
 import { prisma } from "@/lib/prisma";
 import MobileSidebar from "./_components/MobileSidebar";
+import { ConfirmProvider } from "@/components/confirm-provider";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const currentUser = await getCurrentUser();
@@ -89,7 +90,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           hide behind the fixed mobile top bar (h-14 = 56px). On
           desktop the sidebar is always visible so no top padding. */}
       <main className="flex-1 overflow-auto bg-[#F7F9F7] pt-14 lg:pt-0">
-        {children}
+        <ConfirmProvider>{children}</ConfirmProvider>
       </main>
     </div>
   );

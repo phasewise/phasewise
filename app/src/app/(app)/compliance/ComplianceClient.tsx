@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Archive, ArchiveRestore, Calculator, Droplets, FileText, FileUp, Paperclip, Pencil, Plus, ShieldCheck, Trash2, X } from "lucide-react";
+import { useConfirm } from "@/components/confirm-provider";
 
 type MweloSummary = {
   mawa: number;
@@ -65,6 +66,7 @@ const STATUSES = [
 ];
 
 export default function ComplianceClient({ items: initialItems, projects, showArchived }: Props) {
+  const confirm = useConfirm();
   const router = useRouter();
   const [items, setItems] = useState(initialItems);
   const [showForm, setShowForm] = useState(false);
@@ -106,9 +108,13 @@ export default function ComplianceClient({ items: initialItems, projects, showAr
   }
 
   async function handleDelete(item: ComplianceItem) {
-    if (!confirm(`Delete "${item.name}"? This permanently removes the compliance item${item.category === "MWELO" ? " and its MWELO calculation" : ""}.`)) {
-      return;
-    }
+    const ok = await confirm({
+      title: `Delete "${item.name}"?`,
+      message: `This permanently removes the compliance item${item.category === "MWELO" ? " and its MWELO calculation" : ""}.`,
+      confirmText: "Delete",
+      destructive: true,
+    });
+    if (!ok) return;
     const res = await fetch(`/api/compliance?id=${item.id}`, { method: "DELETE" });
     if (!res.ok) {
       const data = await res.json();

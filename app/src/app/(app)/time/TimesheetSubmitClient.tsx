@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useConfirm } from "@/components/confirm-provider";
 
 type Props = {
   weekStart: string;
@@ -18,6 +19,7 @@ type Props = {
 
 export default function TimesheetSubmitClient({ weekStart, status, canApprove, submitBlocked = false }: Props) {
   const router = useRouter();
+  const confirm = useConfirm();
   const [currentStatus, setCurrentStatus] = useState(status);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -31,7 +33,14 @@ export default function TimesheetSubmitClient({ weekStart, status, canApprove, s
   }, [status, weekStart]);
 
   async function postAction(action: "submit" | "reopen", confirmText?: string) {
-    if (confirmText && !confirm(confirmText)) return;
+    if (confirmText) {
+      const ok = await confirm({
+        title: "Reopen this approved timesheet?",
+        message: confirmText,
+        confirmText: "Reopen",
+      });
+      if (!ok) return;
+    }
     setMessage(null);
     setSaving(true);
 
@@ -124,7 +133,7 @@ export default function TimesheetSubmitClient({ weekStart, status, canApprove, s
               postAction(
                 "reopen",
                 currentStatus === "APPROVED"
-                  ? "Reopen this approved timesheet for editing? It will move back to draft and need to be re-submitted and re-approved."
+                  ? "It will move back to draft and need to be re-submitted and re-approved."
                   : undefined
               )
             }
