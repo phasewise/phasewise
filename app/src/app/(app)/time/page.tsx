@@ -189,6 +189,16 @@ export default async function TimePage({
   const hasScheduleTemplate =
     Array.isArray(viewingUserRow?.weeklyScheduleTemplate) &&
     (viewingUserRow!.weeklyScheduleTemplate as unknown[]).length > 0;
+  // Pass the actual template content so the standalone editor (Phase 2)
+  // can render and edit existing rows. Empty array when nothing saved.
+  type TemplateRow = {
+    projectId: string;
+    phaseId: string;
+    hoursPerDay: { mon: number; tue: number; wed: number; thu: number; fri: number; sat: number; sun: number };
+  };
+  const currentTemplate: TemplateRow[] = hasScheduleTemplate
+    ? (viewingUserRow!.weeklyScheduleTemplate as TemplateRow[])
+    : [];
 
   // Previous-week rows for the "Copy rows" button. We only need the
   // distinct {projectId, phaseId} / {leaveType} combos, not the hours.
@@ -395,6 +405,7 @@ export default async function TimePage({
         previousWeekRows={previousWeekRows}
         weekStart={format(weekStartDate, "yyyy-MM-dd")}
         hasScheduleTemplate={hasScheduleTemplate}
+        currentTemplate={currentTemplate}
         canManageTemplate={!isViewingOther}
         readOnly={
           isViewingOther ||

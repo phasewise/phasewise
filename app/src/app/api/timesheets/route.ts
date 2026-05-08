@@ -361,6 +361,113 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, rowCount: template.length });
   }
 
+  // Phase 2: edit the saved template directly without going through a
+  // real week. Lets the user tune hours, swap phases, add or remove
+  // project rows in a focused editor instead of capturing-from-week.
+  if (action === "update-template") {
+    const incoming = body.template;
+    if (!Array.isArray(incoming)) {
+      return NextResponse.json(
+        { error: "template must be an array of rows." },
+        { status: 400 }
+      );
+    }
+
+    const dayKeysAllowed = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
+
+    type IncomingRow = {
+      projectId?: unknown;
+      phaseId?: unknown;
+      hoursPerDay?: unknown;
+    };
+
+    const cleaned: Array<{
+      projectId: string;
+      phaseId: string;
+      hoursPerDay: Record<(typeof dayKeysAllowed)[number], number>;
+    }> = [];
+    const projectIds = new Set<string>();
+    const phaseIds = new Set<string>();
+
+    for (const raw of incoming as IncomingRow[]) {
+      if (
+        !raw ||
+        typeof raw.projectId !== "string" ||
+        typeof raw.phaseId !== "string" ||
+        !raw.hoursPerDay ||
+        typeof raw.hoursPerDay !== "object"
+      ) {
+        return NextResponse.json(
+          { error: "Each template row needs projectId, phaseId, and hoursPerDay." },
+          { status: 400 }
+        );
+      }
+      const hours = raw.hoursPerDay as Record<string, unknown>;
+      const cleanedHours = { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0, sat: 0, sun: 0 };
+      let rowTotal = 0;
+      for (const day of dayKeysAllowed) {
+        const v = Number(hours[day] ?? 0);
+        if (!Number.isFinite(v) || v < 0 || v > 24) {
+          return NextResponse.json(
+            { error: `Invalid hours value for ${day} — must be 0-24.` },
+            { status: 400 }
+          );
+        }
+        cleanedHours[day] = v;
+        rowTotal += v;
+      }
+      // Drop rows with zero total — they're noise in the template.
+      if (rowTotal === 0) continue;
+      projectIds.add(raw.projectId);
+      phaseIds.add(raw.phaseId);
+      cleaned.push({
+        projectId: raw.projectId,
+        phaseId: raw.phaseId,
+        hoursPerDay: cleanedHours,
+      });
+    }
+
+    // Verify all project + phase IDs belong to the user's org. Without
+    // this check, a malicious client could reference projects from
+    // another firm — even though apply-template would later fail, the
+    // template would still pollute the user record.
+    if (projectIds.size > 0) {
+      const validProjects = await prisma.project.count({
+        where: {
+          id: { in: Array.from(projectIds) },
+          organizationId: currentUser.organizationId,
+        },
+      });
+      if (validProjects !== projectIds.size) {
+        return NextResponse.json(
+          { error: "One or more projects don't belong to your organization." },
+          { status: 400 }
+        );
+      }
+    }
+    if (phaseIds.size > 0) {
+      const validPhases = await prisma.projectPhase.count({
+        where: {
+          id: { in: Array.from(phaseIds) },
+          project: { organizationId: currentUser.organizationId },
+        },
+      });
+      if (validPhases !== phaseIds.size) {
+        return NextResponse.json(
+          { error: "One or more phases don't belong to your organization." },
+          { status: 400 }
+        );
+      }
+    }
+
+    await prisma.user.update({
+      where: { id: currentUser.id },
+      data: { weeklyScheduleTemplate: cleaned },
+    });
+
+    return NextResponse.json({ success: true, rowCount: cleaned.length });
+  }
+
   if (action === "apply-template") {
     if (!weekStart) {
       return NextResponse.json({ error: "weekStart is required to apply template." }, { status: 400 });

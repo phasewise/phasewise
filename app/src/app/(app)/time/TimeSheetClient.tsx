@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2, CalendarDays, Copy, Briefcase, Sparkles, Save } from "lucide-react";
+import { Plus, Trash2, CalendarDays, Copy, Briefcase, Sparkles, Save, Pencil } from "lucide-react";
 import { LEAVE_TYPE_LABELS, LEAVE_TYPES } from "@/lib/leave";
 import { useConfirm } from "@/components/confirm-provider";
+import ScheduleTemplateEditor from "./ScheduleTemplateEditor";
 
 const OVERHEAD_CATEGORIES = [
   "GENERAL_ADMIN",
@@ -32,6 +33,13 @@ type Project = {
 
 type Row = { projectId: string; phaseId: string; leaveType?: string; overheadCategory?: string };
 
+type DayKey = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
+type TemplateRow = {
+  projectId: string;
+  phaseId: string;
+  hoursPerDay: Record<DayKey, number>;
+};
+
 type Props = {
   projects: Project[];
   dates: string[];
@@ -45,6 +53,9 @@ type Props = {
   // True if the user has a saved weeklyScheduleTemplate. Drives whether
   // the "Apply schedule" button renders.
   hasScheduleTemplate?: boolean;
+  // The actual template content for the standalone editor modal.
+  // Empty array when there's no template yet.
+  currentTemplate?: TemplateRow[];
   // False when viewing someone else's timesheet — disables the
   // template buttons since templates are per-user.
   canManageTemplate?: boolean;
@@ -70,11 +81,13 @@ export default function TimeSheetClient({
   previousWeekRows = [],
   weekStart,
   hasScheduleTemplate = false,
+  currentTemplate = [],
   canManageTemplate = true,
   readOnly = false,
 }: Props) {
   const router = useRouter();
   const confirm = useConfirm();
+  const [editingTemplate, setEditingTemplate] = useState(false);
   const [rows, setRows] = useState<Row[]>(
     initialRows.length > 0 ? initialRows : []
   );
@@ -560,7 +573,28 @@ export default function TimeSheetClient({
               {templateBusy ? "Saving..." : hasScheduleTemplate ? "Update saved schedule" : "Save week as schedule"}
             </button>
           )}
+          {canManageTemplate && (
+            <button
+              type="button"
+              onClick={() => setEditingTemplate(true)}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-white text-[#6B8C74] border border-[#E2EBE4] hover:border-[#52B788] hover:text-[#2D6A4F] transition-all"
+              title="Edit your saved schedule template directly without saving from a real week"
+            >
+              <Pencil className="w-4 h-4" />
+              Edit template
+            </button>
+          )}
         </div>
+      )}
+
+      {canManageTemplate && (
+        <ScheduleTemplateEditor
+          open={editingTemplate}
+          onClose={() => setEditingTemplate(false)}
+          projects={projects}
+          initialTemplate={currentTemplate}
+          onSaved={() => router.refresh()}
+        />
       )}
     </div>
   );
