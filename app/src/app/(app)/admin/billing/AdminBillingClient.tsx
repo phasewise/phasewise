@@ -1440,7 +1440,7 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
                   rows={3}
                   value={sendBodyMessage}
                   onChange={(e) => setSendBodyMessage(e.target.value)}
-                  placeholder="Hi — invoice for last month is attached. Reach out with any questions."
+                  placeholder="Hi — your invoice is ready for review. Click the link in the email to view, download, or pay online."
                   className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]"
                 />
               </div>
