@@ -30,6 +30,7 @@ export const LOOPS_TEMPLATES = {
   PASSWORD_CHANGED: process.env.LOOPS_TEMPLATE_PASSWORD_CHANGED ?? "",
   INVOICE_SEND: process.env.LOOPS_TEMPLATE_INVOICE_SEND ?? "",
   TIMESHEET_NUDGE: process.env.LOOPS_TEMPLATE_TIMESHEET_NUDGE ?? "",
+  PAYMENT_RECEIVED: process.env.LOOPS_TEMPLATE_PAYMENT_RECEIVED ?? "",
 } as const;
 
 type LoopsAttachment = {

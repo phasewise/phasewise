@@ -3,6 +3,7 @@ import type Stripe from "stripe";
 import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
+import { sendTransactional, LOOPS_TEMPLATES } from "@/lib/loops";
 
 export const dynamic = "force-dynamic";
 
@@ -119,7 +120,23 @@ async function handleInvoicePayment(
   const invoice = await prisma.invoice.findUnique({
     where: { id: invoiceId },
     include: {
-      organization: { select: { stripeConnectedAccountId: true } },
+      organization: {
+        select: {
+          name: true,
+          stripeConnectedAccountId: true,
+          // Active OWNERs get the payment-received notification email.
+          // ADMIN role doesn't get it by default — they can subscribe
+          // later if firms ask. Solo firms have one OWNER which is
+          // the typical case.
+          users: {
+            where: { role: "OWNER", isActive: true },
+            select: { email: true, fullName: true },
+          },
+        },
+      },
+      project: {
+        select: { name: true, clientName: true },
+      },
     },
   });
 
@@ -172,4 +189,49 @@ async function handleInvoicePayment(
       paymentReference: paymentRef,
     },
   });
+
+  // Notify the firm OWNER(s) that they got paid. Fire-and-forget — a
+  // Loops failure must NEVER make us return non-200 from the webhook
+  // (Stripe would retry and our idempotency dedup would catch it, but
+  // it's wasteful and noisy in logs). Skipped silently if no OWNER
+  // is on the org (shouldn't happen) or the template ID isn't set.
+  if (LOOPS_TEMPLATES.PAYMENT_RECEIVED && invoice.organization.users.length > 0) {
+    const fmtMoney = (n: number) =>
+      `$${n.toLocaleString("en-US", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}`;
+    const fmtDate = (d: Date) =>
+      d.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+
+    const paidDate = new Date();
+    const amountPaidNum = amountTotalCents / 100;
+
+    // One email per OWNER. Fire all sends in parallel; we don't need
+    // to await individually since failures are non-blocking either way.
+    await Promise.allSettled(
+      invoice.organization.users.map((owner) =>
+        sendTransactional({
+          email: owner.email,
+          transactionalId: LOOPS_TEMPLATES.PAYMENT_RECEIVED,
+          dataVariables: {
+            recipientName: owner.fullName.split(/\s+/)[0] || "there",
+            firmName: invoice.organization.name,
+            clientName: invoice.project.clientName ?? "your client",
+            projectName: invoice.project.name,
+            invoiceNumber: invoice.invoiceNumber,
+            amountPaid: fmtMoney(amountPaidNum),
+            paymentMethod,
+            paidDate: fmtDate(paidDate),
+          },
+        })
+      )
+    ).catch((err) => {
+      console.warn("Stripe Connect webhook: payment-received email failed:", err);
+    });
+  }
 }
