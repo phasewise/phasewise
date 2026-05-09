@@ -123,8 +123,8 @@ export default function BillingInfoForm({ initial }: Props) {
       </div>
 
       {/* Tradeoff note: printing routing/account on the invoice is
-          industry standard for B2B (Caltrans / agencies / developers
-          all expect it), but it does mean anyone who has a copy of the
+          industry standard for B2B (state agencies / developers all
+          expect it), but it does mean anyone who has a copy of the
           invoice has the bank info. */}
       <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-5">
         <div className="flex items-start gap-3">
@@ -132,7 +132,7 @@ export default function BillingInfoForm({ initial }: Props) {
           <div className="text-sm text-amber-900">
             <p className="font-semibold mb-1">A note on printing bank details</p>
             <p className="text-xs leading-relaxed">
-              It&apos;s standard practice in B2B invoicing (especially for landscape architecture, AE, and CM firms) to print ACH and wire details on the invoice — public agencies like Caltrans and most enterprise APs expect them. But anyone with a copy of the invoice has the routing and account numbers.
+              It&apos;s standard practice in B2B invoicing (especially for landscape architecture, AE, and CM firms) to print ACH and wire details on the invoice — state agencies and most enterprise APs expect them. But anyone with a copy of the invoice has the routing and account numbers.
             </p>
             <p className="text-xs leading-relaxed mt-2">
               The modern alternative is a hosted &quot;Pay online&quot; link (like Stripe / FreshBooks / QuickBooks Online) where the invoice just says &ldquo;Click here to pay&rdquo; and the bank details stay private. <strong>Stripe Payment Links integration is on the Phasewise roadmap</strong> — when it ships, you&apos;ll be able to send invoices without printing your bank info on them.

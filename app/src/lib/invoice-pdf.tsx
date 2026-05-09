@@ -43,7 +43,7 @@ type InvoicePdfInput = {
     // before opening it).
     clientContactName?: string | null;
     // Optional contract / agreement number from the client side
-    // (Caltrans-style "Agreement No. 56A0814"). Renders under the
+    // (state-agency-style "Agreement No. 56A0814"). Renders under the
     // project label in the meta grid when present.
     contractNumber?: string | null;
   };

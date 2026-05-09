@@ -140,6 +140,13 @@ model User {
   // from the user's current-week entries — and applied by clicking
   // "Apply schedule" on a draft week.
   weeklyScheduleTemplate Json? @map("weekly_schedule_template")
+  // Owner-controlled flag for who can create new projects. OWNER and
+  // ADMIN bypass this (they can always create); for everyone else
+  // (PM / SUPERVISOR / STAFF) the flag gates the +New Project button
+  // on /projects and the POST /api/projects endpoint. Default false
+  // so new firms start in the safest state — owner explicitly grants
+  // it to whoever needs it via the team edit modal.
+  canCreateProjects Boolean @default(false) @map("can_create_projects")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 

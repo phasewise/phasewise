@@ -24,6 +24,10 @@ export type ProjectListItem = {
 
 type Props = {
   projects: ProjectListItem[];
+  // Owner-gated permission: OWNER/ADMIN always true, others need the
+  // `User.canCreateProjects` flag. Hides the "+ New Project" button
+  // when false. Server-side enforcement is on POST /api/projects.
+  canCreateProjects: boolean;
 };
 
 // Status options used both by the inline row dropdown and the top filter pill.
@@ -53,7 +57,7 @@ const SECTION_ORDER: Array<{
   { value: "ARCHIVED", label: "Archived", description: "No longer active or relevant.", defaultCollapsed: true },
 ];
 
-export default function ProjectsClient({ projects: initialProjects }: Props) {
+export default function ProjectsClient({ projects: initialProjects, canCreateProjects }: Props) {
   const confirm = useConfirm();
   const router = useRouter();
   const [projects, setProjects] = useState(initialProjects);
@@ -203,13 +207,15 @@ export default function ProjectsClient({ projects: initialProjects }: Props) {
           <h1 className="text-3xl font-bold text-slate-900">Projects</h1>
           <p className="text-sm text-slate-500 mt-1">All projects for your organization</p>
         </div>
-        <Link
-          href="/projects/new"
-          className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-500"
-        >
-          <FolderPlus className="h-4 w-4" />
-          New Project
-        </Link>
+        {canCreateProjects && (
+          <Link
+            href="/projects/new"
+            className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-500"
+          >
+            <FolderPlus className="h-4 w-4" />
+            New Project
+          </Link>
+        )}
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-4 mb-8">
@@ -304,13 +310,17 @@ export default function ProjectsClient({ projects: initialProjects }: Props) {
               >
                 Clear filters
               </button>
-            ) : (
+            ) : canCreateProjects ? (
               <Link
                 href="/projects/new"
                 className="text-sm font-semibold text-emerald-600 hover:text-emerald-700"
               >
                 Create a project &rarr;
               </Link>
+            ) : (
+              <p className="text-xs text-slate-400">
+                Ask an owner or admin to create the first project.
+              </p>
             )}
           </div>
         </div>

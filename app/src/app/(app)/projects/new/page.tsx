@@ -319,7 +319,7 @@ export default function NewProjectPage() {
                   className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none focus:border-emerald-500"
                 />
                 <p className="mt-1 text-xs text-slate-500">
-                  Required by Caltrans, federal agencies, and most enterprise APs. Renders on the invoice.
+                  Required by state and federal agencies and most enterprise APs. Renders on the invoice.
                 </p>
               </div>
             </div>

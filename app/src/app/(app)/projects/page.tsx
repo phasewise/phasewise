@@ -82,5 +82,16 @@ export default async function ProjectsPage() {
     })),
   }));
 
-  return <ProjectsClient projects={items} />;
+  // Project-create permission gate. OWNER/ADMIN can always create.
+  // Everyone else (PM / SUPERVISOR / STAFF) needs the
+  // owner-controlled `canCreateProjects` flag set on their User row.
+  // The client component uses this to hide the "+ New Project"
+  // button — the server-side check on POST /api/projects is the
+  // actual security gate.
+  const canCreateProjects =
+    currentUser.role === "OWNER" ||
+    currentUser.role === "ADMIN" ||
+    currentUser.canCreateProjects;
+
+  return <ProjectsClient projects={items} canCreateProjects={canCreateProjects} />;
 }

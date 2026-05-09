@@ -22,6 +22,10 @@ type TeamUser = {
   supervisorId?: string | null;
   // Backup approver for when the primary supervisor is on leave.
   alternateSupervisorId?: string | null;
+  // Owner-controlled flag: can this user create new projects?
+  // OWNER/ADMIN bypass; for everyone else this gates the button +
+  // the POST /api/projects endpoint. Default false.
+  canCreateProjects?: boolean;
 };
 
 function MemberAvatar({ name, photoUrl }: { name: string; photoUrl?: string | null }) {
@@ -110,6 +114,9 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
   // Backup supervisor for vacation/leave coverage. Same approval
   // privilege as primary; covers when primary is unavailable.
   const [editAlternateSupervisorId, setEditAlternateSupervisorId] = useState("");
+  // Owner-controlled flag: can this user create new projects? OWNER /
+  // ADMIN bypass; for others this gates the +New Project button.
+  const [editCanCreateProjects, setEditCanCreateProjects] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [inviteBanner, setInviteBanner] = useState<{ name: string; url: string } | null>(null);
 
@@ -215,6 +222,7 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
     setEditSalary(user.salary != null ? String(user.salary) : "");
     setEditSupervisorId(user.supervisorId || "");
     setEditAlternateSupervisorId(user.alternateSupervisorId || "");
+    setEditCanCreateProjects(Boolean(user.canCreateProjects));
     setError(null);
   }
 
@@ -230,6 +238,7 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
     setEditSalary("");
     setEditSupervisorId("");
     setEditAlternateSupervisorId("");
+    setEditCanCreateProjects(false);
   }
 
   function handleEditTitleSelect(value: string) {
@@ -260,6 +269,7 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
       // Send null to clear; otherwise pass the selected user id.
       supervisorId: editSupervisorId || null,
       alternateSupervisorId: editAlternateSupervisorId || null,
+      canCreateProjects: editCanCreateProjects,
     };
     if (editBillingRate !== "") body.billingRate = editBillingRate;
     if (editSalary !== "") body.salary = editSalary;
@@ -290,6 +300,7 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
               phone: updated.phone,
               supervisorId: updated.supervisorId ?? null,
               alternateSupervisorId: updated.alternateSupervisorId ?? null,
+              canCreateProjects: Boolean(updated.canCreateProjects),
               billingRate: updated.billingRate != null ? Number(updated.billingRate) : null,
               salary: updated.salary != null ? Number(updated.salary) : null,
               costRate: updated.costRate != null ? Number(updated.costRate) : null,
@@ -781,6 +792,29 @@ export default function TeamMembersClient({ users: initialUsers, canManage }: Pr
                     Covers approvals when the primary supervisor is on vacation or leave. Same approval privileges as the primary.
                   </p>
                 </div>
+                {/* Project-create permission. Owner/Admin always have it
+                    so the toggle is hidden for them — flipping it would
+                    have no effect. For everyone else it gates the
+                    +New Project button + the POST /api/projects API. */}
+                {editRole !== "OWNER" && editRole !== "ADMIN" && (
+                  <div className="sm:col-span-2">
+                    <label className="flex items-start gap-2.5 cursor-pointer rounded-lg border border-[#E2EBE4] bg-[#F7F9F7] px-3.5 py-2.5 hover:border-[#52B788] transition-colors">
+                      <input
+                        id="team-edit-can-create-projects"
+                        type="checkbox"
+                        checked={editCanCreateProjects}
+                        onChange={(e) => setEditCanCreateProjects(e.target.checked)}
+                        className="mt-0.5 h-4 w-4 accent-[#2D6A4F]"
+                      />
+                      <span className="text-sm text-[#1A2E22] leading-tight">
+                        <span className="font-medium">Can create new projects</span>
+                        <span className="block text-[11px] text-[#6B8C74] mt-0.5">
+                          When enabled, this user sees the &ldquo;+ New Project&rdquo; button on the Projects page. Owners and Admins can always create projects regardless of this setting.
+                        </span>
+                      </span>
+                    </label>
+                  </div>
+                )}
               </div>
 
               <div className="grid sm:grid-cols-2 gap-4 pt-2 border-t border-[#E8EDE9]">

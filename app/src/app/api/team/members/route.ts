@@ -182,6 +182,7 @@ export async function PATCH(request: Request) {
       isActive,
       supervisorId,
       alternateSupervisorId,
+      canCreateProjects,
     } = body as {
       userId?: string;
       fullName?: string;
@@ -196,6 +197,9 @@ export async function PATCH(request: Request) {
       // we'll verify is a valid user in the same org.
       supervisorId?: string | null;
       alternateSupervisorId?: string | null;
+      // Owner-controlled flag — gates the +New Project button + the
+      // POST /api/projects endpoint for non-OWNER/ADMIN users.
+      canCreateProjects?: boolean;
     };
 
     if (!userId) {
@@ -325,6 +329,15 @@ export async function PATCH(request: Request) {
         }
         updateData.alternateSupervisorId = alternateSupervisorId;
       }
+    }
+
+    // Owner-controlled "can create projects" flag. Plain boolean — no
+    // org-membership check needed since it's a flag on the user
+    // themselves. OWNER/ADMIN bypass the flag in the project-create
+    // gate, but persisting it for them is harmless (and lets a future
+    // demoted-to-PM still keep their granted permission).
+    if (canCreateProjects !== undefined) {
+      updateData.canCreateProjects = Boolean(canCreateProjects);
     }
 
     if (billingRate !== undefined) {

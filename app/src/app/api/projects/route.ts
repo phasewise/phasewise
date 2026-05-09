@@ -90,6 +90,21 @@ export async function POST(request: Request) {
       );
     }
 
+    // Project-create permission gate. OWNER and ADMIN can always
+    // create. Everyone else (PM / SUPERVISOR / STAFF) needs the
+    // owner-controlled `canCreateProjects` flag set on their User
+    // row. Defaults to false so new firms start safely.
+    const canCreate =
+      currentUser.role === "OWNER" ||
+      currentUser.role === "ADMIN" ||
+      currentUser.canCreateProjects;
+    if (!canCreate) {
+      return NextResponse.json(
+        { error: "You don't have permission to create projects. Ask an owner or admin to grant you the 'Can create projects' permission." },
+        { status: 403 }
+      );
+    }
+
     if (!Array.isArray(phases) || phases.length === 0) {
       return NextResponse.json(
         { error: "At least one phase is required." },

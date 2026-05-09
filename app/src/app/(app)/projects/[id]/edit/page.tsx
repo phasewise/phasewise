@@ -400,7 +400,7 @@ export default function EditProjectPage() {
                   className="mt-2 w-full rounded-lg border border-[#E2EBE4] bg-[#F7F9F7] px-4 py-3 text-sm text-[#1A2E22] outline-none focus:border-[#52B788] focus:bg-white"
                 />
                 <p className="mt-1 text-xs text-[#6B8C74]">
-                  Optional. Required by Caltrans, federal agencies, and most enterprise APs. Renders on every invoice.
+                  Optional. Required by state and federal agencies and most enterprise APs. Renders on every invoice.
                 </p>
               </div>
             </div>

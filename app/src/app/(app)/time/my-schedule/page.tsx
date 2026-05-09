@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/supabase/auth";
 import { prisma } from "@/lib/prisma";
 import { PHASE_LABELS } from "@/lib/constants";
+import { ProjectNameLink } from "./ProjectNameLink";
 
 export const dynamic = "force-dynamic";
 
@@ -212,13 +213,9 @@ export default async function MySchedulePage() {
                       >
                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                       </svg>
-                      <Link
-                        href={`/projects/${g.projectId}`}
-                        className="font-semibold text-[#1A2E22] hover:text-[#2D6A4F] transition-colors"
-                        onClick={(e) => e.stopPropagation()}
-                      >
+                      <ProjectNameLink href={`/projects/${g.projectId}`}>
                         {g.projectName}
-                      </Link>
+                      </ProjectNameLink>
                       {g.projectNumber && (
                         <span className="text-xs text-[#6B8C74] font-mono">
                           {g.projectNumber}
