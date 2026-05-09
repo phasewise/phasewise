@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/supabase/auth";
 import {
@@ -11,22 +12,44 @@ import {
 
 export const dynamic = "force-dynamic";
 
+// Zod schema for a single leave-type policy entry. Mirrors
+// LeavePolicyEntry in lib/leave.ts. The previous hand-rolled
+// sanitizePolicy only validated 2 of 5 fields (annualHours,
+// rolloverCap) — mode, monthlyAccrual, and cap (added 2026-05-04
+// for the ACCRUED leave mode work) were silently dropped on every
+// save. An OWNER configuring an ACCRUED policy via the admin UI
+// would see it persist correctly in local React state, then revert
+// to FRONTLOAD defaults on next read. This Zod schema closes that
+// drift — every field is validated and persisted, and the type
+// system enforces sync with LeavePolicyEntry.
+const leavePolicyEntrySchema = z.object({
+  annualHours: z.number().nonnegative().max(10000).default(0),
+  rolloverCap: z.number().min(-1).max(10000).default(0),
+  mode: z.enum(["FRONTLOAD", "ACCRUED"]).optional(),
+  monthlyAccrual: z.number().nonnegative().max(1000).default(0),
+  cap: z.number().nonnegative().max(10000).default(0),
+});
+
+const leavePolicySchema = z.object(
+  Object.fromEntries(
+    LEAVE_TYPES.map((type) => [type, leavePolicyEntrySchema.optional()])
+  )
+);
+
 function sanitizePolicy(raw: unknown): LeavePolicy {
+  // Zod's safeParse never throws — invalid entries get filtered out
+  // via the .partial() shape and out-of-range numbers get clamped at
+  // the schema level. Belt-and-suspenders: also gracefully return {}
+  // if the top-level isn't an object.
   if (!raw || typeof raw !== "object") return {};
-  const obj = raw as Record<string, unknown>;
-  const out: LeavePolicy = {};
-  for (const type of LEAVE_TYPES) {
-    const entry = obj[type];
-    if (entry && typeof entry === "object") {
-      const e = entry as Record<string, unknown>;
-      const annualHours = Math.max(0, Number(e.annualHours ?? 0));
-      const rolloverCap = Number(e.rolloverCap ?? 0);
-      if (!Number.isNaN(annualHours) && !Number.isNaN(rolloverCap)) {
-        out[type] = { annualHours, rolloverCap };
-      }
-    }
+  const result = leavePolicySchema.safeParse(raw);
+  if (!result.success) {
+    // Log details server-side so we can debug a malformed payload
+    // without exposing internals to the client.
+    console.warn("Invalid leave policy payload:", result.error.flatten());
+    return {};
   }
-  return out;
+  return result.data as LeavePolicy;
 }
 
 // GET /api/leave/policy — returns org default + per-user overrides.

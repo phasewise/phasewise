@@ -1,9 +1,59 @@
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
+import { z } from "zod";
 import { stripe, planFromPriceId } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
 import { sendTransactional, LOOPS_TEMPLATES } from "@/lib/loops";
 import { Prisma, type SubscriptionStatus, type Plan } from "@prisma/client";
+
+// Zod schemas for Stripe fields not exposed cleanly via the
+// official type definitions. The cancel-detection logic
+// (commit e700f19) reads `cancel_at`, `cancel_at_period_end`, and
+// `current_period_end` off Stripe.Subscription + the event's
+// `previous_attributes`. The previous code used `as unknown as`
+// casts; if Stripe's API drifts the shape (likely on a future
+// API-version upgrade), the cast is silent and the detection
+// breaks without anyone noticing. These Zod schemas surface the
+// drift loudly via console.warn instead.
+const subCancelFieldsSchema = z.object({
+  current_period_end: z.number().optional(),
+  cancel_at_period_end: z.boolean().optional(),
+  cancel_at: z.number().nullable().optional(),
+});
+
+const previousAttributesSchema = z.object({
+  cancel_at: z.number().nullable().optional(),
+  cancel_at_period_end: z.boolean().optional(),
+});
+
+type SubCancelFields = z.infer<typeof subCancelFieldsSchema>;
+type PreviousAttrs = z.infer<typeof previousAttributesSchema>;
+
+function readSubCancelFields(subscription: Stripe.Subscription): SubCancelFields {
+  const result = subCancelFieldsSchema.safeParse(subscription);
+  if (!result.success) {
+    console.warn(
+      "Stripe subscription cancel-fields shape drifted:",
+      result.error.flatten()
+    );
+    return {};
+  }
+  return result.data;
+}
+
+function readPreviousAttributes(event: Stripe.Event): PreviousAttrs {
+  const data = (event.data ?? {}) as { previous_attributes?: unknown };
+  if (!data.previous_attributes) return {};
+  const result = previousAttributesSchema.safeParse(data.previous_attributes);
+  if (!result.success) {
+    console.warn(
+      "Stripe event previous_attributes shape drifted:",
+      result.error.flatten()
+    );
+    return {};
+  }
+  return result.data;
+}
 
 const PLAN_DISPLAY_NAME: Record<Plan, string> = {
   TRIAL: "Trial",
@@ -99,19 +149,8 @@ export async function POST(request: Request) {
         // also correctly skips the inverse case ("Don't cancel" undo)
         // because previous_attributes.cancel_at would be a timestamp
         // and the new value would be null.
-        const subRaw = subscription as unknown as {
-          cancel_at_period_end?: boolean;
-          cancel_at?: number | null;
-        };
-        const eventWithPrev = event as unknown as {
-          data: {
-            previous_attributes?: {
-              cancel_at?: number | null;
-              cancel_at_period_end?: boolean;
-            };
-          };
-        };
-        const prev = eventWithPrev.data.previous_attributes ?? {};
+        const subRaw = readSubCancelFields(subscription);
+        const prev = readPreviousAttributes(event);
 
         const isCancelingNow =
           subRaw.cancel_at_period_end === true || (subRaw.cancel_at != null && subRaw.cancel_at > 0);
@@ -163,10 +202,25 @@ export async function POST(request: Request) {
 
       case "invoice.payment_failed": {
         const invoice = event.data.object as Stripe.Invoice;
-        // Cast through unknown since Stripe v22 types put `subscription` on the
-        // expanded line item but the field is still present on the invoice object.
-        const invoiceWithSub = invoice as unknown as { subscription?: string | Stripe.Subscription | null };
-        const subId = invoiceWithSub.subscription;
+        // Stripe v22 types put `subscription` on the expanded line item
+        // but the field is still present on the invoice object. Zod
+        // schema validates the runtime shape and surfaces drift if
+        // Stripe ever moves it.
+        const invoiceSubSchema = z.object({
+          subscription: z
+            .union([z.string(), z.object({ id: z.string() })])
+            .nullable()
+            .optional(),
+        });
+        const invoiceParsed = invoiceSubSchema.safeParse(invoice);
+        if (!invoiceParsed.success) {
+          console.warn(
+            "Stripe invoice.payment_failed shape drifted:",
+            invoiceParsed.error.flatten()
+          );
+          break;
+        }
+        const subId = invoiceParsed.data.subscription;
         if (subId) {
           const subscription = await stripe.subscriptions.retrieve(
             typeof subId === "string" ? subId : subId.id
@@ -215,13 +269,11 @@ async function syncSubscriptionToOrg(subscription: Stripe.Subscription) {
 
   // Stripe v22 uses subscription items for period dates — get the first item's period_end
   // as the subscription period end. Fall back to subscription-level fields if available.
-  const subWithPeriod = subscription as unknown as {
-    current_period_end?: number;
-    cancel_at_period_end?: boolean;
-    cancel_at?: number | null;
-  };
-  const item = subscription.items.data[0] as unknown as { current_period_end?: number };
-  const periodEndSeconds = subWithPeriod.current_period_end ?? item?.current_period_end;
+  const subWithPeriod = readSubCancelFields(subscription);
+  const itemSchema = z.object({ current_period_end: z.number().optional() });
+  const itemParsed = itemSchema.safeParse(subscription.items.data[0]);
+  const itemPeriodEnd = itemParsed.success ? itemParsed.data.current_period_end : undefined;
+  const periodEndSeconds = subWithPeriod.current_period_end ?? itemPeriodEnd;
   const periodEnd = periodEndSeconds ? new Date(periodEndSeconds * 1000) : null;
 
   // Stripe sets cancel_at (unix timestamp) when cancellation happens via Customer Portal,
