@@ -747,8 +747,9 @@ export default function HomePage() {
               <ul className="list-none space-y-3">
                 {[
                   { name: "Blog", href: "/blog" },
+                  { name: "Help", href: "/help" },
                   { name: "FAQ", href: "/#faq" },
-                  { name: "Contact", href: "mailto:kevin@phasewise.io" },
+                  { name: "Contact", href: "mailto:hello@phasewise.io" },
                 ].map((item) => (
                   <li key={item.name}>
                     <a href={item.href} className="text-[13px] text-white/35 hover:text-white/75 transition-colors">

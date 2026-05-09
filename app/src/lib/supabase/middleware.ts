@@ -40,6 +40,7 @@ export async function handleAuth(request: NextRequest) {
     "/invite",
     // Public marketing pages
     "/blog",
+    "/help",
     "/privacy",
     "/terms",
     // PWA + SEO assets
@@ -61,6 +62,7 @@ export async function handleAuth(request: NextRequest) {
   const isPublicPath =
     publicExact.has(path) ||
     path.startsWith("/blog/") ||
+    path.startsWith("/help/") ||
     path.startsWith("/invite/") ||
     // Public invoice viewer + its PDF endpoint. Clients open these from
     // an email link without a Phasewise account; the cuid token in the

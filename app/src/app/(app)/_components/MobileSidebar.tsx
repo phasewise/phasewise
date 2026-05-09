@@ -9,6 +9,7 @@ import {
   ClipboardList,
   Clock,
   FolderKanban,
+  HelpCircle,
   Home,
   Leaf,
   Menu,
@@ -207,7 +208,16 @@ function SidebarContent({
             {user.organization.name}
           </div>
         )}
-        <div className="mt-3 px-2">
+        <Link
+          href="/help"
+          onClick={onNavigate}
+          className="mt-3 flex items-center gap-2 px-2 py-1.5 text-[12px] text-white/50 hover:text-white/80 hover:bg-white/[0.06] rounded-lg transition-colors"
+          title="Open the Phasewise Help Center"
+        >
+          <HelpCircle className="h-3.5 w-3.5" strokeWidth={1.75} />
+          Help &amp; docs
+        </Link>
+        <div className="mt-2 px-2">
           <LogoutButton />
         </div>
       </div>
