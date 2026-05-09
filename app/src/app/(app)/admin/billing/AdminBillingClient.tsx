@@ -17,38 +17,9 @@ import {
   X,
 } from "lucide-react";
 import { useConfirm } from "@/components/confirm-provider";
-
-type LineItem = {
-  id: string;
-  description: string;
-  quantity: number;
-  unitPrice: number;
-  amount: number;
-};
-
-type Invoice = {
-  id: string;
-  invoiceNumber: string;
-  status: string;
-  issueDate: string;
-  dueDate: string;
-  periodStart: string | null;
-  periodEnd: string | null;
-  subtotal: number;
-  tax: number;
-  total: number;
-  paidAmount: number;
-  paidDate: string | null;
-  paymentReference: string | null;
-  paymentMethod: string | null;
-  sentAt: string | null;
-  notes: string | null;
-  projectName: string;
-  projectNumber: string | null;
-  projectId: string;
-  clientEmail: string | null;
-  lineItems: LineItem[];
-};
+import { type Invoice, type LineItem, STATUS_OPTIONS } from "./types";
+import SendInvoiceModal from "./SendInvoiceModal";
+import PaymentUpdateModal from "./PaymentUpdateModal";
 
 type Props = {
   invoices: Invoice[];
@@ -72,15 +43,6 @@ const STATUS_COLORS: Record<string, string> = {
   OVERDUE: "bg-rose-50 text-rose-700 border-rose-200",
   VOID: "bg-[#F7F9F7] text-[#A3BEA9] border-[#E2EBE4]",
 };
-
-const STATUS_OPTIONS = [
-  { value: "DRAFT", label: "Draft" },
-  { value: "SENT", label: "Sent" },
-  { value: "PAID", label: "Paid" },
-  { value: "PARTIALLY_PAID", label: "Partially Paid" },
-  { value: "OVERDUE", label: "Overdue" },
-  { value: "VOID", label: "Void" },
-];
 
 // Section order — attention items first, then current work, then
 // historical. Matches the pattern used on the Projects list page.
@@ -119,16 +81,17 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
+  // Payment modal: { invoice, markAsPaid }. markAsPaid=true uses
+  // PAID + total + today's date as defaults; false uses invoice's
+  // current values (edit existing payment).
+  const [paymentModal, setPaymentModal] = useState<{
+    invoice: Invoice;
+    markAsPaid: boolean;
+  } | null>(null);
 
-  // Send-invoice modal state — replaces the back-to-back browser
-  // prompt() calls that were the v1 path. Real form gives the user a
-  // proper recipient input + multiline message + a clear send action.
+  // Send-invoice modal: just which invoice is open. The modal owns
+  // its own form state (recipient, message, error, success).
   const [sendingInvoice, setSendingInvoice] = useState<Invoice | null>(null);
-  const [sendToEmail, setSendToEmail] = useState("");
-  const [sendBodyMessage, setSendBodyMessage] = useState("");
-  const [sendError, setSendError] = useState<string | null>(null);
-  const [sendSuccess, setSendSuccess] = useState<string | null>(null);
   // Tracks which invoice's Send button is in-flight, so we can disable
   // it without disabling the whole row.
   const [savingStatusId, setSavingStatusId] = useState<string | null>(null);
@@ -191,12 +154,9 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
     Record<string, "sending" | "sent" | string>
   >({});
 
-  // Edit modal state
-  const [editStatus, setEditStatus] = useState("");
-  const [editPaidAmount, setEditPaidAmount] = useState("");
-  const [editPaidDate, setEditPaidDate] = useState("");
-  const [editPaymentReference, setEditPaymentReference] = useState("");
-  const [editPaymentMethod, setEditPaymentMethod] = useState("");
+  // (Payment-modal form state moved into PaymentUpdateModal.tsx —
+  // the parent only tracks which invoice's modal is open via
+  // paymentModal above.)
 
   // Auto-fetch next invoice number whenever the form opens. The counter
   // doesn't increment until the user actually creates the invoice.
@@ -419,22 +379,15 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
   }
 
   function openPayment(invoice: Invoice) {
-    setEditingInvoice(invoice);
-    setEditStatus(invoice.status);
-    setEditPaidAmount(String(invoice.paidAmount));
-    setEditPaidDate(invoice.paidDate ? invoice.paidDate.split("T")[0] : "");
-    setEditPaymentReference(invoice.paymentReference ?? "");
-    setEditPaymentMethod(invoice.paymentMethod ?? "");
     setError(null);
+    setPaymentModal({ invoice, markAsPaid: false });
   }
 
   // Pre-fill the payment modal as a "Mark as Paid" shortcut: status PAID,
   // paid in full, today's date. User can still tweak before saving.
   function quickMarkAsPaid(invoice: Invoice) {
-    openPayment(invoice);
-    setEditStatus("PAID");
-    setEditPaidAmount(String(invoice.total));
-    setEditPaidDate(new Date().toISOString().split("T")[0]);
+    setError(null);
+    setPaymentModal({ invoice, markAsPaid: true });
   }
 
   // Delete an invoice. PAID invoices get a stronger confirm because
@@ -464,61 +417,8 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
     setInvoices((prev) => prev.filter((i) => i.id !== invoice.id));
   }
 
-  // Open the Send-invoice modal — we're not actually sending yet, just
-  // collecting the recipient + optional message in a real form.
-  function openSendModal(invoice: Invoice) {
-    setSendError(null);
-    setSendSuccess(null);
-    setSendToEmail(invoice.clientEmail ?? "");
-    setSendBodyMessage("");
-    setSendingInvoice(invoice);
-  }
-
-  function closeSendModal() {
-    setSendingInvoice(null);
-    setSendToEmail("");
-    setSendBodyMessage("");
-    setSendError(null);
-  }
-
-  async function handleSendSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!sendingInvoice) return;
-    setSendError(null);
-    setSavingStatusId(sendingInvoice.id);
-    try {
-      const res = await fetch(`/api/invoices/${sendingInvoice.id}/send`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          toEmail: sendToEmail.trim() || undefined,
-          bodyMessage: sendBodyMessage.trim() || undefined,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setSendError(data.error || "Failed to send invoice.");
-        return;
-      }
-      setInvoices((prev) =>
-        prev.map((i) =>
-          i.id === sendingInvoice.id
-            ? { ...i, status: data.status, sentAt: data.sentAt }
-            : i
-        )
-      );
-      setSendSuccess(
-        `Sent to ${data.recipient}. Status updated to ${data.status}.`
-      );
-      // Auto-close after a moment so the user sees the confirmation.
-      setTimeout(() => {
-        setSendingInvoice(null);
-        setSendSuccess(null);
-      }, 1800);
-    } finally {
-      setSavingStatusId(null);
-    }
-  }
+  // (Send-invoice modal logic moved into SendInvoiceModal.tsx —
+  // the parent only tracks which invoice is being sent.)
 
   // One-click "Mark as Sent" — records sentAt + flips DRAFT to SENT.
   // No modal because there's nothing to ask the user about.
@@ -554,50 +454,8 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
     );
   }
 
-  async function handleUpdatePayment(e: React.FormEvent) {
-    e.preventDefault();
-    if (!editingInvoice) return;
-    setError(null);
-    setSaving(true);
-
-    const res = await fetch("/api/invoices", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        id: editingInvoice.id,
-        status: editStatus,
-        paidAmount: Number(editPaidAmount) || 0,
-        paidDate: editPaidDate || null,
-        paymentReference: editPaymentReference || null,
-        paymentMethod: editPaymentMethod || null,
-      }),
-    });
-
-    const data = await res.json();
-    setSaving(false);
-
-    if (!res.ok) {
-      setError(data.error || "Failed to update.");
-      return;
-    }
-
-    const updated = data.invoice;
-    setInvoices((prev) =>
-      prev.map((inv) =>
-        inv.id === editingInvoice.id
-          ? {
-              ...inv,
-              status: updated.status,
-              paidAmount: Number(updated.paidAmount),
-              paidDate: updated.paidDate,
-              paymentReference: updated.paymentReference,
-              paymentMethod: updated.paymentMethod,
-            }
-          : inv
-      )
-    );
-    setEditingInvoice(null);
-  }
+  // (handleUpdatePayment moved into PaymentUpdateModal.tsx — the
+  // parent passes an onSaved callback that patches the invoices list.)
 
   // Group invoices by section for the rendered tables.
   const grouped: Record<SectionKey, Invoice[]> = {
@@ -1310,7 +1168,7 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
                                   {(inv.status === "DRAFT" || inv.status === "SENT") && (
                                     <button
                                       type="button"
-                                      onClick={() => openSendModal(inv)}
+                                      onClick={() => setSendingInvoice(inv)}
                                       disabled={savingStatusId === inv.id}
                                       className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 hover:text-emerald-800 hover:underline disabled:opacity-50"
                                       title="Email PDF to client via Phasewise"
@@ -1377,285 +1235,41 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
         </div>
       )}
 
-      {/* Send invoice modal — replaces the back-to-back browser
-          prompts that v1 used. Recipient + optional message + send.
-          Auto-closes ~1.8s after a successful send so the user sees
-          the confirmation, not just an instant disappearance. */}
+      {/* Modals — split out into SendInvoiceModal.tsx +
+          PaymentUpdateModal.tsx so this file stays focused on the
+          invoice list, status grouping, stat cards, and the
+          New Invoice form. Each modal owns its own form state. */}
       {sendingInvoice && (
-        <div
-          className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
-          onClick={closeSendModal}
-        >
-          <div
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between p-6 pb-0">
-              <h2 className="font-serif text-xl text-[#1A2E22]">Send invoice</h2>
-              <button
-                type="button"
-                onClick={closeSendModal}
-                aria-label="Close send invoice modal"
-                className="text-[#A3BEA9] hover:text-[#1A2E22] transition-colors"
-              >
-                <X size={18} />
-              </button>
-            </div>
-            <form onSubmit={handleSendSubmit} className="p-6 space-y-4">
-              <div className="bg-[#F7F9F7] rounded-xl p-4 space-y-1 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-[#6B8C74]">Invoice</span>
-                  <span className="font-mono font-semibold text-[#1A2E22]">
-                    {sendingInvoice.invoiceNumber}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#6B8C74]">Project</span>
-                  <span className="text-[#1A2E22]">{sendingInvoice.projectName}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#6B8C74]">Total</span>
-                  <span className="font-semibold text-[#1A2E22]">
-                    ${sendingInvoice.total.toLocaleString()}
-                  </span>
-                </div>
-              </div>
-
-              <div>
-                <label
-                  htmlFor="send-to-email"
-                  className="text-sm text-[#3D5C48] block mb-1.5 font-medium"
-                >
-                  Send to
-                </label>
-                <input
-                  id="send-to-email"
-                  type="email"
-                  value={sendToEmail}
-                  onChange={(e) => setSendToEmail(e.target.value)}
-                  placeholder={sendingInvoice.clientEmail ?? "client@example.com"}
-                  className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]"
-                />
-                <p className="mt-1 text-xs text-[#A3BEA9]">
-                  Defaults to the client&apos;s email on the project. Override here for a one-off.
-                </p>
-              </div>
-
-              <div>
-                <label
-                  htmlFor="send-message"
-                  className="text-sm text-[#3D5C48] block mb-1.5 font-medium"
-                >
-                  Message <span className="text-[#A3BEA9] font-normal">(optional)</span>
-                </label>
-                <textarea
-                  id="send-message"
-                  rows={3}
-                  value={sendBodyMessage}
-                  onChange={(e) => setSendBodyMessage(e.target.value)}
-                  placeholder="Hi — your invoice is ready for review. Click the link in the email to view, download, or pay online."
-                  className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]"
-                />
-              </div>
-
-              {sendError && (
-                <div className="rounded-lg bg-rose-50 border border-rose-200 px-3 py-2 text-xs text-rose-700">
-                  {sendError}
-                </div>
-              )}
-              {sendSuccess && (
-                <div className="rounded-lg bg-[#F0FAF4] border border-[#52B788]/40 px-3 py-2 text-xs text-[#2D6A4F]">
-                  {sendSuccess}
-                </div>
-              )}
-
-              <div className="flex items-center gap-3 pt-2">
-                <button
-                  type="submit"
-                  disabled={savingStatusId === sendingInvoice.id || !!sendSuccess}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold bg-[#2D6A4F] text-white hover:bg-[#40916C] transition-colors disabled:opacity-60"
-                >
-                  <Send className="w-4 h-4" />
-                  {savingStatusId === sendingInvoice.id
-                    ? "Sending..."
-                    : sendSuccess
-                    ? "Sent ✓"
-                    : "Send invoice"}
-                </button>
-                <button
-                  type="button"
-                  onClick={closeSendModal}
-                  className="px-4 py-2.5 rounded-lg text-sm font-medium text-[#6B8C74] hover:text-[#1A2E22] transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <SendInvoiceModal
+          invoice={sendingInvoice}
+          onClose={() => setSendingInvoice(null)}
+          onSent={(update) =>
+            setInvoices((prev) =>
+              prev.map((inv) =>
+                inv.id === sendingInvoice.id ? { ...inv, ...update } : inv
+              )
+            )
+          }
+        />
       )}
 
-      {/* Payment update modal */}
-      {editingInvoice && (
-        <div
-          className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
-          onClick={() => setEditingInvoice(null)}
-        >
-          <div
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between p-6 pb-0">
-              <h2 className="font-serif text-xl text-[#1A2E22]">Update Payment</h2>
-              <button
-                type="button"
-                onClick={() => setEditingInvoice(null)}
-                aria-label="Close payment update modal"
-                className="text-[#A3BEA9] hover:text-[#1A2E22] transition-colors"
-              >
-                <X size={18} />
-              </button>
-            </div>
-            <form onSubmit={handleUpdatePayment} className="p-6 space-y-4">
-              <div className="bg-[#F7F9F7] rounded-xl p-4 space-y-1 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-[#6B8C74]">Invoice</span>
-                  <span className="font-mono font-semibold text-[#1A2E22]">
-                    {editingInvoice.invoiceNumber}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#6B8C74]">Project</span>
-                  <span className="text-[#1A2E22]">{editingInvoice.projectName}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#6B8C74]">Total</span>
-                  <span className="font-semibold text-[#1A2E22]">
-                    ${editingInvoice.total.toLocaleString()}
-                  </span>
-                </div>
-              </div>
-
-              <div>
-                <label
-                  htmlFor="inv-edit-status"
-                  className="text-sm text-[#3D5C48] block mb-1.5 font-medium"
-                >
-                  Status
-                </label>
-                <select
-                  id="inv-edit-status"
-                  value={editStatus}
-                  onChange={(e) => setEditStatus(e.target.value)}
-                  className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]"
-                >
-                  {STATUS_OPTIONS.map((s) => (
-                    <option key={s.value} value={s.value}>
-                      {s.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label
-                    htmlFor="inv-edit-paid-amount"
-                    className="text-sm text-[#3D5C48] block mb-1.5 font-medium"
-                  >
-                    Amount paid
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A3BEA9] text-sm">
-                      $
-                    </span>
-                    <input
-                      id="inv-edit-paid-amount"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={editPaidAmount}
-                      onChange={(e) => setEditPaidAmount(e.target.value)}
-                      className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg pl-7 pr-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label
-                    htmlFor="inv-edit-paid-date"
-                    className="text-sm text-[#3D5C48] block mb-1.5 font-medium"
-                  >
-                    Paid date
-                  </label>
-                  <input
-                    id="inv-edit-paid-date"
-                    type="date"
-                    value={editPaidDate}
-                    onChange={(e) => setEditPaidDate(e.target.value)}
-                    className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label
-                    htmlFor="inv-edit-payment-method"
-                    className="text-sm text-[#3D5C48] block mb-1.5 font-medium"
-                  >
-                    Payment method
-                  </label>
-                  <input
-                    id="inv-edit-payment-method"
-                    list="inv-payment-methods"
-                    value={editPaymentMethod}
-                    onChange={(e) => setEditPaymentMethod(e.target.value)}
-                    placeholder="Check / ACH / Wire / Card"
-                    className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]"
-                  />
-                  <datalist id="inv-payment-methods">
-                    <option value="Check" />
-                    <option value="ACH" />
-                    <option value="Wire" />
-                    <option value="Credit Card" />
-                    <option value="Cash" />
-                    <option value="Other" />
-                  </datalist>
-                </div>
-                <div>
-                  <label
-                    htmlFor="inv-edit-payment-reference"
-                    className="text-sm text-[#3D5C48] block mb-1.5 font-medium"
-                  >
-                    Reference / check #
-                  </label>
-                  <input
-                    id="inv-edit-payment-reference"
-                    value={editPaymentReference}
-                    onChange={(e) => setEditPaymentReference(e.target.value)}
-                    placeholder="Check #, ACH ref, transaction ID…"
-                    className="w-full bg-[#F7F9F7] border border-[#E2EBE4] rounded-lg px-3.5 py-2.5 text-sm text-[#1A2E22] focus:outline-none focus:border-[#52B788]"
-                  />
-                </div>
-              </div>
-              {error && <p className="text-[#B04030] text-sm">{error}</p>}
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium bg-[#2D6A4F] text-white hover:bg-[#40916C] transition-colors disabled:opacity-50"
-                >
-                  {saving ? "Saving..." : "Update payment"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setEditingInvoice(null)}
-                  className="px-4 py-2.5 rounded-lg text-sm text-[#6B8C74] hover:text-[#1A2E22]"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+      {paymentModal && (
+        <PaymentUpdateModal
+          invoice={paymentModal.invoice}
+          {...(paymentModal.markAsPaid && {
+            initialStatus: "PAID",
+            initialPaidAmount: String(paymentModal.invoice.total),
+            initialPaidDate: new Date().toISOString().split("T")[0],
+          })}
+          onClose={() => setPaymentModal(null)}
+          onSaved={(update) =>
+            setInvoices((prev) =>
+              prev.map((inv) =>
+                inv.id === paymentModal.invoice.id ? { ...inv, ...update } : inv
+              )
+            )
+          }
+        />
       )}
     </div>
   );
