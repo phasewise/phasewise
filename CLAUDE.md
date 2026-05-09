@@ -602,6 +602,61 @@ Ordered by my estimated value-per-effort. Revisit during the forensic audit.
 - ✅ **Automated year-end rollover** (shipped 2026-05-07, commit `d831e5e`) — `computeUserLeaveBalances` pulls leave entries for `[prevYearStart, yearEnd)` in one query, buckets by year on the JS side, and adds `min(remainingPrev, rolloverCap)` to this year's available pool. New `LeaveBalance.carryoverHours` field surfaces the amount; admin leave page + timesheet balance widget render "+Xh carried over" beneath the balance number. `rolloverCap=0` keeps use-it-or-lose-it (HOLIDAY default), `>0` clamps, `-1` is unlimited. ACCRUED policies use their own annualHours as the prior-year ceiling — by Dec 31 the full annual amount has been accrued (capped if a `cap` was set), so the formula works for both modes without re-running month-by-month accrual against a closed year. New Year's Day flips and the rollover computes itself off the prior year's actual usage.
 - **Forensic audit** — top-to-bottom value review once the queue slows down. Rate each feature on value delivered vs maintenance cost. Cut or sharpen anything that doesn't earn its keep.
 
+## Where We Left Off (2026-05-09 EOD)
+
+**Status: 🟢 Light, focused day after yesterday's marathon.** Two commits, real-bug-found-via-Zod-refactor, full audit punch-list cleared, Postmaster Tools live, welcome template tightened, outreach reply playbook drafted. Total LOC small; meaningful work concentrated in audit closure, ops hardening, and the offensive-side prep for first cold-outreach replies.
+
+### Commits in order (2 today, on top of yesterday's 7)
+
+8. `eef0d33` (or thereabouts — `eef…` not in scope today, see below) — N/A
+9. **Today's commits**:
+   - `c14c86e` — **Audit mop-up: dev-guard budget log + Sentry capture on checkout fail.** Two Low-tier audit items from yesterday's forensic audit. **(a)** `lib/budget-alerts.ts:121` — wrapped `console.log` in `process.env.NODE_ENV !== "production"` guard so the log doesn't flood Vercel function logs at scale (every time-entry write triggers a budget check). **(b)** `app/_components/PricingButton.tsx:49` — replaced `console.error(err)` with `Sentry.captureException(err)` so checkout-button network failures land in Sentry instead of the user's browser console.
+   - `8c2e44d` — **n8n automation docs: refresh setup guide + add 5/9 incident postmortem.** Two doc updates. **(a)** `automation/n8n-workflow-setup.md` rewritten to match the actual deployed 6-node pipeline (`Schedule → List → Build → Generate → Extract → Commit`); old version described an older simpler pipeline. New version documents the deterministic keyword selection logic, the frontmatter fence-strip sanitizer, and points to the JSON as the import source of truth. **(b)** New `automation/n8n-blog-incident-2026-05-09.md` postmortem capturing what broke (GitHub 422 on slug collision), root cause (Build prompt didn't read upstream `List existing articles` output, so keyword was effectively static), fix detail (rewrote Build prompt to dedupe against existing slugs), and why it can't recur. The `n8n-workflow.json` was already current — the deterministic keyword selection + sanitizer were baked in earlier; only the prose docs were stale.
+
+### Plus operational work (no commits)
+
+- **Google Postmaster Tools setup** — both sending domains added and auto-verified (no TXT step needed; Postmaster reused phasewise.io's existing Search Console verification from 2026-04-26).
+  - `phasewise.io` (Workspace Gmail apex)
+  - `mail.phasewise.io` (Loops sending subdomain)
+  - Data starts populating in 24-48 hours. At current send volume most charts will say "Not enough data" for a while; meaningful signals appear once volume crosses ~hundreds of recipients/day. Connects directly to the welcome-email-to-spam diagnosis from yesterday — gives reputation visibility going forward.
+- **Welcome email template tightened in Loops** — three small wins applied to the Welcome template ahead of any further outreach:
+  1. Preview text added: `Your account is ready — here's how to get rolling.` (was empty, wasted inbox real estate; Gmail was duplicating the subject line).
+  2. New first paragraph: `You signed up at phasewise.io. Your account is ready!` — quiet "expected mail" reassurance signal that helps Gmail's spam engine treat the message as wanted. Demoted to body text after first version rendered as H1 above another H1.
+  3. The "replaces the spreadsheets, time trackers, and billing tools" line was flagged as a minor Bayesian-filter risk but Kevin elected to keep it for now. Worth circling back during a future template pass.
+- **Outreach reply playbook drafted** — new file at repo root: `OUTREACH-REPLY-PLAYBOOK.private.md` (gitignored via `*.private.md`). Six pre-written reply templates covering the most common cold-email response patterns:
+  1. "Tell me more / interested" (most important — drop everything to respond)
+  2. "How are you different from Monograph?" (with swap-in copy for BQE / Deltek / Harvest+QBO)
+  3. "Not now / not a priority" (polite close, 6-month follow-up rule)
+  4. "What does it cost?" (direct pricing)
+  5. "Who's behind this?" (anonymity disclosure with allowed/forbidden phrases)
+  6. "Wrong person — talk to X" (referral handoff with fresh first-touch template)
+  Plus voice rules at top (anonymous brand, "we" not "I", short, no marketing fluff, reply within 4 business hours), a triage table at the bottom, and a "never reply with" list. Sister file to `OUTREACH-DRAFTS.private.md`. Replies from Broussard + Atlas Lab cold sends (2026-04-29) are due any day; this preempts the scramble.
+
+### Strategic conversation: outreach automation
+
+Kevin asked: can the prospect-list + outreach + reply loop be fully automated?
+
+Honest map laid out. **Tier-1 automation worth doing now (Hunter.io for verified emails, Gmail filter for reply triage, n8n classification of incoming replies, sequencing tool for follow-ups only)**. Tier-2 (full Apollo + Smartlead stack) waits until first 3-5 paying customers. Tier-3 (multi-mailbox, AI-suggested reply drafts) waits until ~25 customers. **Never automate**: the first reply to a hot lead, anything that touches the anonymity disclosure (one AI hallucination there and the brand is done).
+
+Recommendation accepted: don't try full automation yet. The LA firm market is too tight + connected (NAICS 541320 has ~1-2K active firms in CA), and the first 3-5 customers need founder-touch to become reference customers. **Hunter.io is the one cheap Tier-1 win to start now.** Deferred to Monday 2026-05-11 because today's a Saturday and it benefits from a clear-headed setup block.
+
+### Tomorrow / Monday morning (2026-05-11) — top of the list
+
+**🚨 #1: Hunter.io free tier signup** (~10 min). Goal: kill 80% of the prospect-research grunt work. Sign up at hunter.io with `kevin@phasewise.io`, claim the free 50 lookups/month, install the Chrome extension for one-click email-finding on firm websites. After Monday, every new prospect added to `PROSPECTS.md` should pull a verified email from Hunter rather than guessing `info@` / `studio@`.
+
+**#2: First cold-outreach reply lane open.** Replies from Broussard (2026-04-29) and Atlas Lab (2026-04-29) are now 12 days out. If silence continues through Monday, fire follow-up #1 per `OUTREACH-PLAYBOOK.md` cadence. If anything lands, **use the reply playbook templates** at `OUTREACH-REPLY-PLAYBOOK.private.md` — don't compose from scratch.
+
+**#3: Maintain 5/week cold-outreach cadence.** Three Tier-A drafts already prepared in `OUTREACH-DRAFTS.private.md` (attention2 in San Diego, designlab 252 in Fresno, Mantle in Berkeley) plus runway for more. Send Mon/Tue/Wed/Thu mornings, not Friday afternoons.
+
+### Tomorrow's options (anything past the top three)
+
+4. **AdminBillingClient further refactor.** Today's commit dropped it from 1,662 → 1,276 lines but more is possible (the New Invoice form is still ~400 lines and could come out as `<NewInvoiceForm>`).
+5. **Help center expansion.** Yesterday shipped 6 starter articles. Add 4-6 more covering: timesheet approval workflow, leave & PTO setup, MWELO calculator end-to-end, work plan basics, project status workflow, Stripe Connect troubleshooting.
+6. **Stripe Connect production smoke test.** Click Connect Stripe on `/settings/payments` against your real bank info to verify the live-mode flow end-to-end. Worth doing once you have a real client to invoice with the Pay-now flow.
+7. **G2 Digital Markets resubmission.** Listing was rejected 2026-05-07 with boilerplate copy. Auto-reply promised feedback within 72 business hours; check inbox for specifics on which guideline failed, then resubmit.
+
+---
+
 ## Where We Left Off (2026-05-08 EOD)
 
 **Status: 🟢🟢 Massive day. 7 commits + Stripe live activation + ops fixes.** Today closed out the entire Stripe Connect arc (live mode + Stage D notification email), shipped a long-overdue UX cleanup (modal sweep + Apply Schedule Phase 2), ran a forensic audit and shipped its three Critical fixes, fixed an SEO duplicate-canonical issue (Cloudflare redirect on getphasewise.com), and diagnosed a real welcome-email-to-spam incident with a concrete remediation plan. G2 listing resubmission email sent (auto-reply: 72 business-hour SLA).
@@ -1811,6 +1866,10 @@ After a strategy discussion this session, Kevin confirmed that his top prioritie
 - [x] Priority indexing requested for top 3 commercial-intent articles (Monograph alternatives, LA PM software, billing rates) ✅ 2026-04-26
 - [x] Comprehensive audit completed — 25 verified findings documented at `AUDIT-2026-04-26.md` ✅ 2026-04-26
 - [x] **All 25 audit items cleared** ✅ 2026-04-27 (privacy/terms public, isActive check, form labels, time-entry assignment check, Stripe webhook idempotency, BudgetAlert table, billing PAST_DUE handling, pagination, project access control, private compliance bucket — see AUDIT-2026-04-26.md)
+- [x] **Forensic audit punch-list closed** ✅ 2026-05-09 — yesterday's 3 Critical items (`(app)/error.tsx` boundary, WorkPlan load-error UX, cron firmName fallback bug) plus today's 2 Low items (budget-alerts dev-guard, PricingButton Sentry capture). All audit findings actioned.
+- [x] **Google Postmaster Tools setup** ✅ 2026-05-09 — `phasewise.io` + `mail.phasewise.io` both verified (auto-reused Search Console proof). Reputation data populates 24-48h. Pairs with the welcome-email-to-spam diagnosis from 2026-05-08.
+- [x] **Welcome email template tightened** ✅ 2026-05-09 — preview text added (was empty), "expected mail" reassurance line at top, demoted from H1 to body text. Minor improvements; the spam-classification root cause is domain reputation, not template content.
+- [x] **n8n SEO automation docs refreshed** ✅ 2026-05-09 — `automation/n8n-workflow-setup.md` rewritten to match deployed 6-node pipeline; new `automation/n8n-blog-incident-2026-05-09.md` postmortem captures the GitHub-422 slug-collision incident + fix.
 - [x] **Project relocation off OneDrive** ✅ 2026-04-30 — robocopy to `C:\dev\phasewise`, memory key migrated
 - [x] **Pre-existing slug conflict fix** ✅ 2026-04-30 — dev server now starts cleanly
 - [x] **MWELO render-back loop + branded PDF route** ✅ 2026-04-30
@@ -1834,15 +1893,20 @@ After a strategy discussion this session, Kevin confirmed that his top prioritie
 - [x] **X auto-posting via n8n LIVE** ✅ 2026-05-03 — OAuth blocker (Avast Secure Browser cookie hijack) resolved by using Chrome incognito with fresh @phasewise session. Workflow now auto-tweets every Friday at 7am UTC. First test tweet posted (ID `2051026738046488746`)
 - [ ] **Monitor indexing progress** in Search Console over next 1-2 weeks (Performance + Indexing reports)
 
-### Sales / outreach (highest revenue ROI)
+### Sales / outreach (highest revenue ROI) — Monday 2026-05-11 priority order
 
-- [ ] **Outreach reply playbook** — write canned responses for "interested", "not now", "tell me more", "what makes you different from Monograph?" before first replies land. Replies from Broussard / Atlas Lab expected within the week
-- [ ] **Maintain weekly cold-outreach cadence** — 5 emails/day Mon-Thu (per `OUTREACH-PLAYBOOK.md`). Skip-2-weeks is the most common solo-founder failure mode
+- [ ] **🚨 #1: Hunter.io free tier signup (Monday morning, ~10 min)** — sign up with `kevin@phasewise.io`, claim 50 free lookups/month, install Chrome extension. Kills 80% of prospect-research grunt work. After this, every new firm in `PROSPECTS.md` pulls a verified email rather than `info@` guess
+- [ ] **#2: Use reply playbook on first replies** — `OUTREACH-REPLY-PLAYBOOK.private.md` has 6 templates ready. Replies from Broussard / Atlas Lab cold sends (2026-04-29) are 12+ days out as of Monday. If still silent, fire follow-up #1 per `OUTREACH-PLAYBOOK.md`. If anything lands, **don't compose from scratch — use the templates**
+- [x] **Outreach reply playbook** ✅ 2026-05-09 — drafted at `OUTREACH-REPLY-PLAYBOOK.private.md`. Six templates covering interested / objection / not-now / pricing / anonymity-disclosure / referral, plus voice rules + triage table + "never reply with" list
+- [ ] **Maintain weekly cold-outreach cadence** — 5 emails/day Mon-Thu (per `OUTREACH-PLAYBOOK.md`). Skip-2-weeks is the most common solo-founder failure mode. 3 Tier-A drafts already queued (attention2, designlab 252, Mantle)
 - [ ] **Submit to AlternativeTo** (text fields ready in `directory-listings.md` — was blocked by weekend pause; should be unblocked now)
 - [ ] **Submit to Capterra + G2 individual listings** (copy-paste in `directory-listings.md`)
+- [ ] **G2 Digital Markets resubmission** — listing rejected 2026-05-07; auto-reply promised feedback within 72 business hours. Check inbox for specifics, then resubmit
 - [ ] **Add Vercel Analytics + Plausible** before significant traffic accumulates from outreach + content
 - [ ] Later: more directories (GetApp, Software Advice, SaaSHub)
 - [ ] Product Hunt launch (one-time, needs prep + launch window)
+- [ ] **Tier-2 outreach automation (after first 3-5 paying customers)** — adopt sequencing tool (Smartlead $39/mo) for touches 2 + 3 only; first touch + first reply stays manual. n8n classification node for incoming-reply triage with template suggestion (human still hits Send)
+- [ ] **Tier-3 outreach automation (after ~25 customers)** — full Apollo + Smartlead + Hunter stack, AI-suggested reply drafts (still human-approved), multiple sending mailboxes
 
 ### Product polish that supports sales
 
