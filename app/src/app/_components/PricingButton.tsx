@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
+import * as Sentry from "@sentry/nextjs";
 
 type Props = {
   priceId: string;
@@ -46,7 +47,7 @@ export default function PricingButton({ priceId, featured = false, label = "Star
         setLoading(false);
       }
     } catch (err) {
-      console.error(err);
+      Sentry.captureException(err);
       setError("Network error. Please try again.");
       setLoading(false);
     }

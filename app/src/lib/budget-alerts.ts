@@ -118,7 +118,13 @@ export async function checkAndSendBudgetAlert(projectId: string): Promise<void> 
       },
     });
 
-    console.log(`[budget-alert] Sent ${alertLevel} alert for project ${project.name} (${burnRate}%)`);
+    // Dev-only telemetry. In prod this would flood Vercel function
+    // logs at scale (every time-entry write triggers a check) without
+    // contributing useful operational info — Sentry catches the
+    // failures, and successful sends are uninteresting in aggregate.
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`[budget-alert] Sent ${alertLevel} alert for project ${project.name} (${burnRate}%)`);
+    }
   } catch (error) {
     // Budget alerts should never block time entry operations
     console.error("[budget-alert] Failed to check/send alert:", error);
