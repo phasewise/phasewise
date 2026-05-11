@@ -602,6 +602,41 @@ Ordered by my estimated value-per-effort. Revisit during the forensic audit.
 - ✅ **Automated year-end rollover** (shipped 2026-05-07, commit `d831e5e`) — `computeUserLeaveBalances` pulls leave entries for `[prevYearStart, yearEnd)` in one query, buckets by year on the JS side, and adds `min(remainingPrev, rolloverCap)` to this year's available pool. New `LeaveBalance.carryoverHours` field surfaces the amount; admin leave page + timesheet balance widget render "+Xh carried over" beneath the balance number. `rolloverCap=0` keeps use-it-or-lose-it (HOLIDAY default), `>0` clamps, `-1` is unlimited. ACCRUED policies use their own annualHours as the prior-year ceiling — by Dec 31 the full annual amount has been accrued (capped if a `cap` was set), so the formula works for both modes without re-running month-by-month accrual against a closed year. New Year's Day flips and the rollover computes itself off the prior year's actual usage.
 - **Forensic audit** — top-to-bottom value review once the queue slows down. Rate each feature on value delivered vs maintenance cost. Cut or sharpen anything that doesn't earn its keep.
 
+## Where We Left Off (2026-05-11 EOD)
+
+**Status: 🟢🟢 Pure sales-execution day. Zero code commits. Three outreach actions out the door, one directory placement went LIVE on Capterra, one secondary directory gated for 8 days.**
+
+### Outreach scoreboard
+
+- **✅ attention2 — Sent #1 to Laura Burnett (President, FASLA) at `laura@attention2.com`** — Hunter.io-verified address (2 sources, shield-verified). Original 2026-04-28 draft was reworked end-to-end based on the Hunter About-page context: founded 2011 (not 2019), husband-and-wife founders married 1986, both FASLA, public-sector specialization (parks/campuses/transit/open-space/civic). Subject changed to "Quick honest read from attention2 on an LA-specific PM tool?" (humility-hook, no `$`/caps/`!`, 59 chars). Body switched from "growth-pain" register to Mantle-style "expert read" register since two FASLAs running a 15-year practice are senior peers, not prospects to educate. Free-MWELO-guide hook removed. Public-agency invoicing pain (contract numbers, Attn lines, MWELO compliance docs) named specifically — the exact admin patterns the 2026-05-04 invoice-header work was built for. Sent from `Phasewise Team <hello@phasewise.io>`. Follow-up #1 due Mon 5/18.
+- **✅ Broussard — Sent FU#1 to Terry** at `terry@broussardassoc.com`, threaded on the original 4/29 send. Kevin softened the standard playbook template for Terry's 1996-vintage Central Valley register: "provide more information if you'd like" instead of "20-min walkthrough" + traditional "Thank you for your consideration" close. Breakup due Mon 5/25.
+- **✅ Atlas Lab — Sent FU#1 to Kimberly Garza** at `kimberly@atlaslab.com`, standard playbook template. Breakup due Mon 5/25.
+
+### Directory placement wins + blockers
+
+- **🟢 Capterra listing went LIVE today at 10:11 AM Pacific** — GDM (Gartner Digital Markets) approved the 5/4 resubmission. The earlier 5/7 rejection ("website was not accessible") turned out to be a transient crawl failure on their end. Listing URL is at https://www.capterra.com/p/[slug]/Phasewise/. Public page renders cleanly: Project Management Software category, $99 starting price, free trial flag, 3+ screenshots, accurate description. Pricing tab shows all three tiers ($99/$199/$349). Features tab shows 20 (you submitted 18 — 2 auto-added by Capterra, worth auditing). Deltek PIM correctly placed as a top alternative (real competitor). Software Advice + GetApp should mirror over the next 24-48h since they share GDM's backend.
+- **⏳ Capterra vendor access blocked on GDM permissions.** Tried `vendor.capterra.com` / GDM unified portal — sign-in with `hello@phasewise.io` got past the login but hit "your account doesn't have the permissions needed to see this page." Likely the 5/4 submission was recorded under a different email (possibly `kgallo22@gmail.com` from the pre-brand-migration era, or no vendor-admin role was attached at all). Replied to the live `gdmcatalogteam@gartner.com` thread asking for vendor-access migration to `hello@phasewise.io`. They've been responding within 24 hours; expect resolution Tue 5/12 morning.
+- **Pending vendor edits to apply once GDM unblocks access:**
+  1. Toggle **Knowledge Base** support to ✓ (the `/help` center shipped 2026-05-08 — listing predates it)
+  2. Verify the **Starter tier user/project limits** match the live `/pricing` page AND what Stripe actually enforces. Capterra currently shows "Up to 5 users, 20 active projects." The reply playbook draft from Saturday referenced "3 users / 5 projects." One of those is wrong — pick the authoritative source and unify across landing page + billing page + directories.
+  3. Click through "See all 20 features →" and confirm none of the forbidden auto-merges slipped in (Client Portal, API, Native Mobile App, Live Online training).
+- **⏳ AlternativeTo gated 7 days.** Created account as `phasewise-team` with `hello@phasewise.io`, email verified. Then hit AlternativeTo's hard "new app submissions require an account age of at least 7 days" anti-spam wall. **Submission unblocks Mon 5/18 evening Pacific / Tue 5/19 01:38 AM Stockholm.** All copy is already prepared in `directory-listings.md` — when the gate lifts, the submission is ~10 minutes.
+
+### Hunter.io setup confirmed working
+
+Kevin already had a free Hunter.io account from prior use. Six leads visible (2 Phasewise-relevant duplicates: Atlas Lab + Broussard; 4 Verifield-era leads to ignore). Today's net new use: searched `attention2.com`, found both decision-makers (Laura Burnett FASLA / President + Marty Poirier FASLA / Partner), revealed Laura's verified email at 1 search-credit cost. Free-tier limits: 50 searches/month, 10 verifications/month. Currently at 1 search used. Plenty of headroom.
+
+### Files updated today
+
+- `PROSPECTS.md` (gitignored) — attention2 entry rewritten with verified email + corrected founding year + new "expert read" hook + 📧 Sent #1 status. Broussard + Atlas Lab status flipped to 📧 Sent FU#1.
+- `OUTREACH-DRAFTS.private.md` (gitignored) — Email 3 (attention2) reworked end-to-end. Old "growth-pain" register replaced with "expert read" frame. Subject hooked on humility + curiosity. Anonymity-note added pointing to reply playbook template #5.
+
+### No code commits today
+
+Today was pure customer-acquisition execution. No production code touched. Reviewed audit-fixed surfaces; no regressions.
+
+---
+
 ## Where We Left Off (2026-05-09 EOD)
 
 **Status: 🟢 Light, focused day after yesterday's marathon.** Two commits, real-bug-found-via-Zod-refactor, full audit punch-list cleared, Postmaster Tools live, welcome template tightened, outreach reply playbook drafted. Total LOC small; meaningful work concentrated in audit closure, ops hardening, and the offensive-side prep for first cold-outreach replies.
@@ -1870,6 +1905,10 @@ After a strategy discussion this session, Kevin confirmed that his top prioritie
 - [x] **Google Postmaster Tools setup** ✅ 2026-05-09 — `phasewise.io` + `mail.phasewise.io` both verified (auto-reused Search Console proof). Reputation data populates 24-48h. Pairs with the welcome-email-to-spam diagnosis from 2026-05-08.
 - [x] **Welcome email template tightened** ✅ 2026-05-09 — preview text added (was empty), "expected mail" reassurance line at top, demoted from H1 to body text. Minor improvements; the spam-classification root cause is domain reputation, not template content.
 - [x] **n8n SEO automation docs refreshed** ✅ 2026-05-09 — `automation/n8n-workflow-setup.md` rewritten to match deployed 6-node pipeline; new `automation/n8n-blog-incident-2026-05-09.md` postmortem captures the GitHub-422 slug-collision incident + fix.
+- [x] **Capterra listing LIVE** ✅ 2026-05-11 — GDM approved the 5/4 resubmission. Listing at https://www.capterra.com/p/[slug]/Phasewise/. Three pending vendor edits documented (Knowledge Base toggle, Starter tier verify, features audit) — blocked on GDM vendor-access migration thread.
+- [x] **attention2 cold-email sent** ✅ 2026-05-11 — to Laura Burnett FASLA, President. Hunter-verified email. Draft reworked end-to-end (subject + body) to match 15-year FASLA practice context.
+- [x] **Broussard + Atlas Lab FU#1 sent** ✅ 2026-05-11 — both follow-ups out, threaded on original 4/29 conversations.
+- [x] **Hunter.io confirmed working on free tier** ✅ 2026-05-11 — 1 search credit consumed (attention2 lookup), 49 remaining for the month. Chrome extension pending.
 - [x] **Project relocation off OneDrive** ✅ 2026-04-30 — robocopy to `C:\dev\phasewise`, memory key migrated
 - [x] **Pre-existing slug conflict fix** ✅ 2026-04-30 — dev server now starts cleanly
 - [x] **MWELO render-back loop + branded PDF route** ✅ 2026-04-30
@@ -1893,17 +1932,31 @@ After a strategy discussion this session, Kevin confirmed that his top prioritie
 - [x] **X auto-posting via n8n LIVE** ✅ 2026-05-03 — OAuth blocker (Avast Secure Browser cookie hijack) resolved by using Chrome incognito with fresh @phasewise session. Workflow now auto-tweets every Friday at 7am UTC. First test tweet posted (ID `2051026738046488746`)
 - [ ] **Monitor indexing progress** in Search Console over next 1-2 weeks (Performance + Indexing reports)
 
-### Sales / outreach (highest revenue ROI) — Monday 2026-05-11 priority order
+### Sales / outreach (highest revenue ROI) — Tuesday 2026-05-12 priority order
 
-- [ ] **🚨 #1: Hunter.io free tier signup (Monday morning, ~10 min)** — sign up with `kevin@phasewise.io`, claim 50 free lookups/month, install Chrome extension. Kills 80% of prospect-research grunt work. After this, every new firm in `PROSPECTS.md` pulls a verified email rather than `info@` guess
-- [ ] **#2: Use reply playbook on first replies** — `OUTREACH-REPLY-PLAYBOOK.private.md` has 6 templates ready. Replies from Broussard / Atlas Lab cold sends (2026-04-29) are 12+ days out as of Monday. If still silent, fire follow-up #1 per `OUTREACH-PLAYBOOK.md`. If anything lands, **don't compose from scratch — use the templates**
-- [x] **Outreach reply playbook** ✅ 2026-05-09 — drafted at `OUTREACH-REPLY-PLAYBOOK.private.md`. Six templates covering interested / objection / not-now / pricing / anonymity-disclosure / referral, plus voice rules + triage table + "never reply with" list
-- [ ] **Maintain weekly cold-outreach cadence** — 5 emails/day Mon-Thu (per `OUTREACH-PLAYBOOK.md`). Skip-2-weeks is the most common solo-founder failure mode. 3 Tier-A drafts already queued (attention2, designlab 252, Mantle)
-- [ ] **Submit to AlternativeTo** (text fields ready in `directory-listings.md` — was blocked by weekend pause; should be unblocked now)
-- [ ] **Submit to Capterra + G2 individual listings** (copy-paste in `directory-listings.md`)
-- [ ] **G2 Digital Markets resubmission** — listing rejected 2026-05-07; auto-reply promised feedback within 72 business hours. Check inbox for specifics, then resubmit
-- [ ] **Add Vercel Analytics + Plausible** before significant traffic accumulates from outreach + content
-- [ ] Later: more directories (GetApp, Software Advice, SaaSHub)
+- [ ] **🚨 #1: Send designlab 252 cold email** (Tue morning, 8-10am Pacific). Drafted and ready in `OUTREACH-DRAFTS.private.md` (Email 2). To `studio@designlab252.com`. **Anonymity-critical** — this is the Fresno firm with Caltrans overlap; brand-led register is essential. After sending, update `PROSPECTS.md` status to `📧 Sent #1 — 2026-05-12`.
+- [ ] **🚨 #2: Check GDM reply** about vendor-access migration. Replied Mon 5/11 to `gdmcatalogteam@gartner.com` thread asking to migrate vendor permissions to `hello@phasewise.io`. They typically respond within 24h. Once unblocked, apply the three pending Capterra edits: (a) Knowledge Base toggle → ✓ (the `/help` center shipped 5/8), (b) verify Starter tier user/project limits, (c) audit the "See all 20 features" list for forbidden auto-merges.
+- [ ] **#3: Check Software Advice + GetApp** for Phasewise listings. Should auto-mirror from Capterra (same GDM backend) within 24-48h of the Capterra approval. Search "Phasewise" on both:
+  - https://www.softwareadvice.com
+  - https://www.getapp.com
+- [ ] **#4: Vercel Analytics + Plausible signup** (~5-15 min combined). Need analytics in place before outreach + n8n content drive any real traffic. Otherwise flying blind on which channels convert.
+- [ ] **#5: Send Mantle cold email** (Wed morning per cadence — don't blast all 3 remaining in one day). Drafted and ready as Email 5 in `OUTREACH-DRAFTS.private.md`.
+- [x] **🚨 Hunter.io setup confirmed working** ✅ 2026-05-11 — free tier active, 6 leads already saved, attention2 search consumed 1 credit. Chrome extension still pending.
+- [x] **Outreach reply playbook** ✅ 2026-05-09 — drafted at `OUTREACH-REPLY-PLAYBOOK.private.md`. Six templates covering interested / objection / not-now / pricing / anonymity-disclosure / referral, plus voice rules + triage table + "never reply with" list.
+- [x] **attention2 sent + Broussard FU#1 + Atlas Lab FU#1** ✅ 2026-05-11 — three outreach actions out. Follow-up #1 windows for attention2 due Mon 5/18; Broussard + Atlas Lab breakups due Mon 5/25.
+
+### Active waits (cron-style — won't ping you, you have to come back)
+
+- [ ] **Mon 5/18 — attention2 follow-up #1** (5 business days after Mon 5/11 send to Laura Burnett). Use the standard playbook template; if a creative angle is wanted, the reserve contact `marty@attention2.com` (Marty Poirier FASLA, Partner) is held for FU#2 if Laura goes silent through FU#1.
+- [ ] **Mon 5/18 / Tue 5/19 — AlternativeTo submission unblocks** (7-day spam gate from account creation 5/11). All copy ready in `directory-listings.md`; ~10 min when the gate lifts. Highest-ROI directory for "Monograph alternatives" search intent.
+- [ ] **Mon 5/25 — Broussard + Atlas Lab breakup emails** if still silent after FU#1. Use OUTREACH-PLAYBOOK breakup template. After breakup, move to "warm-but-paused" list — leave alone for 6 months minimum.
+
+### Lower priority / continue cadence
+
+- [ ] **Maintain 5/week cold-outreach cadence beyond the original 5** — Tier-B firms research + send. Skip-2-weeks is the most common solo-founder failure mode.
+- [ ] **Capterra vendor edits** (blocked on GDM access; unblocks when they reply to Mon 5/11 thread) — see #2 above.
+- [ ] **Submit to G2 (g2.com)** — this is a separate company from GDM, requires its own submission. Larger directory, more SEO authority, but gated by 3+ reviews to surface in search.
+- [ ] Later: more directories (SaaSHub, Slant.co)
 - [ ] Product Hunt launch (one-time, needs prep + launch window)
 - [ ] **Tier-2 outreach automation (after first 3-5 paying customers)** — adopt sequencing tool (Smartlead $39/mo) for touches 2 + 3 only; first touch + first reply stays manual. n8n classification node for incoming-reply triage with template suggestion (human still hits Send)
 - [ ] **Tier-3 outreach automation (after ~25 customers)** — full Apollo + Smartlead + Hunter stack, AI-suggested reply drafts (still human-approved), multiple sending mailboxes
