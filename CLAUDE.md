@@ -602,6 +602,96 @@ Ordered by my estimated value-per-effort. Revisit during the forensic audit.
 - ✅ **Automated year-end rollover** (shipped 2026-05-07, commit `d831e5e`) — `computeUserLeaveBalances` pulls leave entries for `[prevYearStart, yearEnd)` in one query, buckets by year on the JS side, and adds `min(remainingPrev, rolloverCap)` to this year's available pool. New `LeaveBalance.carryoverHours` field surfaces the amount; admin leave page + timesheet balance widget render "+Xh carried over" beneath the balance number. `rolloverCap=0` keeps use-it-or-lose-it (HOLIDAY default), `>0` clamps, `-1` is unlimited. ACCRUED policies use their own annualHours as the prior-year ceiling — by Dec 31 the full annual amount has been accrued (capped if a `cap` was set), so the formula works for both modes without re-running month-by-month accrual against a closed year. New Year's Day flips and the rollover computes itself off the prior year's actual usage.
 - **Forensic audit** — top-to-bottom value review once the queue slows down. Rate each feature on value delivered vs maintenance cost. Cut or sharpen anything that doesn't earn its keep.
 
+## Where We Left Off (2026-05-12 EOD)
+
+**Status: 🟢🟢🟢 Massive customer-acquisition day.** One code commit, two more cold emails scheduled (designlab 252 + Mantle), two more directory channels activated (Software Advice + GetApp), Vercel Analytics enabled, anonymity hardened across two more surfaces (second LinkedIn account deleted + Workspace user renamed). Listing completion score went from 69% → 91%. The brand-anonymous customer-acquisition machine is essentially fully wired now — what's left is waiting for replies + iterating.
+
+### Commits in order (1 today)
+
+11. `a410573` — **Fix /pricing 404: server-side redirect to /#pricing + middleware allowlist.** Cold-email recipients who pasted `phasewise.io/pricing` were hitting a black 404 page — terrible first impression. Two-file change: new server-component page at `app/src/app/pricing/page.tsx` calls `redirect("/#pricing")` from `next/navigation`, and `lib/supabase/middleware.ts` adds `/pricing` to the public-route allowlist so unauthenticated visitors don't get bounced to `/login`. Browsers preserve the fragment on 307 redirects in most cases; if they don't, the landing page's pricing section is still visible without scrolling. Future cleanup: build a real `/pricing` route with structured data + faster paint, but the redirect closes the immediate UX hole.
+
+### Outreach scoreboard (3 more actions out — total 5 since 5/11)
+
+- **✅ designlab 252 — Scheduled Wed 5/13 8 AM Pacific via Gmail Schedule Send.** This was the maximum-anonymity case: Kevin has worked directly with all three partners (Patrick Boyd, Konni Jones, Scott Mears — all with Caltrans backgrounds; Scott is currently Co-Chair of Caltrans Central Region Calmentor Steering Committee). The 2026-04-28 draft was unsendable — it opened with "30 years of transportation work" and offered a "free MWELO guide," every phrase narrowing the field to people in Kevin's exact Caltrans orbit. Reworked end-to-end: removed all references to transportation, Caltrans, highway, public-sector, Cal Poly, Fresno, MWELO-as-hook, plant-science/irrigation. Subject changed to "An LA-specific PM tool — quick honest read from designlab 252?" — generic vendor framing, zero portfolio knowledge implied. Body uses the Mantle-style "expert read" register treating all three partners as senior peers. Reply protocol added with explicit "Scott Mears is highest-recognition risk" warning since he's actively on Calmentor today.
+- **✅ Mantle — Scheduled Thu 5/14 8 AM Pacific.** To Ramsey Silberberg at `info@mantlela.com`. Standard "expert read" register treatment matching attention2 + the reworked designlab 252. Same brand-anonymous voice. Staggered one day after designlab 252 so reply windows don't bunch.
+
+Tier-A queue **fully out of the gate**: Broussard + Atlas Lab + attention2 + designlab 252 + Mantle = 5 first-touch outreach emails, plus 2 follow-ups (Broussard + Atlas Lab FU#1 sent yesterday).
+
+### Directory listings: all 3 GDM channels live (or under review)
+
+Yesterday Capterra was the only one published. Today we activated the other two GDM properties + tuned Capterra.
+
+- **🟢 Capterra: still Published.** Plus 5 accuracy fixes applied: Knowledge Base support → ✓ (now that `/help` shipped), Licensing Models → Proprietary, the 20-features list audited clean (no forbidden auto-merges — Client Portal, API, Native Mobile, AI Copilot all correctly unchecked), Starter tier limits verified matching the live landing page (Up to 5 users / 20 active projects), and Pricing URL set to `https://phasewise.io` (since `/pricing` is now a redirect).
+- **🟠 Software Advice: NEWLY ACTIVATED → Under Review.** Long Description (~2,500 chars) tailored to Software Advice's research-oriented buyer profile — "ideal user / unique benefits / support details" structure per their content prompt. 5 screenshots uploaded with captions (Dashboard, Project Detail, MWELO Calculator, Profitability Report, Submittal Log — same set as Capterra at `brand_v2/exports/screenshots/`). Submit For Review clicked. Expected approval Wed-Thu (GDM's typical 24-72h moderation window; Capterra came through in ~30h yesterday).
+- **🟠 GetApp: NEWLY ACTIVATED → Under Review.** Tailored 1,700-char Long Description (different framing than Software Advice — "operating system for landscape architecture firms" hook, vs SA's "if your firm runs on a stack of..." hook — meaningful structural differentiation to pass GDM's per-site tailoring rule). Tagline: "The operating system for landscape architecture firms" (53 chars). Benefits section: 6-bullet value-prop list. Same 5 screenshots with same captions. Submit For Review clicked. Same approval window.
+
+Each new channel went through: tailored copy, all required fields filled, screenshots uploaded + captioned, page-level save, Submit For Review. Process took ~15 min per channel.
+
+### Anonymity hardening (2 more surfaces locked down)
+
+Yesterday's Postmaster + welcome template tightening were operational. Today closed two **structural** anonymity holes:
+
+- **🗑️ Second Kevin Gallo LinkedIn account deleted.** Discovered during the Capterra sign-in verification — the account at `linkedin.com/in/kevin-gallo-a2bb59406` was a second LinkedIn profile Kevin had created around the Workspace setup (mid-April) specifically to be the "Phasewise founder" presence so he could later create a Phasewise Company Page. The account publicly listed "Owner at Phasewise" in the headline AND in an Experience entry — a complete anonymity break for anyone searching LinkedIn for "Phasewise" or `kevin@phasewise.io`. Strategic decision: skip the Phasewise LinkedIn presence entirely for now. Reasoning: LinkedIn Company Pages cannot exist without a real personal admin who lists the company as current employer; that's an unavoidable public link if Kevin wants a Company Page. **Cleaner play is no LinkedIn presence for Phasewise at all** until Kevin can either hire someone to be the visible admin, or until revenue replaces his Caltrans income and anonymity becomes less critical. Account closed via duplicate-account reason; 14-day soft delete period before permanent. His **long-term personal LinkedIn (Caltrans-anchored) is untouched** and is now his only LinkedIn surface.
+- **✅ Workspace user renamed Kevin Gallo → Phasewise Team.** The underlying Google Workspace user at `kevin@phasewise.io` had display name "Kevin Gallo." That display propagates to Google Calendar invites, Drive shares, Gmail address-card auto-resolves (which was the bug surfaced 5/9 when Kevin saw "Kevin Gallo" appear in his own Gmail search for `hello@phasewise.io`), and any Workspace directory lookup. Renamed in Admin Console → Directory → Users. From now on every Google-surface interaction shows "Phasewise Team," matching the email From line. Both `hello@` and `demo@` aliases pull from the renamed user.
+
+### GDM vendor portal access established
+
+Yesterday's "permissions wall" cleared. GDM's `gdmcatalogteam@gartner.com` replied within ~24h confirming `hello@phasewise.io` was added as a vendor user with reactivation email. Kevin set the account up via app.g2digitalmarkets.com with anonymity-clean profile data (Phasewise / Team / Manager-Head-Lead / Product department / Pacific Time). The portal manages Capterra + Software Advice + GetApp content cross-channel — single edit interface for all three GDM properties.
+
+### Listing completion score: 69% → 91%
+
+The recommendations counter dropped from 13 → 4 across the session. Closed: Software Advice + GetApp descriptions, Software Advice + GetApp screenshots, Knowledge Base toggle, Licensing Models (Proprietary), Pricing URL, Pricing Details (5,000-char tailored copy with included-on-every-plan rundown, free trial details, volume guidance, refund policy).
+
+**Remaining 4 recommendations triaged:**
+- Custom descriptions on Capterra + GetApp (per-category tailoring) — could net +8% but the marginal returns aren't worth the effort tonight
+- Supported integrations — **skipping**. Phasewise has zero integrations wired (no QuickBooks, Slack, Zapier, etc.). Accepting the -3% completion hit on honesty grounds; listing fake integrations triggers 1-star reviews from buyers who expect them.
+- Product video — **deferred** to a focused 2-4 hour recording session later this week. Real boost to engagement once shipped (~+2% completion plus significant CTR lift), but it's a real project, not a quick recommendation.
+
+91% is well above the GDM median (typical listing 60-80%) and the diminishing-returns curve is steep after this point. Higher-leverage moves now are: first review, first paying customer, more outbound volume.
+
+### Vercel Analytics enabled
+
+Discovered the `@vercel/analytics` package was already installed (v2.0.1) and `<Analytics />` was already mounted in `app/src/app/layout.tsx:115` from a prior session — the only missing piece was the dashboard toggle. Enabled on the free Hobby tier (50K events/month, 30-day viewable history). First data populates within ~24h. Goes live just as the outreach + n8n content pipeline are starting to drive real visitors.
+
+### File updates (private/gitignored)
+
+- `OUTREACH-DRAFTS.private.md` — Email 2 (designlab 252) reworked end-to-end with maximum-anonymity guards + explicit "what to do if Scott replies" reply protocol
+- `OUTREACH-REPLY-PLAYBOOK.private.md` — pricing template #4 corrected from wrong "3 users / 5 projects" to canonical "5 users / 20 projects" (which matches the landing page + Stripe enforcement)
+- `PROSPECTS.md` — designlab 252 status updated to "📧 Scheduled #1 — 2026-05-13 (was anonymity-maximum rewrite)"
+
+### Tomorrow / Wednesday 2026-05-13 — top of the list
+
+**🚨 #1: designlab 252 cold email fires at 8 AM Pacific.** Nothing to do but check for replies. If any reply lands during the day, use `OUTREACH-REPLY-PLAYBOOK.private.md` templates. **Maximum care** if Scott Mears replies — he's the highest-recognition risk (active Calmentor Steering Committee role). Voice-only call if pushed for identity disclosure beyond template #5.
+
+**🚨 #2: Watch for Software Advice + GetApp approval emails.** Both submitted today, GDM's pattern is 24-72h. Expect approval Wed afternoon through Thu morning. If approved: confirm public listings render correctly (search the brand name on each site). If rejected with feedback: triage the reason and resubmit same-session.
+
+**#3: Check Capterra public page for Knowledge Base ✓ propagation** (24-48h after today's vendor edits). The toggle is the most visible new fix.
+
+**#4: First Vercel Analytics data should be visible** ~24h after enabling. Check the Analytics tab on the Vercel dashboard. Even at low volume, seeing the dashboard render real numbers is a useful sanity check.
+
+**#5: Maintain outreach cadence.** No new outbound queued for Wed since designlab 252 fires automatically. Thu 5/14 Mantle fires automatically. If both go silent through their respective FU#1 windows (Wed 5/20 for designlab 252 follow-up; Thu 5/21 for Mantle follow-up), keep the existing playbook. If any inbound lands, prioritize replies over new outbound.
+
+### Active waits (cron-style — won't ping you)
+
+- **Wed 5/13 — designlab 252 first-touch fires**
+- **Thu 5/14 — Mantle first-touch fires**
+- **Wed-Thu 5/13–5/14 — Software Advice + GetApp public listings should go live** (GDM approval pending)
+- **Mon 5/18 — attention2 follow-up #1 due** (5 business days after 5/11 send to Laura Burnett)
+- **Mon 5/18 / Tue 5/19 — AlternativeTo submission unblocks** (7-day account-age gate)
+- **Wed 5/20 — designlab 252 follow-up #1 due** if silent
+- **Thu 5/21 — Mantle follow-up #1 due** if silent
+- **Mon 5/25 — Broussard + Atlas Lab breakups due** if still silent after FU#1
+
+### Things still on the queue (not urgent)
+
+- **Product video for GetApp / Software Advice** — 60-90 second demo recording. Real 2-4 hour project. Defer to a focused session.
+- **Custom per-category descriptions on Capterra + GetApp** — +8% completion if done, low effort, but diminishing returns at 91%
+- **Plausible signup** — Vercel Analytics covers the basics; Plausible would be the open/privacy-friendly alternative or supplement
+- **Capterra vendor profile claim** — still pending (skipped today since we got into the GDM unified portal which manages Capterra)
+- **First review** — needs first customer. Bigger lever than completing 100% of the listing completion checklist.
+
+---
+
 ## Where We Left Off (2026-05-11 EOD)
 
 **Status: 🟢🟢 Pure sales-execution day. Zero code commits. Three outreach actions out the door, one directory placement went LIVE on Capterra, one secondary directory gated for 8 days.**
@@ -1909,6 +1999,14 @@ After a strategy discussion this session, Kevin confirmed that his top prioritie
 - [x] **attention2 cold-email sent** ✅ 2026-05-11 — to Laura Burnett FASLA, President. Hunter-verified email. Draft reworked end-to-end (subject + body) to match 15-year FASLA practice context.
 - [x] **Broussard + Atlas Lab FU#1 sent** ✅ 2026-05-11 — both follow-ups out, threaded on original 4/29 conversations.
 - [x] **Hunter.io confirmed working on free tier** ✅ 2026-05-11 — 1 search credit consumed (attention2 lookup), 49 remaining for the month. Chrome extension pending.
+- [x] **/pricing 404 fix** ✅ 2026-05-12 — server-side redirect to /#pricing + middleware allowlist (commit `a410573`). Closes the broken-link UX hole for cold-email recipients pasting the URL.
+- [x] **Software Advice channel newly activated** ✅ 2026-05-12 — submitted for review; live in 24-72h.
+- [x] **GetApp channel newly activated** ✅ 2026-05-12 — submitted for review; live in 24-72h.
+- [x] **Listing completion score 69% → 91%** ✅ 2026-05-12 — 9 of 13 GDM recommendations resolved in one session.
+- [x] **Second LinkedIn account deleted (anonymity)** ✅ 2026-05-12 — public link from Kevin Gallo → "Owner at Phasewise" severed.
+- [x] **Workspace user renamed Phasewise Team** ✅ 2026-05-12 — display name propagates across Google services.
+- [x] **Vercel Analytics enabled** ✅ 2026-05-12 — Hobby tier free; data populates within 24h.
+- [x] **designlab 252 + Mantle outreach scheduled** ✅ 2026-05-12 — Wed 5/13 + Thu 5/14 8 AM Pacific. Tier-A queue fully out.
 - [x] **Project relocation off OneDrive** ✅ 2026-04-30 — robocopy to `C:\dev\phasewise`, memory key migrated
 - [x] **Pre-existing slug conflict fix** ✅ 2026-04-30 — dev server now starts cleanly
 - [x] **MWELO render-back loop + branded PDF route** ✅ 2026-04-30
@@ -1932,18 +2030,26 @@ After a strategy discussion this session, Kevin confirmed that his top prioritie
 - [x] **X auto-posting via n8n LIVE** ✅ 2026-05-03 — OAuth blocker (Avast Secure Browser cookie hijack) resolved by using Chrome incognito with fresh @phasewise session. Workflow now auto-tweets every Friday at 7am UTC. First test tweet posted (ID `2051026738046488746`)
 - [ ] **Monitor indexing progress** in Search Console over next 1-2 weeks (Performance + Indexing reports)
 
-### Sales / outreach (highest revenue ROI) — Tuesday 2026-05-12 priority order
+### Sales / outreach (highest revenue ROI) — Wednesday 2026-05-13 priority order
 
-- [ ] **🚨 #1: Send designlab 252 cold email** (Tue morning, 8-10am Pacific). Drafted and ready in `OUTREACH-DRAFTS.private.md` (Email 2). To `studio@designlab252.com`. **Anonymity-critical** — this is the Fresno firm with Caltrans overlap; brand-led register is essential. After sending, update `PROSPECTS.md` status to `📧 Sent #1 — 2026-05-12`.
-- [ ] **🚨 #2: Check GDM reply** about vendor-access migration. Replied Mon 5/11 to `gdmcatalogteam@gartner.com` thread asking to migrate vendor permissions to `hello@phasewise.io`. They typically respond within 24h. Once unblocked, apply the three pending Capterra edits: (a) Knowledge Base toggle → ✓ (the `/help` center shipped 5/8), (b) verify Starter tier user/project limits, (c) audit the "See all 20 features" list for forbidden auto-merges.
-- [ ] **#3: Check Software Advice + GetApp** for Phasewise listings. Should auto-mirror from Capterra (same GDM backend) within 24-48h of the Capterra approval. Search "Phasewise" on both:
-  - https://www.softwareadvice.com
-  - https://www.getapp.com
-- [ ] **#4: Vercel Analytics + Plausible signup** (~5-15 min combined). Need analytics in place before outreach + n8n content drive any real traffic. Otherwise flying blind on which channels convert.
-- [ ] **#5: Send Mantle cold email** (Wed morning per cadence — don't blast all 3 remaining in one day). Drafted and ready as Email 5 in `OUTREACH-DRAFTS.private.md`.
+- [ ] **🚨 #1: designlab 252 first-touch fires at 8 AM Pacific** (auto via Gmail Schedule Send). **Maximum-anonymity case** — Kevin worked directly with all 3 partners. If any reply lands, use `OUTREACH-REPLY-PLAYBOOK.private.md` templates verbatim. **Special care if Scott Mears replies** (active Caltrans Calmentor Steering Committee Co-Chair) — voice-only call if pushed past anonymity-disclosure template #5; do not video.
+- [ ] **🚨 #2: Watch for Software Advice + GetApp approval emails from GDM** (24-72h typical window, Capterra came through in ~30h). Search "Phasewise" on https://www.softwareadvice.com and https://www.getapp.com after approval confirmation to verify public listings render correctly. If rejected, triage feedback + resubmit same-session.
+- [ ] **#3: Verify Capterra Knowledge Base ✓ propagated to public page** (24-48h after today's vendor edits). Visit https://www.capterra.com/p/[slug]/Phasewise/ → Support section.
+- [ ] **#4: Check Vercel Analytics dashboard** — first 24h of data should be visible. Even low traffic gives a sanity check that the analytics pipeline is working.
+- [ ] **#5: Maintain outreach cadence.** Thu 5/14 Mantle fires automatically at 8 AM Pacific. No new outbound needed Wed unless a reply lands that needs follow-up.
 - [x] **🚨 Hunter.io setup confirmed working** ✅ 2026-05-11 — free tier active, 6 leads already saved, attention2 search consumed 1 credit. Chrome extension still pending.
-- [x] **Outreach reply playbook** ✅ 2026-05-09 — drafted at `OUTREACH-REPLY-PLAYBOOK.private.md`. Six templates covering interested / objection / not-now / pricing / anonymity-disclosure / referral, plus voice rules + triage table + "never reply with" list.
+- [x] **Outreach reply playbook** ✅ 2026-05-09 — drafted at `OUTREACH-REPLY-PLAYBOOK.private.md`. Six templates covering interested / objection / not-now / pricing / anonymity-disclosure / referral, plus voice rules + triage table + "never reply with" list. Template #4 pricing corrected 2026-05-12 to match canonical "5 users / 20 projects".
 - [x] **attention2 sent + Broussard FU#1 + Atlas Lab FU#1** ✅ 2026-05-11 — three outreach actions out. Follow-up #1 windows for attention2 due Mon 5/18; Broussard + Atlas Lab breakups due Mon 5/25.
+- [x] **designlab 252 scheduled (anonymity-maximum rewrite)** ✅ 2026-05-12 — scheduled Wed 5/13 8 AM Pacific via Gmail Schedule Send. Original 4/28 draft was unsendable due to Caltrans-overlap tells; reworked end-to-end with portfolio-agnostic framing.
+- [x] **Mantle scheduled** ✅ 2026-05-12 — Thu 5/14 8 AM Pacific via Gmail Schedule Send. Standard "expert read" register.
+- [x] **GDM vendor portal access established** ✅ 2026-05-12 — `hello@phasewise.io` added as vendor user; profile set up with anonymity-clean values (Phasewise / Team / Pacific Time).
+- [x] **Capterra accuracy fixes applied** ✅ 2026-05-12 — Knowledge Base ✓, Licensing → Proprietary, Features audit clean, Starter tier verified, Pricing URL set.
+- [x] **Software Advice channel activated** ✅ 2026-05-12 — Long Description (2,500 chars tailored), 5 captioned screenshots, Submit For Review clicked → Under Review.
+- [x] **GetApp channel activated** ✅ 2026-05-12 — Long Description (1,700 chars, different framing), Tagline, Benefits, 5 captioned screenshots, Submit For Review clicked → Under Review.
+- [x] **Vercel Analytics enabled** ✅ 2026-05-12 — Hobby tier (50K events/mo free). Code was already installed; only dashboard toggle was missing.
+- [x] **Second Kevin Gallo LinkedIn account deleted** ✅ 2026-05-12 — anonymity surface closed (account previously listed "Owner at Phasewise" publicly).
+- [x] **Workspace user renamed Kevin Gallo → Phasewise Team** ✅ 2026-05-12 — display name propagates to all Google surfaces.
+- [x] **Listing Completion 69% → 91%** ✅ 2026-05-12 — 9 of 13 recommendations resolved.
 
 ### Active waits (cron-style — won't ping you, you have to come back)
 
