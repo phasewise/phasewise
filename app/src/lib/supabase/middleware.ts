@@ -41,6 +41,7 @@ export async function handleAuth(request: NextRequest) {
     // Public marketing pages
     "/blog",
     "/help",
+    "/pricing",
     "/privacy",
     "/terms",
     // PWA + SEO assets
