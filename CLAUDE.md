@@ -647,6 +647,101 @@ Higher-volume outreach uses the operational playbook at [`marketing/outreach/PLA
 
 ---
 
+## Where We Left Off (2026-05-13 EOD)
+
+**Status: 🟢🟢🟢 Build day + sales pipeline build-out.** 5 commits shipped (invoice review UX + GA wiring + /pricing 404 fix + outreach automation playbook integration + active-vertical lock-in), Vercel Analytics confirmed firing, Google Analytics 4 confirmed firing, designlab 252 fired automatically at 8 AM Pacific, and the outreach automation workflow ran its first research pass — 5 verified Wave-2 candidates with personalized drafts queued for Mon-Wed sends. **The outreach machine is now operating ahead of the send cadence** instead of scrambling each Monday.
+
+### Commits in order (5 today)
+
+12. `27b665a` — **Wire Google Analytics 4 via NEXT_PUBLIC_GA_MEASUREMENT_ID env var.** Opt-in pattern matches existing Plausible setup. Script only loads when the env var is set, so previews + dev environments stay clean. Vercel env var (`G-DPVYJ6W5HS`) set on all 3 environments. Also added to local `app/.env` for dev testing. **Confirmed firing** — GA Realtime shows 1 active user with page_view + scroll + first_visit + session_start events.
+13. `e2d7d12` — **Invoice review: read-only preview modal for draft invoices.** New `InvoiceReviewModal.tsx` surfaces line items, billing period, totals, and notes so operators can verify auto-pulled timesheet content before sending. DRAFT row clicks now open this modal; SENT/PAID/etc. rows keep the existing payment modal path. Plus an explicit "Review" action button in the row's actions cell (eye icon) for discoverability. Read-only — any correction stays in the New Invoice form's delete-and-recreate flow. Tested + confirmed working.
+14. `a410573` — **Fix /pricing 404: server-side redirect to /#pricing + middleware allowlist.** Cold-email recipients who pasted `phasewise.io/pricing` were hitting a black 404. New server-component page at `app/src/app/pricing/page.tsx` calls `redirect("/#pricing")` from `next/navigation`, and `lib/supabase/middleware.ts` adds `/pricing` to the public-route allowlist.
+15. `e38fb23` — **CLAUDE.md: point future sessions at outreach automation playbook with Phasewise adaptations.** Imported the operational playbook at `marketing/outreach/PLAYBOOK_for_other_projects.md` from another project (originally targeting solo Typeform-using operators). Added a 33-line "Outreach automation" section that says: transferable principles apply (anonymity, no generic addresses, varied subjects, Day 0/+3-5/+10 cadence, stop-after-FU#2), Phasewise-specific adaptations override (target = firms not solos, lead sources = LATC/ASLA not Google queries, pattern-guessing less reliable, existing Gmail Send-mail-as works, Mantle/attention2 register for senior firms, anonymity discipline is stricter due to Caltrans-overlap risk).
+16. `f2d2633` — **CLAUDE.md: lock in active vertical (SoCal MWELO-strict) + research cadence.** Chose **Option B + H — SoCal LA firms via LATC/ASLA, MWELO-strict overlay** (LA County, OC w/ MWDOC, Inland Empire, San Diego County). Kevin's strategic insight: firms in MWELO-strict jurisdictions face MAWA/ETWU calcs on every public-sector + large-commercial submittal, so the built-in MWELO calculator becomes a "saves 2-4 hours per project" hook. Research-pass cadence: 5 sends/day Mon-Thu, weekend research blocks to keep 10-15 candidates ahead of send queue.
+
+### Outreach machine: first automation-driven research pass
+
+Ran the first research pass using WebSearch + WebFetch on SoCal LA firms. **5 verified Wave-2 candidates** (4 new + 1 promoted from existing Tier-A queue):
+
+1. **Clark & Green Associates** (OC, 14 staff, Bob Clark + Michael Green ASLA) — 🟢🟢 strongest MWELO fit. Branded around water management + drought-tolerant planting. Email pattern uncertain → Hunter.io lookup needed.
+2. **Mark Tessier Landscape Architecture** (Santa Monica, 4 staff, Mark Tessier ASLA) — Tier-1 MWELO city + affordable multifamily portfolio. Email verified: `mark@marktessier.com`.
+3. **Studio PAD** (OC, 6-12 staff, Peter A. Duarte) — OC multifamily/on-podium/master planning. Email verified: `paduarte@studio-PAD.com`. (Important learning: the old email guess `peter@studio-pad.com` from 4/29 research was wrong — pattern is `firstlastinitial`. Documented for future research.)
+4. **Hermann Design Group** (Coachella Valley + Riverside + SD, Chris Hermann, 40+ yrs experience) — Inland Empire drought zone + literal turf-removal portfolio. Multi-office (likely 15-25). Email: `info@hdg-inc.com` only; Hunter.io lookup for `chris@hdg-inc.com` recommended.
+5. **KDA Landscape Architects** (SD, 4 staff, Kathryn Kanaan PLA ASLA, founded 2001) — San Diego public-agency contracts + irrigation specialist on staff + DBE/SBE certs. Email pattern uncertain due to long domain → Hunter.io lookup needed.
+
+**Deprioritized from this pass:**
+- KTUA (SD) — likely 25-50+ staff, founded 1970, multi-discipline. Outside ICP for $349/mo Studio plan.
+- Studio AR&D Architects (Palm Springs + LA) — no named principals, no email, residential focus.
+- June Scott Design (Pasadena) — "very small office" likely solo, may not fit firm-size ICP.
+
+**Still TBD:** SALT Landscape Architects (LA boutique founded 2009) — HTTP 503 both fetch attempts. Retry next session.
+
+### Operational confirmations today
+
+- **Google Analytics confirmed firing** — Realtime shows 1 active user, page views tracking, events for scroll + first_visit + session_start. Production data starts accumulating now.
+- **Invoice review modal tested** — DRAFT row click + Review button both open the modal correctly; non-DRAFT rows still open Payment modal. Anonymity audit clean.
+- **designlab 252 first-touch fired automatically** at 8 AM Pacific. Maximum-anonymity rework held up. Reply window starts now; FU#1 due Wed 5/20 if silent.
+- **Capterra promotional emails arriving** in inbox — signal that the listing is indexed + their algorithms are recommending Phasewise back at us. Normal vendor onboarding.
+
+### File updates (private/gitignored)
+
+- `OUTREACH-DRAFTS.private.md` — appended Wave 2 with 5 new personalized cold drafts (Emails 6-10). Each leads with a portfolio-specific MWELO hook tuned to the firm's sub-vertical.
+- `PROSPECTS.md` — new Tier C section "MWELO-strict SoCal push (researched 2026-05-13, automation-driven)" with 3 new candidate entries + 2 promotions from existing tiers. Send queue documented.
+
+### Sending mechanic decision
+
+Kevin chose **Option C: Claude drafts + Kevin paste-and-sends via Gmail Schedule Send**. Reasoning: at 5/day the marginal time saved by API automation is small, sender reputation on hello@phasewise.io has been warming since April, human-in-the-loop catches dumb mistakes BEFORE they cost reputation. **Revisit Resend setup after first 20-30 emails OR after MWELO hook validates with 1-2 positive replies.**
+
+### Tomorrow / Thursday 2026-05-14 — top of the list
+
+**🚨 #1: Mantle cold email fires automatically at 8 AM Pacific.** Nothing to do but check for any reply landing during the day. If anything inbound, use `OUTREACH-REPLY-PLAYBOOK.private.md` templates.
+
+**#2: Watch for GDM approval emails** on Software Advice + GetApp. Both still under review from yesterday's submissions — expected approval Thu through Fri.
+
+**#3: Check Capterra public page for Knowledge Base ✓ propagation** (yesterday's vendor edit should be visible by Wed-Thu).
+
+**#4: Optional research block** if you have an hour free — pull next batch (Inland Empire, Pasadena, Long Beach, Beverly Hills firms) into Tier C of PROSPECTS.md. Keeps the queue 1-2 weeks ahead of send cadence.
+
+### Mon 5/18 — Wave 2 begins
+
+**🚨 #1: Hunter.io lookups (3 credits, ~10 min)** before sending:
+- `clarkgreen.com` → find Bob Clark / Michael Green email
+- `hdg-inc.com` → confirm `chris@hdg-inc.com` or surface alternative
+- `kda-landscapearchitects.com` → find Kathryn Kanaan email
+
+**🚨 #2: attention2 follow-up #1 due** (Laura Burnett, 5 business days after 5/11 send). Use playbook FU#1 template.
+
+**🚨 #3: Schedule Send Wave 2 batch via Gmail:**
+- Mon 5/18 8 AM Pacific: Email 6 (Clark & Green) + Email 7 (Mark Tessier)
+- Tue 5/19 8 AM Pacific: Email 8 (Studio PAD) + Email 9 (Hermann Design Group)
+- Wed 5/20 8 AM Pacific: Email 10 (KDA Landscape Architects)
+
+**#4: Update PROSPECTS.md** after scheduling — change Tier C statuses from `⏳ Not contacted` to `📧 Scheduled #1 — 2026-05-XX`.
+
+### Active waits (cron-style — won't ping you)
+
+- **Thu 5/14 — Mantle first-touch fires**
+- **Thu-Fri 5/15-5/16 — Software Advice + GetApp public listings should go live** (GDM approval pending)
+- **Mon 5/18 — Wave 2 sends + attention2 FU#1**
+- **Mon 5/18 / Tue 5/19 — AlternativeTo submission unblocks** (7-day account-age gate)
+- **Wed 5/20 — designlab 252 FU#1 due** if silent
+- **Thu 5/21 — Mantle FU#1 due** if silent
+- **Mon 5/25 — Broussard + Atlas Lab breakups due** if still silent after FU#1
+- **Mon 5/25 — Clark & Green + Mark Tessier FU#1 due** if silent
+- **Tue 5/26 — Studio PAD + Hermann FU#1 due** if silent
+- **Wed 5/27 — KDA FU#1 due** if silent
+
+### Things still on the queue (not urgent)
+
+- **Next research pass** — Inland Empire (Riverside/San Bernardino), Pasadena, Long Beach, Beverly Hills, SALT retry, ASLA San Diego directory. Target +10 candidates for Wave 3.
+- **Resend API setup** — defer until 10+/day sustained or after MWELO hook validates with 1-2 positive replies.
+- **Custom per-category descriptions on Capterra + GetApp** — +8% completion, low effort, diminishing returns at 91%.
+- **Product video for GetApp / Software Advice** — 60-90 second demo, real 2-4 hour project.
+- **Capterra vendor profile claim** — still pending.
+- **Stripe Connect production smoke test** — when first real client is lined up.
+
+---
+
 ## Where We Left Off (2026-05-12 EOD)
 
 **Status: 🟢🟢🟢 Massive customer-acquisition day.** One code commit, two more cold emails scheduled (designlab 252 + Mantle), two more directory channels activated (Software Advice + GetApp), Vercel Analytics enabled, anonymity hardened across two more surfaces (second LinkedIn account deleted + Workspace user renamed). Listing completion score went from 69% → 91%. The brand-anonymous customer-acquisition machine is essentially fully wired now — what's left is waiting for replies + iterating.
@@ -2048,6 +2143,12 @@ After a strategy discussion this session, Kevin confirmed that his top prioritie
 - [x] **Software Advice channel newly activated** ✅ 2026-05-12 — submitted for review; live in 24-72h.
 - [x] **GetApp channel newly activated** ✅ 2026-05-12 — submitted for review; live in 24-72h.
 - [x] **Listing completion score 69% → 91%** ✅ 2026-05-12 — 9 of 13 GDM recommendations resolved in one session.
+- [x] **Invoice review modal shipped** ✅ 2026-05-13 — `InvoiceReviewModal.tsx` for read-only draft preview before sending. DRAFT row clicks now open it; non-DRAFT rows keep payment modal path. Plus explicit Review button in actions cell. Tested working. (commit `e2d7d12`)
+- [x] **Google Analytics 4 wired + firing** ✅ 2026-05-13 — opt-in via `NEXT_PUBLIC_GA_MEASUREMENT_ID` env var (matches Plausible pattern), Vercel env var set, local `.env` updated, GA Realtime confirms tracking (page_view + scroll + first_visit + session_start events). (commit `27b665a`)
+- [x] **/pricing 404 fixed** ✅ 2026-05-13 — server-side redirect to `/#pricing` + middleware allowlist. Cold-email recipients pasting the URL no longer hit a black 404. (commit `a410573`)
+- [x] **Outreach automation playbook integrated** ✅ 2026-05-13 — imported from another project, adapted for Phasewise (LA firms not solos, LATC/ASLA not Google queries, anonymity discipline stricter). CLAUDE.md "Outreach automation" section guides future sessions. (commit `e38fb23`)
+- [x] **Active vertical locked in: SoCal MWELO-strict** ✅ 2026-05-13 — Option B + H (LA County + OC + Inland Empire + SD via LATC/ASLA, MWELO-strict overlay). 5 Wave-2 cold drafts queued in `OUTREACH-DRAFTS.private.md`. Hunter credits earmarked. Send schedule: Mon-Wed 5/18-5/20. (commit `f2d2633`)
+- [x] **First automation-driven research pass complete** ✅ 2026-05-13 — 5 verified Wave-2 candidates via WebSearch + WebFetch (Clark & Green, Mark Tessier, Studio PAD, Hermann Design Group, KDA). Important learning captured: Studio PAD's old email guess `peter@studio-pad.com` was wrong — actual is `paduarte@studio-PAD.com` (firstlastinitial pattern, not firstname). Pattern documented for future research.
 - [x] **Second LinkedIn account deleted (anonymity)** ✅ 2026-05-12 — public link from Kevin Gallo → "Owner at Phasewise" severed.
 - [x] **Workspace user renamed Phasewise Team** ✅ 2026-05-12 — display name propagates across Google services.
 - [x] **Vercel Analytics enabled** ✅ 2026-05-12 — Hobby tier free; data populates within 24h.
@@ -2075,13 +2176,22 @@ After a strategy discussion this session, Kevin confirmed that his top prioritie
 - [x] **X auto-posting via n8n LIVE** ✅ 2026-05-03 — OAuth blocker (Avast Secure Browser cookie hijack) resolved by using Chrome incognito with fresh @phasewise session. Workflow now auto-tweets every Friday at 7am UTC. First test tweet posted (ID `2051026738046488746`)
 - [ ] **Monitor indexing progress** in Search Console over next 1-2 weeks (Performance + Indexing reports)
 
-### Sales / outreach (highest revenue ROI) — Wednesday 2026-05-13 priority order
+### Sales / outreach (highest revenue ROI) — Thursday 2026-05-14 + Mon 5/18 priority order
 
-- [ ] **🚨 #1: designlab 252 first-touch fires at 8 AM Pacific** (auto via Gmail Schedule Send). **Maximum-anonymity case** — Kevin worked directly with all 3 partners. If any reply lands, use `OUTREACH-REPLY-PLAYBOOK.private.md` templates verbatim. **Special care if Scott Mears replies** (active Caltrans Calmentor Steering Committee Co-Chair) — voice-only call if pushed past anonymity-disclosure template #5; do not video.
-- [ ] **🚨 #2: Watch for Software Advice + GetApp approval emails from GDM** (24-72h typical window, Capterra came through in ~30h). Search "Phasewise" on https://www.softwareadvice.com and https://www.getapp.com after approval confirmation to verify public listings render correctly. If rejected, triage feedback + resubmit same-session.
-- [ ] **#3: Verify Capterra Knowledge Base ✓ propagated to public page** (24-48h after today's vendor edits). Visit https://www.capterra.com/p/[slug]/Phasewise/ → Support section.
-- [ ] **#4: Check Vercel Analytics dashboard** — first 24h of data should be visible. Even low traffic gives a sanity check that the analytics pipeline is working.
-- [ ] **#5: Maintain outreach cadence.** Thu 5/14 Mantle fires automatically at 8 AM Pacific. No new outbound needed Wed unless a reply lands that needs follow-up.
+**Thu 5/14 (mostly passive):**
+- [ ] **🚨 #1: Mantle first-touch fires at 8 AM Pacific** (auto via Gmail Schedule Send). Tier-A queue fully out. Watch for any inbound replies during the day.
+- [ ] **#2: Watch for Software Advice + GetApp approval emails** (under review since 5/12)
+- [ ] **#3: Verify Capterra Knowledge Base ✓ propagated to public listing** (visible by Wed-Thu)
+- [ ] **#4: Optional research block** (1 hr) — pull next batch of MWELO-strict SoCal firms (Inland Empire deeper, Pasadena, Long Beach, Beverly Hills, SALT retry, ASLA San Diego directory)
+
+**Mon 5/18 — Wave 2 begins (~30 min):**
+- [ ] **🚨 #1: Hunter.io lookups (3 credits, ~10 min)** — `clarkgreen.com`, `hdg-inc.com`, `kda-landscapearchitects.com`
+- [ ] **🚨 #2: attention2 follow-up #1** to Laura Burnett (5 business days past 5/11 send)
+- [ ] **🚨 #3: Schedule Send Wave 2 batch** in Gmail:
+  - Mon 5/18 8 AM Pacific: Email 6 (Clark & Green) + Email 7 (Mark Tessier)
+  - Tue 5/19 8 AM Pacific: Email 8 (Studio PAD) + Email 9 (Hermann Design Group)
+  - Wed 5/20 8 AM Pacific: Email 10 (KDA Landscape Architects)
+- [ ] **#4: Update PROSPECTS.md** Tier C statuses from `⏳ Not contacted` to `📧 Scheduled #1 — 2026-05-XX`
 - [x] **🚨 Hunter.io setup confirmed working** ✅ 2026-05-11 — free tier active, 6 leads already saved, attention2 search consumed 1 credit. Chrome extension still pending.
 - [x] **Outreach reply playbook** ✅ 2026-05-09 — drafted at `OUTREACH-REPLY-PLAYBOOK.private.md`. Six templates covering interested / objection / not-now / pricing / anonymity-disclosure / referral, plus voice rules + triage table + "never reply with" list. Template #4 pricing corrected 2026-05-12 to match canonical "5 users / 20 projects".
 - [x] **attention2 sent + Broussard FU#1 + Atlas Lab FU#1** ✅ 2026-05-11 — three outreach actions out. Follow-up #1 windows for attention2 due Mon 5/18; Broussard + Atlas Lab breakups due Mon 5/25.
