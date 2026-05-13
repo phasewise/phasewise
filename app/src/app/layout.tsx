@@ -103,6 +103,11 @@ export const viewport: Viewport = {
 // to the apex domain (e.g. "phasewise.io") to enable.
 const PLAUSIBLE_DOMAIN = process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN;
 
+// Google Analytics 4 is also opt-in via env var. Set
+// NEXT_PUBLIC_GA_MEASUREMENT_ID to the GA4 measurement id (e.g.
+// "G-XXXXXXXXXX") on Vercel + local .env to enable.
+const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -119,6 +124,20 @@ export default function RootLayout({
             data-domain={PLAUSIBLE_DOMAIN}
             strategy="afterInteractive"
           />
+        )}
+        {GA_MEASUREMENT_ID && (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+              strategy="afterInteractive"
+            />
+            <Script id="ga-init" strategy="afterInteractive">
+              {`window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', '${GA_MEASUREMENT_ID}');`}
+            </Script>
+          </>
         )}
       </body>
     </html>
