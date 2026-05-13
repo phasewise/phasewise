@@ -602,6 +602,39 @@ Ordered by my estimated value-per-effort. Revisit during the forensic audit.
 - ✅ **Automated year-end rollover** (shipped 2026-05-07, commit `d831e5e`) — `computeUserLeaveBalances` pulls leave entries for `[prevYearStart, yearEnd)` in one query, buckets by year on the JS side, and adds `min(remainingPrev, rolloverCap)` to this year's available pool. New `LeaveBalance.carryoverHours` field surfaces the amount; admin leave page + timesheet balance widget render "+Xh carried over" beneath the balance number. `rolloverCap=0` keeps use-it-or-lose-it (HOLIDAY default), `>0` clamps, `-1` is unlimited. ACCRUED policies use their own annualHours as the prior-year ceiling — by Dec 31 the full annual amount has been accrued (capped if a `cap` was set), so the formula works for both modes without re-running month-by-month accrual against a closed year. New Year's Day flips and the rollover computes itself off the prior year's actual usage.
 - **Forensic audit** — top-to-bottom value review once the queue slows down. Rate each feature on value delivered vs maintenance cost. Cut or sharpen anything that doesn't earn its keep.
 
+## Outreach automation
+
+Higher-volume outreach uses the operational playbook at [`marketing/outreach/PLAYBOOK_for_other_projects.md`](marketing/outreach/PLAYBOOK_for_other_projects.md). Originally written for a project targeting solo operators (Typeform-using coaches/consultants); the principles transfer to Phasewise, but the ICP + lead sources + email patterns differ. Future sessions: **read the playbook for mechanics, but heed the adaptations below before executing.**
+
+**Transferable principles (apply as-is):**
+
+- **Anonymous brand voice.** Send from `Phasewise Team <hello@phasewise.io>`, sign "— The Phasewise team", no founder name anywhere.
+- **Skip generic addresses** (`info@`, `hello@`, `contact@`). 2-5% open vs 30-50% for named addresses.
+- **Vary subject lines across the daily batch** (bulk-filter signal otherwise).
+- **Cadence: Day 0 / +3-5 / +10. Stop after FU#2.** Sending a third email is spammy and hurts sender reputation more than the marginal probability of conversion.
+- **Cap ~5-15 emails/day** (mail.phasewise.io has been warming since April; can safely sustain 10-15/day at this point, but stay disciplined).
+- **Conversion math:** 30-100 emails per first paying customer is the realistic range.
+- **CSV tracker pattern** with status enum (pending / sent / followed_up_1 / followed_up_2 / replied / converted / not_interested / bounced / lost) is worth adopting once prospect count crosses ~30. Until then, `PROSPECTS.md` stays the source of truth.
+
+**Phasewise-specific adaptations (do NOT apply the playbook literally):**
+
+- **Target = LA firms (3-50 staff), not solo operators.** LA firms have public-sector portfolios, licensed principals, multi-person team pages. The playbook's "verify SOLO status via WebFetch" step is the wrong filter — we WANT firms with 3+ people because they have budgets. Use ICP filter "small to mid-size LA firm" instead.
+- **Lead sources: registries + directories beat Google.** The CA Landscape Architects Technical Committee (LATC) publishes every licensed LA in the state. ASLA chapter directories (Sierra, Northern CA, Southern CA, San Diego) list firms publicly. Start there. WebSearch is the fallback, not the primary.
+- **The playbook's Typeform/Calendly action-language queries don't fit LA firms.** Don't run `"apply to work with me" typeform [vertical]` — that returns coaches, not LA firms.
+- **Pattern-guessing less reliable than for solo-brand domains.** Many LA firms publish only `info@firmname.com` or use `firstname.lastname@firm.com`. Hunter.io credits are MORE valuable here than for solo-operator targets. Spend them.
+- **Email infrastructure already works.** We send via Gmail "Send mail as" on Workspace (hello@ alias on kevin@phasewise.io), with display name `Phasewise Team`. No Resend API needed at current volume. Revisit if we ever cross 50/day sustained.
+- **Existing templates are calibrated.** `OUTREACH-DRAFTS.private.md` has 5 Tier-A cold drafts in the right register; `OUTREACH-REPLY-PLAYBOOK.private.md` has 6 reply templates. Use the **Mantle/attention2 "expert read" register** for senior firms (FASLA principals, 10+ year practices) — they're peers, not prospects to educate. Use the **Broussard/Atlas Lab value-first register** for growth-phase firms (newer practices, mid-career owners).
+- **Anonymity discipline is stricter for Phasewise.** Some California LA firms have Caltrans-overlap risk (Kevin's day job) — never reference specific Caltrans projects, Cal Poly affiliations, or California district numbers in any draft. See `OUTREACH-DRAFTS.private.md` Email 2 (designlab 252) for the maximum-anonymity rework pattern.
+
+**Files that future sessions should know about:**
+- `marketing/outreach/PLAYBOOK_for_other_projects.md` — the imported operational playbook (read for mechanics)
+- `OUTREACH-PLAYBOOK.md` — Phasewise's strategy doc (committed, public — strategic framing, tier targeting, register guide)
+- `OUTREACH-DRAFTS.private.md` — the 5 active cold drafts + designlab 252 anonymity rework + Mantle draft (gitignored)
+- `OUTREACH-REPLY-PLAYBOOK.private.md` — 6 reply templates for inbound responses + voice rules + triage table (gitignored)
+- `PROSPECTS.md` — current source of truth for who's been contacted, when, and what status (gitignored)
+
+---
+
 ## Where We Left Off (2026-05-12 EOD)
 
 **Status: 🟢🟢🟢 Massive customer-acquisition day.** One code commit, two more cold emails scheduled (designlab 252 + Mantle), two more directory channels activated (Software Advice + GetApp), Vercel Analytics enabled, anonymity hardened across two more surfaces (second LinkedIn account deleted + Workspace user renamed). Listing completion score went from 69% → 91%. The brand-anonymous customer-acquisition machine is essentially fully wired now — what's left is waiting for replies + iterating.
