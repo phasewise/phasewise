@@ -633,6 +633,18 @@ Higher-volume outreach uses the operational playbook at [`marketing/outreach/PLA
 - `OUTREACH-REPLY-PLAYBOOK.private.md` — 6 reply templates for inbound responses + voice rules + triage table (gitignored)
 - `PROSPECTS.md` — current source of truth for who's been contacted, when, and what status (gitignored)
 
+**Active target vertical (chosen 2026-05-13): Option B + H — SoCal LA firms via LATC/ASLA, MWELO-strict overlay.** Kept Option D (San Diego), Option C (Sacramento/Central Valley), and other geographic verticals as backup. Kevin's strategic insight: firms working in MWELO-strict jurisdictions face MAWA/ETWU calculations on every public-sector + large-commercial submittal, so the built-in MWELO calculator is a "saves 2-4 hours per project" hook for them specifically. Residential-only firms in Tier-1 areas matter less (residential <2,500 sq ft is MWELO-exempt).
+
+**Tier-1 MWELO-strict jurisdictions to over-index on:**
+- **LA County:** City of LA, Santa Monica, Pasadena, Long Beach, Beverly Hills, Culver City (all have post-2015 ordinances stricter than statewide MWELO)
+- **Orange County:** Irvine, Newport Beach, Costa Mesa, Anaheim (MWDOC enforcement)
+- **Inland Empire:** Riverside, San Bernardino, Palm Springs (drought-zone strictness)
+- **San Diego County:** county-wide drought-resistant landscape requirements
+
+**Research-pass cadence (Path A):** target 5 outbound sends/day, Mon-Thu mornings (8-10am Pacific). Each off-day or weekend session: 1-2 hours of research to add 10-15 candidates to PROSPECTS.md Tier B section, draft personalized emails, queue via Gmail Schedule Send.
+
+**Sending mechanic (current):** Claude drafts personalized emails in `OUTREACH-DRAFTS.private.md`; Kevin paste-and-sends via Gmail's "Send mail as" on `hello@phasewise.io` with Schedule Send for next morning. **No Resend API yet** — at 5/day the marginal time saved by API automation is small and human-in-the-loop catches name/email/anonymity mistakes before they hit sender reputation. Revisit Resend if we ever sustain 10+/day or want open/click tracking.
+
 ---
 
 ## Where We Left Off (2026-05-12 EOD)
