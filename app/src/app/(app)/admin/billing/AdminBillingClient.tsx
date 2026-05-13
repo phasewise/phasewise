@@ -9,6 +9,7 @@ import {
   ChevronDown,
   ChevronRight,
   DollarSign,
+  Eye,
   FileText,
   Plus,
   Send,
@@ -20,6 +21,7 @@ import { useConfirm } from "@/components/confirm-provider";
 import { type Invoice, type LineItem, STATUS_OPTIONS } from "./types";
 import SendInvoiceModal from "./SendInvoiceModal";
 import PaymentUpdateModal from "./PaymentUpdateModal";
+import InvoiceReviewModal from "./InvoiceReviewModal";
 
 type Props = {
   invoices: Invoice[];
@@ -92,6 +94,12 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
   // Send-invoice modal: just which invoice is open. The modal owns
   // its own form state (recipient, message, error, success).
   const [sendingInvoice, setSendingInvoice] = useState<Invoice | null>(null);
+  // Review modal: read-only preview of a draft invoice's line items,
+  // period, totals, notes. Opens when an operator clicks a DRAFT row
+  // (or the explicit "Review" action) so they can verify auto-pulled
+  // content before sending. Editing stays in the New Invoice form;
+  // this surface is verification-only.
+  const [reviewingInvoice, setReviewingInvoice] = useState<Invoice | null>(null);
   // Tracks which invoice's Send button is in-flight, so we can disable
   // it without disabling the whole row.
   const [savingStatusId, setSavingStatusId] = useState<string | null>(null);
@@ -381,6 +389,19 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
   function openPayment(invoice: Invoice) {
     setError(null);
     setPaymentModal({ invoice, markAsPaid: false });
+  }
+
+  // Clicking a DRAFT row should open the read-only review modal so the
+  // operator can verify line items + period before sending. Anything
+  // already sent/paid lands in the payment modal instead — that's
+  // where mark-paid + record-payment-reference live.
+  function openRowDetail(invoice: Invoice) {
+    if (invoice.status === "DRAFT") {
+      setError(null);
+      setReviewingInvoice(invoice);
+    } else {
+      openPayment(invoice);
+    }
   }
 
   // Pre-fill the payment modal as a "Mark as Paid" shortcut: status PAID,
@@ -1090,7 +1111,7 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
                           return (
                             <tr
                               key={inv.id}
-                              onClick={() => openPayment(inv)}
+                              onClick={() => openRowDetail(inv)}
                               className={`border-b border-[#E8EDE9] last:border-0 hover:bg-[#F7F9F7]/50 transition-colors cursor-pointer ${
                                 isHistorical ? "opacity-80" : ""
                               }`}
@@ -1162,6 +1183,21 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
                               </td>
                               <td className="px-4 sm:px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
                                 <div className="inline-flex items-center gap-2">
+                                  {/* Review — opens read-only preview of line items,
+                                      period, totals, notes. DRAFT only — for SENT/PAID
+                                      rows the operator clicks the row directly which
+                                      opens the payment modal instead. */}
+                                  {inv.status === "DRAFT" && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setReviewingInvoice(inv)}
+                                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#2D6A4F] hover:text-[#40916C] hover:underline"
+                                      title="Verify line items + period before sending"
+                                    >
+                                      <Eye className="w-3 h-3" />
+                                      Review
+                                    </button>
+                                  )}
                                   {/* Send to client — emails the PDF via Loops and
                                       flips status to SENT. Available for DRAFT and
                                       SENT (resend). PAID/VOID hide it. */}
@@ -1269,6 +1305,26 @@ export default function AdminBillingClient({ invoices: initialInvoices, projects
               )
             )
           }
+        />
+      )}
+      {reviewingInvoice && (
+        <InvoiceReviewModal
+          invoice={reviewingInvoice}
+          onClose={() => setReviewingInvoice(null)}
+          onSend={() => {
+            // Hand off to the send modal — the operator picks recipient
+            // + message + we render the PDF, attach via Loops, flip
+            // status to SENT. Close the review so the two modals don't
+            // stack on top of each other.
+            const invoice = reviewingInvoice;
+            setReviewingInvoice(null);
+            setSendingInvoice(invoice);
+          }}
+          onMarkSent={async () => {
+            const invoice = reviewingInvoice;
+            setReviewingInvoice(null);
+            await quickMarkAsSent(invoice);
+          }}
         />
       )}
     </div>
