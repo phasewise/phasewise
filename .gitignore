@@ -7,3 +7,7 @@ PROSPECTS.md
 PROSPECTS-*.md
 private/
 *.private.md
+
+# Claude Code local harness files — local settings + runtime locks.
+# Never belong in the repo.
+.claude/
