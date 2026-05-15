@@ -649,7 +649,7 @@ Higher-volume outreach uses the operational playbook at [`marketing/outreach/PLA
 
 ## Where We Left Off (2026-05-15 EOD)
 
-**Status: 🟢🟢 Sales-pipeline build day.** Thu 5/14 was passive (Mantle fired automatically — Tier-A queue fully out). Fri 5/15 ran the first ASLA-FirmFinder-driven research pass: 4 verified Wave-3 candidates drafted + queued. The outreach pipeline is now **3 waves deep (~3 weeks of send cadence queued ahead of cadence)**. One housekeeping commit. No product code changed.
+**Status: 🟢🟢🟢 Sales-execution day.** Thu 5/14 passive (Mantle fired). Fri 5/15: ran the first ASLA-FirmFinder research pass (4 Wave-3 candidates), THEN ran the full Wave 2 verification + scheduling gauntlet — **all 5 Wave 2 emails are now verified and scheduled in Gmail to fire Mon-Tue.** One housekeeping commit. No product code changed.
 
 ### Thu 5/14 (passive)
 
@@ -667,36 +667,52 @@ Higher-volume outreach uses the operational playbook at [`marketing/outreach/PLA
   4. **BMLA** (Corona, 18 staff, municipal/educational; pitched at VP of Operations Steve Shirrel rather than a design principal) — 🟢
 - **Drafts written** — Emails 11-14 appended to `OUTREACH-DRAFTS.private.md` (Wave 3 section). All 4 need Hunter.io lookups (none publish a direct email). `PROSPECTS.md` Tier C updated with the 4 firms + a Wave 4 backlog of 10 triaged-but-unverified names (LRM, Agency Artifact, SQLA, MJS Design Group, FORMA Design, RHA, Withers & Sandgren, Sitescapes, Conceptual Design & Planning, Pacific Coast Land Design).
 
+### Fri 5/15 (later) — Wave 2 verified + scheduled
+
+After the research pass, ran the full Wave 2 send-prep gauntlet:
+
+- **Hunter.io verification on the 3 unverified Wave 2 firms:**
+  - Clark & Green → `bclark@clarkgreen.com` (verified valid, 91%; pattern `{first-initial}{lastname}@`, derived from revealing Aliyah Madriaga)
+  - Hermann Design Group → `chris@hdg-inc.com` (Hunter green check; Chris Hermann listed CEO; headcount actually 1-10, better than estimated)
+  - KDA → `kathryn@kda-landscapearchitects.com` (Hunter green check, 6 sources)
+  - (Mark Tessier + Studio PAD already had published emails — no lookup needed.)
+- **All 5 Wave 2 emails scheduled in Gmail Schedule Send:**
+  - **Mon 5/18 8 AM:** Clark & Green, Mark Tessier, Studio PAD
+  - **Tue 5/19 8 AM:** Hermann Design Group, KDA
+  - (3/day cadence per Kevin's call — Mon also has attention2 FU#1 = 4 sends, under cap.)
+- **Two Wave 3 pull-forward attempts BENCHED** — Kevin wanted a 3rd Tuesday email; both candidates hit bad contact data:
+  - **Community Works Design Group** — no findable email. Hunter has zero data, website publishes none, contact page 404s, 3 domains (`cwdg.online`/`comworksdg.com`/`cwdg.fun`) none verify. Logged in PROSPECTS.md "don't rabbit-hole" — reach via contact form or phone (951) 369-0700.
+  - **David Volz Design** — discovered the firm rebranded to "DVD" (`dvdcreative.com`) and the Volz family (David + Kevin Volz) has LEFT. Hunter's `dvolzdesign.com` data is the stale pre-rebrand roster. Current President is Eric Sterling. Email 13 benched in OUTREACH-DRAFTS.private.md; needs re-targeting to Eric Sterling.
+- **Lesson:** two firms with stale/missing contact data isn't failure — it's the verify step working, catching 2 bad sends before they bounced. Stale data is normal cold-outreach texture. Tuesday correctly stays at 2 emails; forcing a 3rd wasn't worth it.
+
 ### Commit (1 today)
 
 17. `1512f09` — **.gitignore: exclude .claude/ harness files.** A set of files had gotten accidentally staged (`.claude/settings.local.json`, `.claude/scheduled_tasks.lock`, a stray blank line in `BUSINESS_PLAN.md`, `brand_v2/exports/`, the playbook). Cleanup: unstaged everything, reverted the BUSINESS_PLAN.md blank line, added `.claude/` to `.gitignore`. `brand_v2/exports/` (brand assets + 5 directory screenshots) and `marketing/outreach/PLAYBOOK_for_other_projects.md` left **untracked pending Kevin's deliberate decision** — note that committing the playbook would put the outreach methodology in the public repo. (Rebased over the n8n pipeline's Friday auto-article `7a9925f`.)
 
 ### Pipeline state — 3 waves deep
 
-- **Wave 2** (5 firms: Clark & Green, Mark Tessier, Studio PAD, Hermann Design Group, KDA) — fires Mon-Wed 5/18-5/20
-- **Wave 3** (4 firms: Community Works, David Volz, Architerra, BMLA) — fires week of Mon 5/25
+- **Wave 2** (5 firms) — ✅ SCHEDULED in Gmail: Mon 5/18 8 AM (Clark & Green, Mark Tessier, Studio PAD) + Tue 5/19 8 AM (Hermann, KDA)
+- **Wave 3** (2 ready + 2 benched) — Architerra + BMLA need Hunter lookups; Community Works + David Volz/DVD need contact workarounds (see above). Target send week of Mon 5/25.
 - **Wave 4 backlog** — 10 triaged names awaiting a verify pass
 
-### Mon 5/18 — Wave 2 ignition (unchanged from 5/13 plan)
+### Mon 5/18 — only one task left (Wave 2 already scheduled)
 
-- **🚨 Hunter.io lookups (3 credits):** `clarkgreen.com`, `hdg-inc.com`, `kda-landscapearchitects.com`
-- **🚨 attention2 follow-up #1** to Laura Burnett (5 business days past 5/11)
-- **🚨 Schedule Send Wave 2:** Mon — Clark & Green + Mark Tessier; Tue — Studio PAD + Hermann; Wed — KDA
-- Update `PROSPECTS.md` statuses after scheduling
+- **🚨 attention2 follow-up #1** to Laura Burnett (5 business days past 5/11 send) — the lone Monday action; Wave 2's 5 emails fire automatically.
+- After Wave 2 fires, update `PROSPECTS.md` Tier C statuses to `📧 Sent #1 — 2026-05-XX`.
 
-### Week of Mon 5/25 — Wave 3 ignition
+### Week of Mon 5/25 — Wave 3 ignition + Wave 2 follow-ups
 
-- **Hunter.io lookups (4 credits):** `cwdg.online`, `architerradesigngroup.com`, `dvolzdesign.com`, `bmla.net`
-- **Schedule Send Wave 3** (Emails 11-14, 2/day): Community Works + David Volz, then Architerra + BMLA
-- Wave 2 follow-up #1s also come due this week (Clark & Green + Mark Tessier ~5/25, Studio PAD + Hermann ~5/26, KDA ~5/27)
+- **Architerra + BMLA:** Hunter lookups (`architerradesigngroup.com`, `bmla.net`), then draft-ready Emails 12 + 14 can schedule-send.
+- **Community Works + David Volz/DVD:** resolve the contact workarounds first (Community Works → contact form/phone; DVD → get Eric Sterling's email via dvdcreative.com). Then their drafts (11 + 13) can be finished.
+- **Wave 2 follow-up #1s come due:** Clark & Green + Mark Tessier + Studio PAD ~5/25, Hermann + KDA ~5/26.
 
 ### Active waits (cron-style — won't ping you)
 
-- **Mon 5/18 — Wave 2 sends + attention2 FU#1**
+- **Mon 5/18 — Wave 2 fires (5 emails Mon-Tue) + attention2 FU#1**
 - **Mon 5/18 / Tue 5/19 — AlternativeTo submission unblocks** (7-day account-age gate)
 - **Wed 5/20 — designlab 252 FU#1 due** if silent
 - **Thu 5/21 — Mantle FU#1 due** if silent
-- **Mon 5/25 — Broussard + Atlas Lab breakups due** if silent; Wave 3 sends begin
+- **Mon 5/25 — Broussard + Atlas Lab breakups due** if silent; Wave 3 sends begin; Wave 2 FU#1 window opens
 - **GDM Software Advice + GetApp approvals** — still pending; check the vendor portal
 
 ### Things still on the queue (not urgent)
