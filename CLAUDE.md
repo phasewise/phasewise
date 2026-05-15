@@ -647,6 +647,68 @@ Higher-volume outreach uses the operational playbook at [`marketing/outreach/PLA
 
 ---
 
+## Where We Left Off (2026-05-15 EOD)
+
+**Status: 🟢🟢 Sales-pipeline build day.** Thu 5/14 was passive (Mantle fired automatically — Tier-A queue fully out). Fri 5/15 ran the first ASLA-FirmFinder-driven research pass: 4 verified Wave-3 candidates drafted + queued. The outreach pipeline is now **3 waves deep (~3 weeks of send cadence queued ahead of cadence)**. One housekeeping commit. No product code changed.
+
+### Thu 5/14 (passive)
+
+- **Mantle cold email fired automatically** at 8 AM Pacific. Tier-A queue (Broussard, Atlas Lab, attention2, designlab 252, Mantle) is now 100% out. No replies yet across any of the 5 first-touches + 2 follow-ups — normal; B2B reply windows are 3-10 days.
+
+### Fri 5/15 — Wave 3 research pass
+
+- **Sentry Business trial ended** → auto-moved to free Developer plan. Usage was 0% of even the free tier (10 errors / 1M, 96K spans / 100M). No action needed, no upgrade — Sentry keeps working.
+- **#3/#4 checks (GDM Software Advice + GetApp approval, Capterra Knowledge Base propagation) could not be verified externally** — new directory listings aren't Google-indexed yet (2-4 week lag). Handed back to Kevin: check the GDM vendor portal (app.g2digitalmarkets.com → Product Listing → Channels) for publish status. Still pending as of EOD.
+- **Research-method finding:** tested whether autonomous research is runnable end-to-end. ASLA FirmFinder (`connect.asla.org`) is **403-gated** against automated fetches; scattershot WebSearch by city is **low-yield** (SEO-skews residential). **The working split: Kevin does discovery** (pastes firm lists from the FirmFinder, which loads fine for a human), **Claude does verify + draft** (WebFetch each firm → size/portfolio/principal/email → personalized draft).
+- **Wave 3 candidates verified.** Kevin pasted the ASLA FirmFinder SoCal list (~130 firms, 100-mi radius of LACMA). Claude triaged: excluded ~40 too-large/contractor/vendor (OLIN, RIOS, SWA, AECOM, BrightView, etc.), ~30 solo-residential, and **Tatsumi & Partners (transportation LA — anonymity risk, explicitly skipped)**. 4 verified Wave-3 candidates:
+  1. **Community Works Design Group** (Riverside, 14 staff — caps at 14 by design, Certified Irrigation Auditor on staff, parks/schools/housing) — 🟢🟢
+  2. **David Volz Design** (Costa Mesa, 6 staff, self-described "public landscape specialist" — parks/sports fields/streetscapes) — 🟢🟢
+  3. **Architerra Design Group** (Rancho Cucamonga, 16 staff, 30+ yrs public-agency work) — 🟢
+  4. **BMLA** (Corona, 18 staff, municipal/educational; pitched at VP of Operations Steve Shirrel rather than a design principal) — 🟢
+- **Drafts written** — Emails 11-14 appended to `OUTREACH-DRAFTS.private.md` (Wave 3 section). All 4 need Hunter.io lookups (none publish a direct email). `PROSPECTS.md` Tier C updated with the 4 firms + a Wave 4 backlog of 10 triaged-but-unverified names (LRM, Agency Artifact, SQLA, MJS Design Group, FORMA Design, RHA, Withers & Sandgren, Sitescapes, Conceptual Design & Planning, Pacific Coast Land Design).
+
+### Commit (1 today)
+
+17. `1512f09` — **.gitignore: exclude .claude/ harness files.** A set of files had gotten accidentally staged (`.claude/settings.local.json`, `.claude/scheduled_tasks.lock`, a stray blank line in `BUSINESS_PLAN.md`, `brand_v2/exports/`, the playbook). Cleanup: unstaged everything, reverted the BUSINESS_PLAN.md blank line, added `.claude/` to `.gitignore`. `brand_v2/exports/` (brand assets + 5 directory screenshots) and `marketing/outreach/PLAYBOOK_for_other_projects.md` left **untracked pending Kevin's deliberate decision** — note that committing the playbook would put the outreach methodology in the public repo. (Rebased over the n8n pipeline's Friday auto-article `7a9925f`.)
+
+### Pipeline state — 3 waves deep
+
+- **Wave 2** (5 firms: Clark & Green, Mark Tessier, Studio PAD, Hermann Design Group, KDA) — fires Mon-Wed 5/18-5/20
+- **Wave 3** (4 firms: Community Works, David Volz, Architerra, BMLA) — fires week of Mon 5/25
+- **Wave 4 backlog** — 10 triaged names awaiting a verify pass
+
+### Mon 5/18 — Wave 2 ignition (unchanged from 5/13 plan)
+
+- **🚨 Hunter.io lookups (3 credits):** `clarkgreen.com`, `hdg-inc.com`, `kda-landscapearchitects.com`
+- **🚨 attention2 follow-up #1** to Laura Burnett (5 business days past 5/11)
+- **🚨 Schedule Send Wave 2:** Mon — Clark & Green + Mark Tessier; Tue — Studio PAD + Hermann; Wed — KDA
+- Update `PROSPECTS.md` statuses after scheduling
+
+### Week of Mon 5/25 — Wave 3 ignition
+
+- **Hunter.io lookups (4 credits):** `cwdg.online`, `architerradesigngroup.com`, `dvolzdesign.com`, `bmla.net`
+- **Schedule Send Wave 3** (Emails 11-14, 2/day): Community Works + David Volz, then Architerra + BMLA
+- Wave 2 follow-up #1s also come due this week (Clark & Green + Mark Tessier ~5/25, Studio PAD + Hermann ~5/26, KDA ~5/27)
+
+### Active waits (cron-style — won't ping you)
+
+- **Mon 5/18 — Wave 2 sends + attention2 FU#1**
+- **Mon 5/18 / Tue 5/19 — AlternativeTo submission unblocks** (7-day account-age gate)
+- **Wed 5/20 — designlab 252 FU#1 due** if silent
+- **Thu 5/21 — Mantle FU#1 due** if silent
+- **Mon 5/25 — Broussard + Atlas Lab breakups due** if silent; Wave 3 sends begin
+- **GDM Software Advice + GetApp approvals** — still pending; check the vendor portal
+
+### Things still on the queue (not urgent)
+
+- **GDM portal check** — verify Software Advice + GetApp publish status + Capterra Knowledge Base ✓ propagation
+- **brand_v2/exports/ + playbook** — decide whether to commit (playbook → public repo)
+- **Wave 4 verification pass** — 10 triaged names in PROSPECTS.md; also pull San Diego + Inland Empire core (still under-represented)
+- **Resend API setup** — defer until 10+/day sustained or MWELO hook validates
+- **Product video, custom category descriptions, Capterra vendor claim** — low-priority polish
+
+---
+
 ## Where We Left Off (2026-05-13 EOD)
 
 **Status: 🟢🟢🟢 Build day + sales pipeline build-out.** 5 commits shipped (invoice review UX + GA wiring + /pricing 404 fix + outreach automation playbook integration + active-vertical lock-in), Vercel Analytics confirmed firing, Google Analytics 4 confirmed firing, designlab 252 fired automatically at 8 AM Pacific, and the outreach automation workflow ran its first research pass — 5 verified Wave-2 candidates with personalized drafts queued for Mon-Wed sends. **The outreach machine is now operating ahead of the send cadence** instead of scrambling each Monday.
@@ -2176,22 +2238,26 @@ After a strategy discussion this session, Kevin confirmed that his top prioritie
 - [x] **X auto-posting via n8n LIVE** ✅ 2026-05-03 — OAuth blocker (Avast Secure Browser cookie hijack) resolved by using Chrome incognito with fresh @phasewise session. Workflow now auto-tweets every Friday at 7am UTC. First test tweet posted (ID `2051026738046488746`)
 - [ ] **Monitor indexing progress** in Search Console over next 1-2 weeks (Performance + Indexing reports)
 
-### Sales / outreach (highest revenue ROI) — Thursday 2026-05-14 + Mon 5/18 priority order
+### Sales / outreach (highest revenue ROI) — Mon 5/18 + week of 5/25 priority order
 
-**Thu 5/14 (mostly passive):**
-- [ ] **🚨 #1: Mantle first-touch fires at 8 AM Pacific** (auto via Gmail Schedule Send). Tier-A queue fully out. Watch for any inbound replies during the day.
-- [ ] **#2: Watch for Software Advice + GetApp approval emails** (under review since 5/12)
-- [ ] **#3: Verify Capterra Knowledge Base ✓ propagated to public listing** (visible by Wed-Thu)
-- [ ] **#4: Optional research block** (1 hr) — pull next batch of MWELO-strict SoCal firms (Inland Empire deeper, Pasadena, Long Beach, Beverly Hills, SALT retry, ASLA San Diego directory)
-
-**Mon 5/18 — Wave 2 begins (~30 min):**
+**Mon 5/18 — Wave 2 ignition (~30 min):**
 - [ ] **🚨 #1: Hunter.io lookups (3 credits, ~10 min)** — `clarkgreen.com`, `hdg-inc.com`, `kda-landscapearchitects.com`
 - [ ] **🚨 #2: attention2 follow-up #1** to Laura Burnett (5 business days past 5/11 send)
-- [ ] **🚨 #3: Schedule Send Wave 2 batch** in Gmail:
-  - Mon 5/18 8 AM Pacific: Email 6 (Clark & Green) + Email 7 (Mark Tessier)
-  - Tue 5/19 8 AM Pacific: Email 8 (Studio PAD) + Email 9 (Hermann Design Group)
-  - Wed 5/20 8 AM Pacific: Email 10 (KDA Landscape Architects)
+- [ ] **🚨 #3: Schedule Send Wave 2 batch** in Gmail (Emails 6-10 in `OUTREACH-DRAFTS.private.md`):
+  - Mon 5/18 8 AM Pacific: Clark & Green + Mark Tessier
+  - Tue 5/19 8 AM Pacific: Studio PAD + Hermann Design Group
+  - Wed 5/20 8 AM Pacific: KDA Landscape Architects
 - [ ] **#4: Update PROSPECTS.md** Tier C statuses from `⏳ Not contacted` to `📧 Scheduled #1 — 2026-05-XX`
+
+**Week of Mon 5/25 — Wave 3 ignition + Wave 2 follow-ups:**
+- [ ] **Hunter.io lookups (4 credits)** — `cwdg.online`, `architerradesigngroup.com`, `dvolzdesign.com`, `bmla.net`
+- [ ] **Schedule Send Wave 3** (Emails 11-14, 2/day): Community Works + David Volz, then Architerra + BMLA
+- [ ] **Wave 2 FU#1s come due** — Clark & Green + Mark Tessier ~5/25, Studio PAD + Hermann ~5/26, KDA ~5/27
+- [ ] **Broussard + Atlas Lab breakup emails** if still silent
+
+**Anytime — passive checks:**
+- [ ] **GDM vendor portal** — verify Software Advice + GetApp publish status + Capterra Knowledge Base ✓ propagation
+- [ ] **Wave 4 verification pass** — 10 triaged names in PROSPECTS.md Wave 4 backlog; pull more San Diego + Inland Empire core firms
 - [x] **🚨 Hunter.io setup confirmed working** ✅ 2026-05-11 — free tier active, 6 leads already saved, attention2 search consumed 1 credit. Chrome extension still pending.
 - [x] **Outreach reply playbook** ✅ 2026-05-09 — drafted at `OUTREACH-REPLY-PLAYBOOK.private.md`. Six templates covering interested / objection / not-now / pricing / anonymity-disclosure / referral, plus voice rules + triage table + "never reply with" list. Template #4 pricing corrected 2026-05-12 to match canonical "5 users / 20 projects".
 - [x] **attention2 sent + Broussard FU#1 + Atlas Lab FU#1** ✅ 2026-05-11 — three outreach actions out. Follow-up #1 windows for attention2 due Mon 5/18; Broussard + Atlas Lab breakups due Mon 5/25.
