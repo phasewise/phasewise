@@ -647,6 +647,92 @@ Higher-volume outreach uses the operational playbook at [`marketing/outreach/PLA
 
 ---
 
+## Where We Left Off (2026-06-10 EOD)
+
+**Status: 🟢 Pick-up session after 26-day gap.** n8n SEO pipeline restored from credential-expiry outage. Two cold inbound emails triaged (one legit M&A operator worth engaging). GitHub commit-metadata anonymity leak diagnosed + closed going forward. GA4 ↔ GSC integration linked. Strategic discussion on outreach ICP refinement. **10 close-out emails drafted (5 Wave 1 breakups + 5 Wave 2 late FU#1s); a few scheduled tonight, balance queued for tomorrow morning.**
+
+### n8n SEO automation restored
+
+- **Issue:** workflow threw "Authorization failed - Bad credentials" — GitHub PAT (created 2026-04-24) had expired earlier than expected (likely defaulted to 30-day instead of the intended 1-year).
+- **Fix:** Kevin regenerated the PAT with explicit 1-year expiry, updated the n8n credential, re-tested. Workflow ran end-to-end and is back to Active. Friday auto-articles resume.
+
+### Cold inbound emails — 2 reviewed
+
+- **Isaac Rousseau (anyIP)** — templated B2B cold sales. Ignored.
+- **Charlie Serota (Recur Holding)** — legit vertical SaaS M&A operator. Backed by Accel / Prosus / Permanent Capital / Reef Pass. Target acquisition range $1-10M ARR. Proposed Zoom call.
+  - **Decision:** decline the Zoom (anonymity-preserving). Reply with email-only thesis-research questions instead — drafted reply asking 3 focused questions: (1) what's drawing Recur to landscape architecture specifically, (2) deal multiples in adjacent verticals at $1-3M ARR, (3) what distinguishes "mission-critical" vertical SaaS in their framework. **Scheduled to send this evening** from Kevin's personal email (where Charlie reached him).
+  - **Strategic read documented in conversation:** Charlie almost certainly knows Phasewise is pre-revenue (every public signal confirms it). His angle is thesis research + relationship-building for a 2-3 year horizon, not a near-term offer. Watch for an early SAFE offer at $3-5M cap (the roll-up's preferred lock-in play). Treat the exchange as a free MBA on vertical SaaS M&A — don't sign anything.
+
+### Anonymity leak diagnosed (going-forward fixed)
+
+- **Root cause:** GitHub commit metadata at `/repos/phasewise/phasewise/commits` was exposing `kgallo22@gmail.com` as author email. Apollo / ZoomInfo / RocketReach scrapers harvest this — explains how both Isaac and Charlie got Kevin's personal Gmail despite the anonymity strategy.
+- **Fix step 1:** turned on GitHub email privacy ("Keep my email addresses private" + "Block command line pushes that expose my email").
+- **Fix step 2:** discovered global + local git config were ALREADY set to the noreply alias `262197471+kgallo22-projects@users.noreply.github.com`. Origin unknown (neither Kevin nor I explicitly recall setting it). No config changes needed. Future commits will use the noreply alias automatically.
+- **Past leak:** historical commits permanently expose `kgallo22@gmail.com`. Not rewriting history because the email is already harvested by data aggregators; rewriting won't unring that bell.
+
+### GSC + GA4 integration
+
+- Verified Google Search Console was already active from 2026-04-26 with sitemap submitted (27 pages discovered).
+- Requested indexing on top 3 commercial-intent pages.
+- Linked GA4 ↔ GSC via GA Property Settings → Search Console links. "LINK CREATED" confirmed. Data populates within 24-48h.
+
+### Outreach ICP discussion (strategic — not executed yet)
+
+Kevin's hypothesis: established LA firms (Broussard 1996, Mantle senior FASLAs, Clark & Green 1987, Hermann 1995) have entrenched processes + high switching costs; younger firms more likely to convert.
+
+**Honest read documented in conversation:** hypothesis is partly right but refined — the sweet spot isn't "brand new" (those firms don't yet feel the pain or have the budget) but rather **founded 2015-2022, 4-15 staff, growing, doing public-sector or multifamily work**. Big enough to feel MWELO + per-phase profitability pain, young enough not to have entrenched on Monograph/BQE. Studio PAD (founded 2012, 6-12 staff) was the best-targeted of Wave 2 by that metric.
+
+**Also flagged uncomfortable truth:** B2B SaaS at $99-349/mo essentially never converts via pure self-serve at the cold-prospect stage. Industry standard is cold-email → demo call → trial → paid. Kevin's anonymity-only strategy is running into a sales-conversion wall. Possible compromises raised for fresh-head decision: Loom walkthroughs / audio-only Meet / founder-led for first 5 customers only.
+
+**Wave 4 plan deferred:** refine ICP filter (founded 2015-2022, 4-15 staff), pain-anchored subject-line A/B test, deliverability test (send to `kgallo22+test@gmail.com` from `hello@phasewise.io` and check Primary vs Promotions vs Spam).
+
+### Close-out batch drafted + partially scheduled
+
+11-day gap means Wave 1 firms are past breakup window, Wave 2 firms are 2+ weeks past FU#1. **10 close-out emails written** into `OUTREACH-DRAFTS.private.md` under "Close-out batch — Waves 1 + 2" section (Emails 15-24):
+
+- **5 Wave 1 breakups:** Broussard, Atlas Lab, attention2, designlab 252, Mantle
+- **5 Wave 2 late FU#1s:** Clark & Green, Mark Tessier, Studio PAD, Hermann, KDA
+
+Two templates (breakup + late FU#1) with per-recipient swap-ins for greeting and firm-type. All to be sent as **REPLIES on original threads** (preserves Gmail threading; recipients see continuation, not a new cold email).
+
+**Scheduled tonight:** Email 15 (Broussard → Terry, Thu 6/11 8 AM) confirmed in Gmail Scheduled folder. A few more from the batch also scheduled.
+
+**Remaining for tomorrow morning** (mechanical paste-and-schedule, ~10-15 min total):
+
+| # | Recipient | Type | Send |
+|---|---|---|---|
+| 16-17 | Atlas Lab, attention2 | breakup | Thu 6/11 8 AM |
+| 18-19 | designlab 252, Mantle | breakup | Fri 6/12 8 AM |
+| 20-21 | Clark & Green, Mark Tessier | late FU#1 | Fri 6/12 8 AM |
+| 22-24 | Studio PAD, Hermann, KDA | late FU#1 | Mon 6/15 8 AM |
+
+Bodies + swap-ins in `OUTREACH-DRAFTS.private.md`. Mechanic: Sent folder → search recipient domain → open thread → Reply → paste body with swap-ins → Schedule send.
+
+### Anonymity tell discovered (fix before Wave 4, not before this batch)
+
+Avast antivirus auto-appends a "Virus-free www.avast.com" footer to outgoing emails. Visible in Gmail's scheduled preview. **Low-trust signal for B2B cold outreach + suggests personal-grade tooling (not a SaaS company brand).** Past Wave 1+2 sends likely had it too. **Action:** disable in Avast → Settings → Mail Shield → outgoing signature/badge. Leaving ON for current close-out batch to match prior thread style; fix before any Wave 4 sends.
+
+### Tomorrow's first task (6/11 AM)
+
+**Finish scheduling the close-out batch** — Emails 16-24 in Gmail (~10-15 min, mechanical paste-and-schedule). Then update `PROSPECTS.md` statuses:
+
+- Wave 1 breakups (Emails 15-19): `📧 Sent breakup — 2026-06-11` (or 6/12) · `Move to warm-but-paused 2026-12-11` (or 12/12)
+- Wave 2 FU#1s (Emails 20-24): `📧 Sent FU#1 — 2026-06-12` (or 6/15) · `Breakup due 2026-06-19` (or 6/22)
+
+After that, in priority order:
+
+1. **Check inbox** for Charlie's reply (Recur Holding). If anything comes in, use the Charlie strategic-read framework (don't share metrics, don't sign anything, free MBA on vertical SaaS M&A).
+2. **Check GA4 ↔ GSC integration data populated** (24-48h window after last night's link).
+3. **Fix Avast outgoing-mail signature** before queuing any Wave 4 sends.
+4. **Decide on the bigger strategic items** (fresh head needed — don't rush these):
+   - Wave 4 ICP filter refinement (founded 2015-2022, 4-15 staff)
+   - Subject-line A/B test design (pain-anchored vs current "would value your read")
+   - Deliverability test (5-min send to `kgallo22+test@gmail.com` from `hello@phasewise.io`)
+   - Anonymity-vs-sales-call compromise (Loom / audio-only Meet / founder-led for first 5 customers)
+5. **Wave 3 Hunter.io lookups** for Architerra Design Group (`architerradesigngroup.com`) + BMLA (`bmla.net`) — still pending from 5/15.
+
+---
+
 ## Where We Left Off (2026-05-15 EOD)
 
 **Status: 🟢🟢🟢 Sales-execution day.** Thu 5/14 passive (Mantle fired). Fri 5/15: ran the first ASLA-FirmFinder research pass (4 Wave-3 candidates), THEN ran the full Wave 2 verification + scheduling gauntlet — **all 5 Wave 2 emails are now verified and scheduled in Gmail to fire Mon-Tue.** One housekeeping commit. No product code changed.
@@ -2227,6 +2313,12 @@ After a strategy discussion this session, Kevin confirmed that his top prioritie
 - [x] **Outreach automation playbook integrated** ✅ 2026-05-13 — imported from another project, adapted for Phasewise (LA firms not solos, LATC/ASLA not Google queries, anonymity discipline stricter). CLAUDE.md "Outreach automation" section guides future sessions. (commit `e38fb23`)
 - [x] **Active vertical locked in: SoCal MWELO-strict** ✅ 2026-05-13 — Option B + H (LA County + OC + Inland Empire + SD via LATC/ASLA, MWELO-strict overlay). 5 Wave-2 cold drafts queued in `OUTREACH-DRAFTS.private.md`. Hunter credits earmarked. Send schedule: Mon-Wed 5/18-5/20. (commit `f2d2633`)
 - [x] **First automation-driven research pass complete** ✅ 2026-05-13 — 5 verified Wave-2 candidates via WebSearch + WebFetch (Clark & Green, Mark Tessier, Studio PAD, Hermann Design Group, KDA). Important learning captured: Studio PAD's old email guess `peter@studio-pad.com` was wrong — actual is `paduarte@studio-PAD.com` (firstlastinitial pattern, not firstname). Pattern documented for future research.
+- [x] **n8n SEO automation restored** ✅ 2026-06-10 — GitHub PAT (created 4/24) had expired earlier than expected. Kevin regenerated with explicit 1-year expiry, updated n8n credential, re-tested end-to-end. Workflow back to Active. Friday auto-articles resume.
+- [x] **GitHub email privacy enabled** ✅ 2026-06-10 — turned on "Keep my email addresses private" + "Block command line pushes that expose my email". Closes the commit-metadata leak vector going forward (root cause of Isaac Rousseau + Charlie Serota finding Kevin's personal Gmail). Global + local git config were already set to noreply alias `262197471+kgallo22-projects@users.noreply.github.com`, so no config changes needed. Past commits permanently leak `kgallo22@gmail.com`; not rewriting history (already harvested).
+- [x] **GA4 ↔ GSC integration linked** ✅ 2026-06-10 — Property Settings → Search Console links → "LINK CREATED". GSC was already active from 2026-04-26 (sitemap submitted, 27 pages discovered). Requested indexing on top 3 commercial-intent pages. Cross-property data populates 24-48h.
+- [x] **Recur Holding cold inbound triaged + reply scheduled** ✅ 2026-06-10 — Charlie Serota (Recur Holding, backed by Accel/Prosus/Permanent Capital/Reef Pass) reached Kevin's personal email proposing Zoom call. Decision: skip Zoom (anonymity-preserving), reply with email-only thesis-research questions instead. Drafted 3 focused questions on Recur's thesis, multiples in adjacent verticals, mission-critical SaaS framework. Scheduled to send 6/10 evening from Kevin's personal email.
+- [x] **Outreach close-out batch drafted (Emails 15-24)** ✅ 2026-06-10 — 10 emails in `OUTREACH-DRAFTS.private.md` "Close-out batch — Waves 1 + 2" section. 5 Wave 1 breakups (Broussard, Atlas Lab, attention2, designlab 252, Mantle) + 5 Wave 2 late FU#1s (Clark & Green, Mark Tessier, Studio PAD, Hermann, KDA). Two templates with per-recipient swap-ins, all to be sent as replies on original threads. Email 15 (Terry/Broussard) scheduled for Thu 6/11 8 AM tonight; remaining 9 queued for tomorrow.
+- [ ] **🚨 Avast outgoing-mail signature footer (anonymity tell)** — Avast antivirus auto-appends "Virus-free www.avast.com" to outgoing emails. B2B trust-killer + anonymity tell. Fix in Avast → Settings → Mail Shield → disable outgoing signature/badge BEFORE Wave 4 sends. (Leave ON for current close-out batch to match prior thread style.)
 - [x] **Second LinkedIn account deleted (anonymity)** ✅ 2026-05-12 — public link from Kevin Gallo → "Owner at Phasewise" severed.
 - [x] **Workspace user renamed Phasewise Team** ✅ 2026-05-12 — display name propagates across Google services.
 - [x] **Vercel Analytics enabled** ✅ 2026-05-12 — Hobby tier free; data populates within 24h.
@@ -2254,7 +2346,34 @@ After a strategy discussion this session, Kevin confirmed that his top prioritie
 - [x] **X auto-posting via n8n LIVE** ✅ 2026-05-03 — OAuth blocker (Avast Secure Browser cookie hijack) resolved by using Chrome incognito with fresh @phasewise session. Workflow now auto-tweets every Friday at 7am UTC. First test tweet posted (ID `2051026738046488746`)
 - [ ] **Monitor indexing progress** in Search Console over next 1-2 weeks (Performance + Indexing reports)
 
-### Sales / outreach (highest revenue ROI) — Mon 5/18 + week of 5/25 priority order
+### Sales / outreach (highest revenue ROI) — Tomorrow 6/11 priority order
+
+**🚨 Thu 6/11 AM — Finish close-out batch (~15 min mechanical):**
+- [ ] **Schedule Emails 16-17 in Gmail for Thu 6/11 8 AM** — Atlas Lab (Kimberly, `atlaslab.com`) + attention2 (Laura, `attention2.com`). Breakup body.
+- [ ] **Schedule Emails 18-21 in Gmail for Fri 6/12 8 AM** — designlab 252 + Mantle (breakups) + Clark & Green + Mark Tessier (late FU#1s).
+- [ ] **Schedule Emails 22-24 in Gmail for Mon 6/15 8 AM** — Studio PAD + Hermann + KDA (late FU#1s).
+- [ ] **Mechanic for each:** Sent folder → search recipient domain → open original thread → Reply → paste body with swap-ins (table in OUTREACH-DRAFTS.private.md "Close-out batch — Waves 1 + 2" section) → Schedule send.
+- [ ] **Verify in Scheduled folder** — should show 10 outgoing emails total (Email 15 Terry already in there from tonight + 9 more).
+- [ ] **Update `PROSPECTS.md` statuses:**
+  - Wave 1 breakups (Emails 15-19): `📧 Sent breakup — 2026-06-11` (or 6/12) · `Move to warm-but-paused 2026-12-11`
+  - Wave 2 FU#1s (Emails 20-24): `📧 Sent FU#1 — 2026-06-12` (or 6/15) · `Breakup due 2026-06-19` (or 6/22)
+
+**Anytime after close-out batch is queued:**
+- [ ] **Charlie (Recur Holding) reply check** — sent last night. Watch inbox 1-7 days. If anything comes in, use the strategic-read framework: don't share metrics, don't sign anything, treat as free MBA on vertical SaaS M&A. Watch for early SAFE offer at $3-5M cap.
+- [ ] **GA4 ↔ GSC data populated?** — check ~24-48h after last night's link create. GA → Acquisition → "Search Console organic traffic" should start showing data.
+- [ ] **Fix Avast outgoing-mail signature** before any Wave 4 sends — Avast → Settings → Mail Shield → disable "Virus-free www.avast.com" footer. Anonymity tell + low-trust signal for B2B.
+
+**Bigger strategic decisions (fresh head, not first thing in the AM):**
+- [ ] **Wave 4 ICP filter refinement** — switch targeting to founded 2015-2022, 4-15 staff. Studio PAD pattern is the highest-conversion profile.
+- [ ] **Subject-line A/B test design** — test pain-anchored opener ("How are you tracking MWELO across 4+ active projects?") vs current humility-hook ("would value your read") on next batch.
+- [ ] **5-min deliverability test** — send a Wave 2 body from `hello@phasewise.io` to `kgallo22+test@gmail.com`. If lands in Primary → message angle is the issue. If Spam → deliverability is the issue (likely needs DMARC tightening / sending warmup / external service like Postmark). This single test could explain everything.
+- [ ] **Anonymity-vs-sales-call compromise decision** — B2B SaaS at $99-349/mo rarely converts via pure self-serve cold prospects. Options: (a) Loom walkthroughs narrated as "Phasewise team", (b) audio-only Google Meet calls, (c) founder-led for first 5 customers only with a step-back plan once case studies exist. Worth deciding before scaling outbound.
+- [ ] **Wave 3 Hunter.io lookups** still pending from 5/15 — `architerradesigngroup.com` (Architerra Design Group) + `bmla.net` (BMLA at Steve Shirrel VP Ops). Emails 12 + 14 in `OUTREACH-DRAFTS.private.md` are draft-ready once Hunter clears.
+- [ ] **Wave 3 contact workarounds** — Community Works Design Group (contact form or phone (951) 369-0700); David Volz Design rebrand to DVD — re-target Email 13 to Eric Sterling at `dvdcreative.com`.
+
+---
+
+### Sales / outreach — earlier priorities (history, mostly closed)
 
 **Mon 5/18 — Wave 2 ignition (~30 min):**
 - [ ] **🚨 #1: Hunter.io lookups (3 credits, ~10 min)** — `clarkgreen.com`, `hdg-inc.com`, `kda-landscapearchitects.com`
