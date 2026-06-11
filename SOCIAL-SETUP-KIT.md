@@ -74,7 +74,7 @@ One subscription instead of three. $99/mo Starter • $199/mo Professional • $
   Phases · budgets · MWELO · submittals · time · profit
   → phasewise.io
   ```
-- **Linked email:** kevin@phasewise.io
+- **Linked email:** hello@phasewise.io
 - **Action button:** "Sign up" → https://phasewise.io/signup
 - **Story highlights to create over week 1:**
   - **Phases** — what each LA project phase actually does
@@ -149,7 +149,7 @@ If that feels like too much, drop Instagram and GitHub to "passive presence — 
 
 ## Do these in order (15 min each, max)
 
-1. Claim @phasewise on Instagram (Business account, link kevin@phasewise.io)
+1. Claim @phasewise on Instagram (Business account, link hello@phasewise.io)
 2. Upload profile pictures + cover images to all four platforms (assets in `brand_v2/`)
 3. Post the four "first post" templates above
 4. Verify the social links in the phasewise.io footer click through correctly

@@ -257,6 +257,6 @@ If you're at 50-emails sent / 0 replies on day 14, the targeting or personalizat
 
 - **Hunter.io** — find principal email addresses ($0-49/mo, 50 free searches/mo)
 - **Apollo.io** — alternative; better LinkedIn integration ($0-99/mo)
-- **Google Workspace** — already set up; gives you kevin@phasewise.io
+- **Google Workspace** — already set up; gives you a branded sending mailbox + aliases (hello@phasewise.io, etc.)
 - **Gmail "Send Later"** — schedule emails for 9am Pacific
 - **Mixmax / Streak** (optional) — Gmail extension for follow-up tracking; only if the spreadsheet feels too manual

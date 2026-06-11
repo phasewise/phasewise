@@ -129,7 +129,7 @@ export default function TermsPage() {
           <p>
             <strong>Phasewise</strong>
             <br />
-            <a href="mailto:kevin@phasewise.io">kevin@phasewise.io</a>
+            <a href="mailto:hello@phasewise.io">hello@phasewise.io</a>
             <br />
             phasewise.io
           </p>

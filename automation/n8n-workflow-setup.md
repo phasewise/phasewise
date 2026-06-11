@@ -32,7 +32,7 @@ The fastest way to set up a copy is to **import [`n8n-workflow.json`](./n8n-work
 
 ### 1.1 Anthropic API key
 
-1. [console.anthropic.com](https://console.anthropic.com/) → sign in with `kevin@phasewise.io`
+1. [console.anthropic.com](https://console.anthropic.com/) → sign in with your Workspace account
 2. Add billing (~$2.50/month at 1 article/week)
 3. **API Keys** → **Create Key**, name `n8n-phasewise-blog`, copy the `sk-ant-...` value
 4. In n8n: **Credentials** → **Add Credential** → search "Anthropic" → name it `Anthropic API (Phasewise blog)`, paste the key

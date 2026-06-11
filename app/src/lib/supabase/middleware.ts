@@ -72,6 +72,10 @@ export async function handleAuth(request: NextRequest) {
     path.startsWith("/api/public/invoices/") ||
     path.startsWith("/api/auth/") ||
     path.startsWith("/api/invitations/") ||
+    // DB-touch health check for UptimeRobot — keeps Supabase from
+    // auto-pausing on idle since the marketing site is static and
+    // doesn't query Postgres on every request.
+    path === "/api/health" ||
     // Sentry browser-error tunnel (configured as `tunnelRoute` in
     // next.config.ts). Anonymous users on the landing page must be
     // able to POST errors here — otherwise the tunnel just 307s to

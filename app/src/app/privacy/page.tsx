@@ -106,7 +106,7 @@ export default function PrivacyPolicyPage() {
           </ul>
           <p>
             To exercise any of these rights, contact us at{" "}
-            <a href="mailto:kevin@phasewise.io">kevin@phasewise.io</a>.
+            <a href="mailto:hello@phasewise.io">hello@phasewise.io</a>.
           </p>
 
           <h2>7. Cookies</h2>
@@ -124,7 +124,7 @@ export default function PrivacyPolicyPage() {
           <p>
             <strong>Phasewise</strong>
             <br />
-            <a href="mailto:kevin@phasewise.io">kevin@phasewise.io</a>
+            <a href="mailto:hello@phasewise.io">hello@phasewise.io</a>
             <br />
             phasewise.io
           </p>
