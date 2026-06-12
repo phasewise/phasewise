@@ -74,9 +74,9 @@ Phasewise includes RFI tracking as part of its construction administration workf
 
 ## Related Reading
 
-- [Construction Administration for Landscape Architects: What PMs Actually Need to Know](/blog/construction-administration-landscape-architecture)
-- [How to Manage Submittals Without Losing Your Mind](/blog/submittal-management-landscape-architecture)
-- [Change Order Management in Landscape Architecture Projects](/blog/change-order-management-landscape-architecture)
+- [Construction Administration Checklist for Landscape Architects](/blog/construction-administration-checklist-landscape-architects)
+- [Landscape Architecture Submittal Log Best Practices](/blog/landscape-architecture-submittal-log-best-practices)
+- [Landscape Architect Fee Proposal Template + Writing Guide](/blog/landscape-architect-fee-proposal-template)
 
 ---
 

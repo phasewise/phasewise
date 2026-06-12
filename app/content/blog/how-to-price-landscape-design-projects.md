@@ -88,9 +88,9 @@ Phasewise is built around the reality that pricing accuracy depends on data from
 
 ## Related Reading
 
-- [How to Write a Landscape Architecture Scope of Work](/blog/how-to-write-a-landscape-architecture-scope-of-work)
-- [Construction Administration Billing for Landscape Architects](/blog/construction-administration-billing-landscape-architects)
-- [How to Track Project Hours Across a Design Team](/blog/how-to-track-project-hours-design-team)
+- [Landscape Architect Fee Proposal Template + Writing Guide](/blog/landscape-architect-fee-proposal-template)
+- [Construction Administration Checklist for Landscape Architects](/blog/construction-administration-checklist-landscape-architects)
+- [Tracking Utilization Rates at Your Landscape Architecture Firm](/blog/landscape-architect-utilization-rate)
 
 ---
 

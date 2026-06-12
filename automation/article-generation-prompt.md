@@ -96,18 +96,32 @@ Always use a natural transition — not "and now a word from our sponsor."
 
 ### 6. "Related reading" section (required)
 
-Markdown list of 2-3 internal links to other Phasewise blog articles. Use this exact list to pick from:
+Markdown list of EXACTLY 2-3 internal links to other Phasewise blog articles.
+
+**CRITICAL CONSTRAINT — read carefully:** You MUST pick from ONLY the list below. DO NOT invent new slugs. DO NOT modify the URLs. DO NOT make up article titles that don't exist. Every other shipped article has had broken "related reading" links because the model invented URLs — that breaks SEO, internal linking, and reader trust. If no perfect topical match exists, pick any 2-3 from the list anyway. Broken links are MUCH worse than slightly-off-topic ones.
+
+In production, the n8n Build prompt node injects the live list of existing slugs dynamically from GitHub at runtime, so the list below is automatically kept in sync. Treat the dynamically injected list as the authoritative source — do not hallucinate URLs even if you think a perfect title would be helpful.
+
+Current published articles (canonical reference — used when running the prompt manually):
 
 - [Landscape Architect Billing Rates by Role and Market (2026 Guide)](/blog/landscape-architect-billing-rates-2026)
+- [Landscape Architect Billing Rates](/blog/landscape-architect-billing-rates)
 - [MWELO Water Budget Calculator: How It Works and How to Stay Compliant](/blog/mwelo-water-budget-calculator-guide)
+- [MWELO Compliance Checklist for California](/blog/mwelo-compliance-checklist-california)
 - [The 7 Phases of a Landscape Architecture Project (Explained)](/blog/landscape-architecture-project-phases-explained)
 - [Monograph Alternatives for Landscape Architecture Firms (2026)](/blog/monograph-alternatives-landscape-architecture)
 - [Landscape Architect Fee Proposal Template + Writing Guide](/blog/landscape-architect-fee-proposal-template)
 - [Construction Administration Checklist for Landscape Architects](/blog/construction-administration-checklist-landscape-architects)
 - [How to Calculate Landscape Architect Profit Margin](/blog/how-to-calculate-landscape-architect-profit-margin)
 - [Landscape Architecture Submittal Log: Best Practices for 2026](/blog/landscape-architecture-submittal-log-best-practices)
+- [Landscape Architect Utilization Rate: A Practical Guide](/blog/landscape-architect-utilization-rate)
+- [Landscape Architecture Project Management Software: What Actually Matters](/blog/landscape-architecture-project-management-software)
+- [Best Software for Landscape Architects](/blog/best-software-for-landscape-architects)
+- [How to Price Landscape Design Projects](/blog/how-to-price-landscape-design-projects)
+- [The Landscape Architecture RFI Process](/blog/landscape-architecture-rfi-process)
+- [Plant Schedule Template for Landscape Architecture](/blog/plant-schedule-template-landscape-architecture)
 
-Pick the 2-3 most topically related to the current article.
+Pick the 2-3 most topically related. If no perfect matches, pick any 2-3.
 
 ### 7. Closing italic tagline
 

@@ -66,9 +66,9 @@ Phasewise lets you build a reusable MWELO compliance checklist template that att
 
 ## Related Reading
 
-- [Irrigation Design Documentation: What to Track and When](/blog/irrigation-design-documentation)
-- [How to Build Project Templates That Actually Get Used](/blog/project-templates-landscape-architecture)
-- [Managing Permit Submittal Deadlines Across Multiple Projects](/blog/permit-submittal-deadline-tracking)
+- [MWELO Water Budget Calculator: How It Works and How to Stay Compliant](/blog/mwelo-water-budget-calculator-guide)
+- [Plant Schedule Template for Landscape Architecture](/blog/plant-schedule-template-landscape-architecture)
+- [Landscape Architecture Submittal Log Best Practices](/blog/landscape-architecture-submittal-log-best-practices)
 
 ---
 

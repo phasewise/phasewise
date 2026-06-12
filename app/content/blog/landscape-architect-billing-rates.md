@@ -78,9 +78,9 @@ Phasewise is built around the connection between how you staff a project and wha
 
 ## Related Reading
 
-- [How to Structure Landscape Architecture Project Fees](/blog/landscape-architecture-project-fees)
-- [Tracking Utilization Rates at Your Firm](/blog/utilization-rates-landscape-architecture)
-- [Writing Scope of Work Clauses That Protect Your Fee](/blog/scope-of-work-landscape-architecture)
+- [How to Price Landscape Design Projects](/blog/how-to-price-landscape-design-projects)
+- [Tracking Utilization Rates at Your Firm](/blog/landscape-architect-utilization-rate)
+- [Landscape Architect Fee Proposal Template + Writing Guide](/blog/landscape-architect-fee-proposal-template)
 
 ---
 

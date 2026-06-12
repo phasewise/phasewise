@@ -78,9 +78,9 @@ Phasewise is built around the reality that construction documents — including 
 
 ## Related Reading
 
-- [How to Manage Construction Document Phases in Landscape Architecture](/blog/construction-document-phases-landscape-architecture)
-- [RFI Management for Landscape Architecture Firms](/blog/rfi-management-landscape-architecture)
-- [Planting Plan QC Checklist Before Every Submission](/blog/planting-plan-qc-checklist)
+- [The 7 Phases of a Landscape Architecture Project (Explained)](/blog/landscape-architecture-project-phases-explained)
+- [The Landscape Architecture RFI Process](/blog/landscape-architecture-rfi-process)
+- [MWELO Compliance Checklist for California](/blog/mwelo-compliance-checklist-california)
 
 ---
 
