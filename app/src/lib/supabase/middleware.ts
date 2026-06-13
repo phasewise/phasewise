@@ -40,6 +40,7 @@ export async function handleAuth(request: NextRequest) {
     "/invite",
     // Public marketing pages
     "/blog",
+    "/demo",
     "/help",
     "/pricing",
     "/privacy",

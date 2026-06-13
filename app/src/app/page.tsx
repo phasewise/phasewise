@@ -336,12 +336,15 @@ export default function HomePage() {
               >
                 Start 14-Day Free Trial
               </Link>
-              <a
-                href="#features"
+              <Link
+                href="/demo"
                 className="inline-flex items-center gap-2 text-sm sm:text-base font-medium px-6 sm:px-9 py-3 sm:py-[14px] rounded-[7px] bg-transparent text-[#3D5C48] border border-[#E2EBE4] hover:border-[#52B788] hover:text-[#2D6A4F] hover:bg-[#F0FAF4] transition-all"
               >
-                See Features
-              </a>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true">
+                  <path d="M3 1.5v11l9-5.5z" />
+                </svg>
+                Watch the demo
+              </Link>
             </div>
             <p className="text-[11px] sm:text-xs text-[#A3BEA9] mt-3 sm:mt-4 tracking-wide">
               No credit card required · Cancel anytime
