@@ -57,6 +57,10 @@ export async function handleAuth(request: NextRequest) {
     "/favicon.ico",
     "/opengraph-image",
     "/twitter-image",
+    // /demo page binary assets — without these the <video> element gets
+    // redirected to /login and HTML5 playback fails silently.
+    "/demo.mp4",
+    "/demo-poster.jpg",
   ]);
 
   // Path-prefix matches
