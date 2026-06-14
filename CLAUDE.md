@@ -647,6 +647,105 @@ Higher-volume outreach uses the operational playbook at [`marketing/outreach/PLA
 
 ---
 
+## Where We Left Off (2026-06-13 EOD)
+
+**Status: 🟢🟢 Three-day push (6/11 → 6/13). Closed every concrete item that was queued in the 6/10 wrap. Launched the self-hosted demo at phasewise.io/demo and got it posted to X. Strategically committed to Fork B (Loom-style walkthroughs + audio-only Meet for first 5 customers) — the anonymity-vs-sales-call wall is now sized correctly. Five commits shipped, 10 close-out outreach emails out the door, demo video rendered + hosted, blog auto-pipeline hardened against future broken links.**
+
+### Anonymity + infrastructure hardening (6/11)
+
+- **kevin@ → hello@ swap** across 5 surfaces: privacy + terms pages (3 mailto refs), SOCIAL-SETUP-KIT.md, OUTREACH-PLAYBOOK.md, automation/n8n-workflow-setup.md. `hello@phasewise.io` is the existing Workspace alias so zero new infrastructure. CLAUDE.md historical refs left as-is (decision flagged below).
+- **`/api/health` endpoint + UptimeRobot monitor.** New `app/src/app/api/health/route.ts` runs `SELECT 1` against Postgres on every hit. Added to middleware allowlist. UptimeRobot pings every 5 min from North America region. Permanently fixes the Supabase 7-day auto-pause warning that surfaced 6/10 morning.
+- **Avast outgoing-mail signature disabled.** "Virus-free www.avast.com" footer was auto-appending to every outgoing email (anonymity tell + B2B trust-killer). Killed in Avast → Core Shields → Mail Shield → "Add a signature to the end of sent emails" unchecked. The 7 close-out emails were re-scheduled without the footer.
+- **Two commits**: `b07448c` (anonymity + health endpoint), `eb211ad` (CLAUDE.md 6/10 EOD).
+
+### Outreach pipeline cleared (6/11 + 6/12 + 6/15 + 6/16)
+
+- **Charlie Serota reply sent.** "Phasewise Team" persona, 3 thesis-research questions (Recur's market thesis, deal multiples in adjacent verticals, mission-critical SaaS framework). Email-only, no Zoom — preserves anonymity. Awaiting reply (window 1-7 days).
+- **10 close-out emails scheduled in Gmail** as REPLIES on original threads (preserves Gmail threading):
+  - **Thu 6/11 8 AM PT — SENT**: Broussard breakup (Terry), Atlas Lab breakup (Kimberly), attention2 breakup (Laura)
+  - **Fri 6/12 8 AM PT**: designlab 252 breakup (studio@), Studio PAD late FU#1, Hermann late FU#1
+  - **Mon 6/15 8 AM PT**: KDA late FU#1 (Kathryn), Clark & Green late FU#1 (Bob), Mantle breakup (Ramsey)
+  - **Tue 6/16 8 AM PT**: Mark Tessier late FU#1
+- **PROSPECTS.md statuses updated** for all 10 firms — Wave 1 firms moved to "Warm-but-paused 2026-12-11" post-breakup; Wave 2 firms get FU#1 status + breakup-due-date noted.
+- **Deliverability test passed.** Sent representative cold email from `hello@phasewise.io` to `kgallo22+test@gmail.com` — landed in Primary inbox marked Important. Rules out the catastrophic "everything's going to spam" case. With self-send bias caveat, deliverability is not the bottleneck.
+
+### Blog auto-pipeline hardened (6/11)
+
+- **15 broken internal "Related Reading" links fixed** across 5 articles (how-to-price-landscape-design-projects, landscape-architect-billing-rates, landscape-architecture-rfi-process, mwelo-compliance-checklist-california, plant-schedule-template-landscape-architecture). Every link in the repo now resolves to a real article.
+- **n8n Build prompt hardened.** Replaced hardcoded 10-article list with dynamic injection from the existing-slugs Set the workflow already fetches from GitHub. Added stricter constraint language referencing the past failure mode. Kevin pasted the new JS into the running n8n workflow's Build prompt node — next Friday's auto-article will ship with verified links.
+- **`automation/n8n-build-prompt-update-2026-06-11.md`** captures the canonical updated JS for future re-paste / re-import.
+- **One commit**: `53a9f21` (blog fixes + n8n prompt hardening + new snippet doc).
+
+### Strategic call: Fork B accepted (6/11)
+
+Honest read on the anonymity-vs-sales-call wall surfaced during the deliverability discussion: B2B SaaS at $99-349/mo essentially never converts via pure cold-email-to-self-serve. Industry standard is cold email → reply → 20-min video demo → trial → paid. Anonymity-only blocks step 3.
+
+**Decision**: Fork B (compromise) over Fork A (hold anonymity line). The Caltrans-day-job risk lives in NOT putting Kevin's name on phasewise.io's website, NOT having a Phasewise LinkedIn page, NOT posting under his name. Those guardrails stay. The compromise is:
+
+1. **Pre-recorded Loom-style walkthrough** (Phasewise team voice, no face, no live exposure) — _shipped today, see Demo Video section below_
+2. **Audio-only Google Meet** when prospects ask for a call ("heads-down shipping, audio is fine") — _added to reply playbook_
+3. **Founder-led for the first 5 paying customers only**, then step back to self-serve once social proof exists
+
+Time-to-first-customer estimate dropped from "6-18 months" (Fork A) to "4-12 weeks" (Fork B).
+
+### Demo video shipped (6/13)
+
+- **Audio + screenshots**: Kevin recorded an 8:50 audio walkthrough at `marketing/demovideos/demo001/AudioPhasewise_12062026.m4a` plus 69 screenshots organized into 9 scene folders at `marketing/screenclips/{landingpage,dashboard,projects,timesheets,MWELO,submittals,Reports,invoice,closing}`.
+- **ffmpeg installed via winget** at `C:\Users\Gallo Beelink 1\AppData\Local\Microsoft\WinGet\Packages\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\ffmpeg-8.1.1-full_build\bin\` (not on PATH yet — reference via full path in future sessions).
+- **Rendered as 1920×1080 30fps MP4** by stitching the 69 screenshots into 9 scenes via the concat demuxer, proportionally distributing the original 14:16 script's per-scene timing across the actual 8:50 audio length, then muxing with the audio track.
+- **Two rendering bugs hit + fixed**:
+  1. First render had a 47-second video stream over 530-second audio (the `-vf fps=30` filter in combination with the concat demuxer's per-image durations didn't expand image durations to frame counts). Fix: use `-r 30 -fps_mode cfr` at output instead.
+  2. Audio appeared silent on first playback — turned out to be a player issue (the source m4a measured at -27.7 dB mean, -7.2 dB max — normal speech levels). Different player worked.
+- **Self-hosted at phasewise.io/demo**, not Loom. Kevin pushed back on Loom (correctly) — third-party branding + anonymity surface + SEO content going to loom.com outweighed Loom's bandwidth benefit at current traffic. 20 MB MP4 fits comfortably in Vercel Hobby bandwidth (100GB/mo = ~5000 demo plays).
+
+**Site assets added**:
+- `app/public/demo.mp4` (20 MB H.264/AAC, 9 minutes, 1920×1080 30fps)
+- `app/public/demo-poster.jpg` (1920×1080 dashboard frame at the ~25s mark, used as before-play poster image)
+- `app/src/app/demo/page.tsx` — dedicated demo page: native HTML5 `<video>` with poster, controls, preload="metadata", playsInline. Page also includes a 3-tile value-prop strip + trial/pricing CTAs. Full OG metadata (og:video, twitter:player) so social shares get rich previews.
+- **Landing page hero CTA**: "See Features" replaced with "Watch the demo" + play-triangle icon, linking to /demo.
+- **Sitemap entry**: /demo at priority 0.9 (above blog index).
+- **Middleware allowlist**: /demo path + the two binary assets (/demo.mp4, /demo-poster.jpg) added — see the bug below.
+
+**Reply playbook update**: `OUTREACH-REPLY-PLAYBOOK.private.md` template #1 ("Tell me more") now leads with the demo URL as Path #1 (lowest friction), trial as #2, audio-only Meet as #3 (was a Zoom previously).
+
+**X post**: Pinned to @phasewise profile with the pain-anchored copy (Monograph + Harvest + QuickBooks stack framing + $99/mo). OG card with the dashboard poster image rendered correctly.
+
+**Three commits**: `aa80176` (demo page + assets + landing CTA + sitemap + middleware), `00e5ea0` (middleware fix for demo binary assets — see below).
+
+### Middleware bug — same class as 2026-04-26
+
+When Kevin tested the live demo it loaded but didn't play, and a third party hit the same issue. Diagnosis: `/demo.mp4` was 307-redirecting to `/login` because the middleware allowlist had `/demo` (the page itself) but NOT the binary asset paths `/demo.mp4` and `/demo-poster.jpg`. The HTML5 `<video>` element saw an HTML redirect instead of video bytes and failed silently. Same exact bug class as the 2026-04-26 middleware regression that blocked Googlebot from indexing /blog + /manifest.webmanifest. Fix: both asset paths added to the public allowlist (commit `00e5ea0`).
+
+**Worth flagging on the wishlist** (not done yet): refactor the middleware to use a path-extension allowlist (any path ending in `.mp4`, `.jpg`, `.png`, `.webp`, etc. is public) instead of an exact-match allowlist. Otherwise this bug class will keep recurring whenever new public assets ship.
+
+### Tomorrow's first task (no urgency — pinned tweet is live, queue is loaded)
+
+**Watch the inbox.** Real action this week is reply-handling:
+
+1. **Charlie reply** (Recur Holding) — 1-7 day window from 6/10. If it lands, use the strategic-read framework from 6/10's discussion. Don't share metrics. Don't sign anything. Treat as free MBA on vertical SaaS M&A. Watch for an early SAFE offer at $3-5M cap (the roll-up's lock-in play).
+2. **Close-out replies** — Wave 1 breakups already fired Thu morning, Wave 2 FU#1s fire across Fri 6/12 + Mon 6/15 + Tue 6/16. Any "tell me more" reply gets the new playbook template (path 1 = phasewise.io/demo).
+3. **GDM vendor portal** — paste `https://phasewise.io/demo` into the Product Video URL field. Single edit propagates to Capterra + Software Advice + GetApp. Listing conversion bump typically +15-25%.
+4. **Search Console** — request indexing on /demo so it ranks for "phasewise demo" + organic searches.
+
+### Bigger strategic items still on the backlog (fresh-head sessions, no urgency)
+
+- **Wave 4 ICP refinement** — research pass with new filter (founded 2015-2022, 4-15 staff, public-sector or multifamily portfolio). Studio PAD pattern (2012, 6-12 staff) was the highest-conversion profile in Wave 2.
+- **Pain-anchored subject-line A/B test** — current "would value [Firm]'s read" might be too humble. Test pain-anchored opener ("How are you tracking MWELO across active projects?") on next batch.
+- **CLAUDE.md historical kevin@ references** — 9 references in the doc. Options: leave (preserves accurate history), rewrite (cleaner for scrapers, but misleading), gitignore (loses public-repo signal). Lower-priority than the commit-metadata leak which is already closed.
+- **Middleware extension-based allowlist refactor** — flagged above. Prevents recurring "new public asset doesn't play" bugs.
+
+### Commits since the 6/10 EOD wrap
+
+| Commit | What |
+|---|---|
+| `eb211ad` | CLAUDE.md 2026-06-10 EOD update |
+| `b07448c` | Anonymity sweep + /api/health endpoint for Supabase keep-alive |
+| `53a9f21` | Fix broken internal links in 5 blog articles + harden n8n prompt |
+| `aa80176` | Add /demo page with self-hosted 9-min walkthrough video |
+| `00e5ea0` | Fix /demo video playback: allow /demo.mp4 + /demo-poster.jpg in middleware |
+
+---
+
 ## Where We Left Off (2026-06-10 EOD)
 
 **Status: 🟢 Pick-up session after 26-day gap.** n8n SEO pipeline restored from credential-expiry outage. Two cold inbound emails triaged (one legit M&A operator worth engaging). GitHub commit-metadata anonymity leak diagnosed + closed going forward. GA4 ↔ GSC integration linked. Strategic discussion on outreach ICP refinement. **10 close-out emails drafted (5 Wave 1 breakups + 5 Wave 2 late FU#1s); a few scheduled tonight, balance queued for tomorrow morning.**
@@ -2318,7 +2417,22 @@ After a strategy discussion this session, Kevin confirmed that his top prioritie
 - [x] **GA4 ↔ GSC integration linked** ✅ 2026-06-10 — Property Settings → Search Console links → "LINK CREATED". GSC was already active from 2026-04-26 (sitemap submitted, 27 pages discovered). Requested indexing on top 3 commercial-intent pages. Cross-property data populates 24-48h.
 - [x] **Recur Holding cold inbound triaged + reply scheduled** ✅ 2026-06-10 — Charlie Serota (Recur Holding, backed by Accel/Prosus/Permanent Capital/Reef Pass) reached Kevin's personal email proposing Zoom call. Decision: skip Zoom (anonymity-preserving), reply with email-only thesis-research questions instead. Drafted 3 focused questions on Recur's thesis, multiples in adjacent verticals, mission-critical SaaS framework. Scheduled to send 6/10 evening from Kevin's personal email.
 - [x] **Outreach close-out batch drafted (Emails 15-24)** ✅ 2026-06-10 — 10 emails in `OUTREACH-DRAFTS.private.md` "Close-out batch — Waves 1 + 2" section. 5 Wave 1 breakups (Broussard, Atlas Lab, attention2, designlab 252, Mantle) + 5 Wave 2 late FU#1s (Clark & Green, Mark Tessier, Studio PAD, Hermann, KDA). Two templates with per-recipient swap-ins, all to be sent as replies on original threads. Email 15 (Terry/Broussard) scheduled for Thu 6/11 8 AM tonight; remaining 9 queued for tomorrow.
-- [ ] **🚨 Avast outgoing-mail signature footer (anonymity tell)** — Avast antivirus auto-appends "Virus-free www.avast.com" to outgoing emails. B2B trust-killer + anonymity tell. Fix in Avast → Settings → Mail Shield → disable outgoing signature/badge BEFORE Wave 4 sends. (Leave ON for current close-out batch to match prior thread style.)
+- [x] **Avast outgoing-mail signature footer disabled** ✅ 2026-06-11 — Avast Core Shields → Mail Shield → "Add a signature to the end of sent emails" unchecked. The 7 still-scheduled close-out emails were cancelled + redone without the footer. Future sends from this machine are clean.
+- [x] **`kevin@phasewise.io` → `hello@phasewise.io` swap across 5 surfaces** ✅ 2026-06-11 — privacy + terms pages (3 mailto refs), SOCIAL-SETUP-KIT.md, OUTREACH-PLAYBOOK.md, automation/n8n-workflow-setup.md. hello@ is the existing Workspace alias, zero new infrastructure. (commit `b07448c`)
+- [x] **`/api/health` endpoint + UptimeRobot monitor for Supabase keep-alive** ✅ 2026-06-11 — `SELECT 1` query against Postgres every 5 min. Permanently fixes the 7-day auto-pause warning. (commit `b07448c`)
+- [x] **Close-out batch scheduled** ✅ 2026-06-11 — Emails 15-17 (Wave 1 breakups: Broussard, Atlas Lab, attention2) fired Thu 6/11 8 AM PT. Emails 18-24 scheduled across Fri 6/12, Mon 6/15, Tue 6/16. All sent as replies on original threads. PROSPECTS.md statuses updated for all 10 firms.
+- [x] **Charlie Serota (Recur Holding) reply sent** ✅ 2026-06-10 evening — email-only thesis-research questions, no Zoom. Anonymity preserved (Phasewise Team persona, first-name only). Awaiting reply 1-7 days.
+- [x] **15 broken blog "Related Reading" links fixed across 5 articles** ✅ 2026-06-11 — every internal link in the repo now resolves to a real published article. (commit `53a9f21`)
+- [x] **n8n Build prompt hardened with dynamic slug injection** ✅ 2026-06-11 — replaced hardcoded list with runtime injection from GitHub-fetched existing slugs. Stricter constraint language. Kevin pasted the new JS into the running n8n workflow. Snippet preserved at `automation/n8n-build-prompt-update-2026-06-11.md`. Next Friday's auto-article ships with verified links.
+- [x] **Fork B accepted: Loom-style demo + audio-only Meet for first 5 customers** ✅ 2026-06-11 — strategic call documented in 2026-06-13 EOD section. Caltrans-day-job guardrails stay (no name on site, no LinkedIn page, no public posts under real name). Compromise: pre-recorded demo + audio-only calls + founder-led for first 5 paying customers only.
+- [x] **Deliverability test passed** ✅ 2026-06-11 — representative cold email from hello@phasewise.io landed in Primary inbox marked Important. Rules out the catastrophic spam case. (Self-send bias caveat applies; gold-standard test would be external recipient like Brian.)
+- [x] **Demo video rendered** ✅ 2026-06-13 — 1920×1080 H.264/AAC MP4, 8:50 audio narration + 69 screenshots stitched proportionally across 9 scenes via ffmpeg's concat demuxer. Two render bugs fixed (CFR mode + audio playback issue). Output at `marketing/demovideos/demo001/phasewise-demo-v2.mp4`.
+- [x] **ffmpeg installed via winget** ✅ 2026-06-13 — at `C:\Users\Gallo Beelink 1\AppData\Local\Microsoft\WinGet\Packages\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\ffmpeg-8.1.1-full_build\bin\`. Not on PATH automatically — reference via full path.
+- [x] **phasewise.io/demo page launched (self-hosted, not Loom)** ✅ 2026-06-13 — dedicated /demo page with native HTML5 video, poster image, OG metadata, 3-tile value-prop strip, trial/pricing CTAs. Landing page "See Features" CTA replaced with "Watch the demo". Sitemap entry at priority 0.9. (commit `aa80176`)
+- [x] **OUTREACH-REPLY-PLAYBOOK.private.md "Tell me more" template updated** ✅ 2026-06-13 — path #1 is now the demo URL (lowest friction), #2 is the trial, #3 is audio-only Meet. Sign-off updated to "The Phasewise team".
+- [x] **Pinned X tweet posted** ✅ 2026-06-13 — pain-anchored copy ("Most LA firms run Monograph + Harvest + QuickBooks. $200+/mo, none of it speaks LA. Phasewise replaces the first two with one tool..."). Demo OG card with dashboard poster renders correctly in feed.
+- [x] **Middleware allowlist fixed for /demo binary assets** ✅ 2026-06-13 — /demo.mp4 + /demo-poster.jpg were 307-redirecting to /login (same bug class as 2026-04-26). Fixed in commit `00e5ea0`. Verified phasewise.io/demo.mp4 now returns HTTP 200 + video/mp4 content type.
+- [ ] **🚨 Middleware extension-based allowlist refactor** — current exact-match allowlist means every new asset under `app/public/` must be manually added or it gets 307'd to /login. Refactor to allow any path ending in `.mp4`, `.jpg`, `.png`, `.webp`, `.svg`, `.pdf` etc. Prevents the recurring "new asset doesn't load" bug class (now hit 3 times: 2026-04-26 manifest, today's demo.mp4 + demo-poster.jpg).
 - [x] **Second LinkedIn account deleted (anonymity)** ✅ 2026-05-12 — public link from Kevin Gallo → "Owner at Phasewise" severed.
 - [x] **Workspace user renamed Phasewise Team** ✅ 2026-05-12 — display name propagates across Google services.
 - [x] **Vercel Analytics enabled** ✅ 2026-05-12 — Hobby tier free; data populates within 24h.
