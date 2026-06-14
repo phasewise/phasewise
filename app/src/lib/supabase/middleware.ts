@@ -68,6 +68,8 @@ export async function handleAuth(request: NextRequest) {
   const isPublicPath =
     publicExact.has(path) ||
     path.startsWith("/blog/") ||
+    path.startsWith("/demo/") ||
+    path.startsWith("/demo-clips/") ||
     path.startsWith("/help/") ||
     path.startsWith("/invite/") ||
     // Public invoice viewer + its PDF endpoint. Clients open these from

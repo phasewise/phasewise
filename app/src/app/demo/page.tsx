@@ -1,42 +1,33 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
+import { DEMO_CLIPS } from "@/lib/demo-clips";
 
 const SITE_URL = "https://phasewise.io";
-const DEMO_URL = `${SITE_URL}/demo`;
-const VIDEO_URL = `${SITE_URL}/demo.mp4`;
-const POSTER_URL = `${SITE_URL}/demo-poster.jpg`;
-
 const PAGE_TITLE = "Phasewise demo — landscape architecture project management";
 const PAGE_DESCRIPTION =
-  "A nine-minute walkthrough of Phasewise: phases, work plan, MWELO calculator, submittals, profitability reports, and invoicing — built specifically for landscape architecture firms.";
+  "Pick the topic you want to see — short, focused walkthroughs of Phasewise: dashboard, work plan, MWELO calculator, timesheets, submittal log, profitability reports, and invoicing.";
 
 export const metadata: Metadata = {
   title: "Demo",
   description: PAGE_DESCRIPTION,
   alternates: { canonical: "/demo" },
   openGraph: {
-    type: "video.other",
-    url: DEMO_URL,
+    type: "website",
+    url: `${SITE_URL}/demo`,
     title: PAGE_TITLE,
     description: PAGE_DESCRIPTION,
     siteName: "Phasewise",
-    images: [{ url: POSTER_URL, width: 1920, height: 1080, alt: "Phasewise dashboard preview" }],
-    videos: [
-      {
-        url: VIDEO_URL,
-        secureUrl: VIDEO_URL,
-        type: "video/mp4",
-        width: 1920,
-        height: 1080,
-      },
+    images: [
+      { url: `${SITE_URL}/demo-poster.jpg`, width: 1920, height: 1080, alt: "Phasewise dashboard preview" },
     ],
   },
   twitter: {
-    card: "player",
+    card: "summary_large_image",
     site: "@phasewise",
     title: PAGE_TITLE,
     description: PAGE_DESCRIPTION,
-    images: [POSTER_URL],
+    images: [`${SITE_URL}/demo-poster.jpg`],
   },
 };
 
@@ -47,6 +38,14 @@ function PhaseLogo() {
       <span className="block h-1 rounded-sm" style={{ width: 16, background: "#40916C" }} />
       <span className="block h-1 rounded-sm" style={{ width: 20, background: "#52B788" }} />
     </div>
+  );
+}
+
+function PlayIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true">
+      <path d="M3 1.5v11l9-5.5z" />
+    </svg>
   );
 }
 
@@ -79,58 +78,53 @@ export default function DemoPage() {
         </Link>
 
         <h1 className="font-serif text-[clamp(32px,5vw,52px)] font-normal leading-[1.1] text-[#1A2E22] mb-3">
-          A quick tour of Phasewise
+          See what you want to see
         </h1>
-        <p className="text-[#3D5C48] text-base sm:text-lg max-w-[720px] mb-8 leading-relaxed">
-          Roughly nine minutes through the app — dashboard, phase tracking, the work plan, timesheets,
-          the MWELO water budget calculator, submittal log, profitability reports, and invoice generation.
-          Built specifically for landscape architecture firms.
+        <p className="text-[#3D5C48] text-base sm:text-lg max-w-[760px] mb-10 leading-relaxed">
+          Seven short clips, one topic each. Skip what you don&apos;t need, watch the ones that matter
+          to your firm. Each is between twenty seconds and two minutes.
         </p>
 
-        <div className="rounded-xl overflow-hidden border border-[#E2EBE4] shadow-[0_8px_40px_rgba(13,34,24,0.10)] bg-black aspect-video">
-          {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-          <video
-            controls
-            preload="metadata"
-            playsInline
-            poster="/demo-poster.jpg"
-            className="block w-full h-full"
-          >
-            <source src="/demo.mp4" type="video/mp4" />
-            Your browser does not support HTML5 video. Download the demo:{" "}
-            <a href="/demo.mp4">demo.mp4</a>
-          </video>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+          {DEMO_CLIPS.map((clip) => (
+            <Link
+              key={clip.slug}
+              href={`/demo/${clip.slug}`}
+              className="group block rounded-lg overflow-hidden border border-[#E2EBE4] bg-white hover:border-[#52B788] hover:shadow-[0_8px_28px_rgba(13,34,24,0.08)] transition-all"
+            >
+              <div className="relative aspect-video bg-black overflow-hidden">
+                <Image
+                  src={clip.poster}
+                  alt={`${clip.shortTitle} preview`}
+                  width={1920}
+                  height={1080}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/15 transition-all">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white/95 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                    <span className="text-[#2D6A4F]">
+                      <PlayIcon />
+                    </span>
+                  </div>
+                </div>
+                <div className="absolute bottom-2 right-2 bg-black/70 text-white text-[11px] font-medium px-2 py-0.5 rounded">
+                  {clip.duration}
+                </div>
+              </div>
+              <div className="p-5">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#40916C] mb-1.5">
+                  {clip.shortTitle}
+                </div>
+                <h2 className="text-[15px] font-semibold text-[#1A2E22] mb-2 leading-snug">
+                  {clip.title}
+                </h2>
+                <p className="text-[13px] text-[#6B8C74] leading-relaxed">{clip.description}</p>
+              </div>
+            </Link>
+          ))}
         </div>
 
-        <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-[960px]">
-          <div className="border border-[#E2EBE4] rounded-lg p-5 bg-[#F7F9F7]">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#40916C] mb-2">
-              What it replaces
-            </div>
-            <p className="text-sm text-[#3D5C48] leading-relaxed">
-              The Monograph + Harvest + spreadsheets stack most LA firms run. Sits alongside your QuickBooks.
-            </p>
-          </div>
-          <div className="border border-[#E2EBE4] rounded-lg p-5 bg-[#F7F9F7]">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#40916C] mb-2">
-              Built-in MWELO
-            </div>
-            <p className="text-sm text-[#3D5C48] leading-relaxed">
-              MAWA and ETWU calculated automatically per hydrozone. Branded PDF export for submittals.
-            </p>
-          </div>
-          <div className="border border-[#E2EBE4] rounded-lg p-5 bg-[#F7F9F7]">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#40916C] mb-2">
-              Real profitability
-            </div>
-            <p className="text-sm text-[#3D5C48] leading-relaxed">
-              Per-project, per-phase, per-person. Labor cost uses each person&apos;s actual billing rate,
-              not a firm-wide average.
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-12 flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center">
+        <div className="mt-14 flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center pt-10 border-t border-[#E2EBE4]">
           <Link
             href="/signup"
             className="inline-flex items-center justify-center px-6 py-3 rounded-md bg-[#2D6A4F] text-white text-sm font-semibold hover:bg-[#40916C] transition-all"

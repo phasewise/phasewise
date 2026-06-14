@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { getAllPosts } from "@/lib/blog";
+import { DEMO_CLIPS } from "@/lib/demo-clips";
 import { getAllArticles as getAllHelpArticles } from "@/lib/help";
 
 export default function sitemap(): MetadataRoute.Sitemap {
@@ -61,5 +62,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.5,
   }));
 
-  return [...staticRoutes, ...blogRoutes, ...helpRoutes];
+  const demoClipRoutes: MetadataRoute.Sitemap = DEMO_CLIPS.map((clip) => ({
+    url: `${base}/demo/${clip.slug}`,
+    lastModified: now,
+    changeFrequency: "monthly" as const,
+    priority: 0.8,
+  }));
+
+  return [...staticRoutes, ...blogRoutes, ...helpRoutes, ...demoClipRoutes];
 }
