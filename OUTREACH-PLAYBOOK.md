@@ -77,6 +77,53 @@ Vary subject lines aggressively — same body with 5 different subjects performs
 >
 > — The Phasewise team
 
+### Template 1b: MWELO-clip-led (new 2026-06-14 — use for any firm doing public-sector or large-commercial CA work)
+
+The 90-second `/demo/mwelo` clip is a stronger "gift" than the blog article for the right firms. Video > article for conveying product value, and the clip page has its own trial CTA so the recipient self-serves from there. Use when the firm's portfolio includes any of: public-sector parks/streetscapes, multifamily housing, hotel/hospitality, large commercial. **Do not** use this template for residential-only or design-build firms — MWELO is irrelevant there.
+
+**Subject lines (rotate):**
+- {{Specific project}} is impressive — a 90-second look at our MWELO calculator
+- For {{firm}} doing {{public-sector / multifamily / commercial}} work — a quick MAWA + ETWU demo
+- 90-second walkthrough of the MWELO tool we built for LA firms
+- For firms in {{Tier-1 MWELO city}} — a quick look at our MAWA + ETWU calculator
+
+**Body:**
+
+> Hi {{firstName or firmName-team}},
+>
+> {{1-2 sentences referencing one specific public detail — a flagship project in a MWELO-strict jurisdiction, a portfolio specialty, a recent recognition. Stay above-the-fold and observable.}}
+>
+> We built a MWELO water budget calculator that handles MAWA + ETWU automatically — per-hydrozone inputs, pass/fail flag, branded PDF for the submittal package. The compliance work that normally takes 2-4 hours per project, done in five minutes.
+>
+> 90-second walkthrough — no signup, no email gate:
+>
+> https://phasewise.io/demo/mwelo
+>
+> If the calculator alone is worth your time, the rest of Phasewise (project management, time tracking, profitability, submittal logs, invoicing — all phases native to LA work) is at phasewise.io for $99–349/mo. 14-day free trial, no card.
+>
+> If not, no follow-up.
+>
+> — The Phasewise team
+
+**Why this works better than the blog-article gift for MWELO-relevant firms:**
+
+- Visual product demo conveys more value per second than a 1,500-word article
+- The /demo/mwelo URL renders an OG card with the dashboard poster on socials — better preview in inbox previewers
+- Self-serve from the demo page (trial CTA built in) — fewer hops to signup
+- 90 seconds respects their time more than a 10-min article read
+- Pre-qualifies replies: a prospect who watches the clip is signaling real interest
+
+**When to use other clip URLs as the lead instead of /demo/mwelo:**
+
+| Firm signal | Lead with |
+|---|---|
+| Public-sector / multifamily / MWELO portfolio | `/demo/mwelo` |
+| Growth-stage firm complaining about spreadsheets / scaling pain | `/demo/projects` (work plan + budgets) |
+| Owner running on Harvest + manual invoicing | `/demo/invoicing` (auto-pull + branded PDF) |
+| Firm with explicit profitability concerns (lost-money projects, billing-rate questions) | `/demo/reports` |
+| Firm with active CA-heavy projects | `/demo/submittals` |
+| Anything else / unsure | `/demo` (full menu, viewer picks) |
+
 ### Template 2: Direct (use sparingly — when there's no obvious personalization hook)
 
 **Subject:**

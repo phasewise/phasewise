@@ -43,7 +43,10 @@ export async function generateMetadata({
       ],
     },
     twitter: {
-      card: "player",
+      // summary_large_image is the most reliable card type that doesn't
+      // require Twitter Player Card approval. Falls back gracefully on
+      // LinkedIn, Slack, and email clients that respect Twitter Cards.
+      card: "summary_large_image",
       site: "@phasewise",
       title,
       description: clip.description,
