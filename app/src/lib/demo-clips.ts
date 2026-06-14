@@ -16,7 +16,7 @@ export const DEMO_CLIPS: DemoClip[] = [
     title: "Dashboard + project health at a glance",
     description:
       "How Phasewise surfaces firm-wide project health, budgets, and at-risk projects in a single view.",
-    duration: "50s",
+    duration: "1m 11s",
     bullets: [
       "Active / On Hold / Completed / Archived project groups",
       "Health badges turn yellow at 75% budget, red at 90%",
@@ -49,7 +49,7 @@ export const DEMO_CLIPS: DemoClip[] = [
     title: "Time tracking, leave + PTO, approvals",
     description:
       "Weekly grid timesheet wired directly to projects. Separate paths for overhead/admin time and leave. Configurable approval workflow.",
-    duration: "1m 14s",
+    duration: "1m 19s",
     bullets: [
       "Grid: one row per project-phase, one column per day",
       "Separate overhead/admin categories so utilization stays accurate",
@@ -66,7 +66,7 @@ export const DEMO_CLIPS: DemoClip[] = [
     title: "MWELO water budget calculator",
     description:
       "Built-in MAWA and ETWU calculator. The compliance work that normally takes 2-4 hours per submission, done in five minutes with a branded PDF report ready to attach.",
-    duration: "1m 51s",
+    duration: "1m 30s",
     bullets: [
       "Per-hydrozone inputs — area, irrigation type, plant water factor",
       "MAWA and ETWU calculated automatically; pass/fail flag",
@@ -83,7 +83,7 @@ export const DEMO_CLIPS: DemoClip[] = [
     title: "Submittal log + ball-in-court tracking",
     description:
       "Every submittal logged with ball-in-court ownership. Automatic email reminders when items go overdue.",
-    duration: "19s",
+    duration: "24s",
     bullets: [
       "Number, project, description, status, ball-in-court, due date",
       "Overdue filter shows what's been sitting too long",
@@ -99,7 +99,7 @@ export const DEMO_CLIPS: DemoClip[] = [
     title: "Profitability + utilization reports",
     description:
       "Per-project, per-phase, per-person profitability using each staff member's actual rate — not a firm-wide blended average.",
-    duration: "1m 33s",
+    duration: "1m 7s",
     bullets: [
       "Profitability: budgeted fee, actual hours, labor cost, margin",
       "Color-coded green/amber/rose by margin percentage",
@@ -115,7 +115,7 @@ export const DEMO_CLIPS: DemoClip[] = [
     title: "Invoice generation + auto-pull from timesheets",
     description:
       "Auto-numbered invoices that pull billable hours from approved timesheets. Monthly auto-invoicing cron drafts invoices on the 5th of every month.",
-    duration: "1m 43s",
+    duration: "1m 20s",
     bullets: [
       "Pull from timesheets — aggregates hours by person and phase",
       "Amber warning if any timesheets in the period aren't approved",
