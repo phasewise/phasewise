@@ -31,6 +31,7 @@ export const LOOPS_TEMPLATES = {
   INVOICE_SEND: process.env.LOOPS_TEMPLATE_INVOICE_SEND ?? "",
   TIMESHEET_NUDGE: process.env.LOOPS_TEMPLATE_TIMESHEET_NUDGE ?? "",
   PAYMENT_RECEIVED: process.env.LOOPS_TEMPLATE_PAYMENT_RECEIVED ?? "",
+  MIGRATION_REQUEST: process.env.LOOPS_TEMPLATE_MIGRATION_REQUEST ?? "",
 } as const;
 
 type LoopsAttachment = {

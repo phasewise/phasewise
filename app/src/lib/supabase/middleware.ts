@@ -42,6 +42,7 @@ export async function handleAuth(request: NextRequest) {
     "/blog",
     "/demo",
     "/help",
+    "/migrate",
     "/pricing",
     "/privacy",
     "/terms",
@@ -79,6 +80,9 @@ export async function handleAuth(request: NextRequest) {
     path.startsWith("/api/public/invoices/") ||
     path.startsWith("/api/auth/") ||
     path.startsWith("/api/invitations/") ||
+    // Migration request form on /migrate — accepts a POST from
+    // unauthenticated visitors.
+    path === "/api/migration-request" ||
     // DB-touch health check for UptimeRobot — keeps Supabase from
     // auto-pausing on idle since the marketing site is static and
     // doesn't query Postgres on every request.

@@ -146,26 +146,28 @@ export default async function DemoClipPage({
             </ul>
           </div>
 
-          <div className="border border-[#E2EBE4] rounded-lg p-5 bg-[#F7F9F7] h-fit">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#40916C] mb-2">
-              Try it
+          <div className="border border-[#E8D5B7] rounded-lg p-5 bg-[#FAF6EF] h-fit">
+            <div className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#7A5A2E] bg-[#E8D5B7] px-2 py-0.5 rounded-full mb-3">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#7A5A2E]" />
+              Founding member
             </div>
-            <p className="text-sm text-[#3D5C48] leading-relaxed mb-4">
-              14-day free trial. No credit card. About 10 minutes to get a project, phases, and a
-              work plan in.
+            <p className="text-sm text-[#3D5C48] leading-relaxed mb-3">
+              <strong className="text-[#1A2E22]">$49/mo for 12 months</strong> (first 20 firms).
+              We import your existing projects, clients, and staff for you. 14-day free trial, no
+              card to start.
             </p>
             <div className="flex flex-col gap-2">
               <Link
-                href="/signup"
+                href="/signup?plan=founding"
                 className="inline-flex items-center justify-center px-4 py-2.5 rounded-md bg-[#2D6A4F] text-white text-sm font-semibold hover:bg-[#40916C] transition-all"
               >
-                Start free trial
+                Claim founding spot
               </Link>
               <Link
                 href="/#pricing"
                 className="inline-flex items-center justify-center px-4 py-2.5 rounded-md border border-[#E2EBE4] text-[#1A2E22] text-sm font-semibold hover:bg-white transition-all"
               >
-                See pricing
+                See standard pricing
               </Link>
             </div>
           </div>

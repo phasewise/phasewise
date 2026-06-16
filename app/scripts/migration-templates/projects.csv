@@ -1,0 +1,4 @@
+name,projectNumber,clientName,city,projectType,status,contractFee,startDate,targetCompletion,contractNumber,billingCadence
+Lone Pine Mall,FTS26-001,Twin Pines Mall,Hill Valley,Commercial,ACTIVE,85000,2026-03-15,2026-12-31,LPM-2026-001,MONTHLY
+Hill Valley High School,FTS26-002,City of Hill Valley,Hill Valley,Public/Educational,ON_HOLD,120000,2026-02-01,,HV-EDU-2026-007,MONTHLY
+Clock Tower Park,FTS26-003,City of Hill Valley,Hill Valley,Public/Park,ACTIVE,180000,2026-01-10,2026-11-30,HV-PRK-2026-003,MONTHLY

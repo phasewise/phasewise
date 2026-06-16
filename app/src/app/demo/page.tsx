@@ -124,20 +124,34 @@ export default function DemoPage() {
           ))}
         </div>
 
-        <div className="mt-14 flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center pt-10 border-t border-[#E2EBE4]">
-          <Link
-            href="/signup"
-            className="inline-flex items-center justify-center px-6 py-3 rounded-md bg-[#2D6A4F] text-white text-sm font-semibold hover:bg-[#40916C] transition-all"
-          >
-            Start 14-day free trial
-          </Link>
-          <Link
-            href="/#pricing"
-            className="inline-flex items-center justify-center px-6 py-3 rounded-md border border-[#E2EBE4] text-[#1A2E22] text-sm font-semibold hover:bg-[#F7F9F7] transition-all"
-          >
-            See pricing
-          </Link>
-          <span className="text-xs text-[#6B8C74] sm:ml-2">No credit card required.</span>
+        <div className="mt-14 pt-10 border-t border-[#E2EBE4] rounded-lg bg-[#FAF6EF] border border-[#E8D5B7] p-6 sm:p-7">
+          <div className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#7A5A2E] bg-[#E8D5B7] px-2 py-0.5 rounded-full mb-3">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#7A5A2E]" />
+            Founding member — first 20 firms
+          </div>
+          <h2 className="font-serif text-xl sm:text-2xl text-[#1A2E22] mb-2 leading-tight">
+            $49/mo for 12 months + free data migration
+          </h2>
+          <p className="text-sm text-[#3D5C48] leading-relaxed max-w-[640px] mb-5">
+            We&apos;re building Phasewise with our first 20 customers. Founding members get 50% off
+            for the first year, and we import your existing projects, clients, and staff from your
+            current tools — no manual setup.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center">
+            <Link
+              href="/signup?plan=founding"
+              className="inline-flex items-center justify-center px-6 py-3 rounded-md bg-[#2D6A4F] text-white text-sm font-semibold hover:bg-[#40916C] transition-all"
+            >
+              Claim founding spot
+            </Link>
+            <Link
+              href="/#pricing"
+              className="inline-flex items-center justify-center px-6 py-3 rounded-md border border-[#E2EBE4] bg-white text-[#1A2E22] text-sm font-semibold hover:bg-[#F7F9F7] transition-all"
+            >
+              See standard pricing
+            </Link>
+            <span className="text-xs text-[#6B8C74] sm:ml-2">No credit card required.</span>
+          </div>
         </div>
       </div>
     </div>

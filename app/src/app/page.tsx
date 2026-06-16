@@ -320,6 +320,13 @@ export default function HomePage() {
               <span className="w-1.5 h-1.5 rounded-full bg-[#52B788]" />
               Built by a landscape architect
             </div>
+            <a
+              href="#founding-member"
+              className="inline-flex items-center gap-2 mb-4 px-3 py-1.5 rounded-full bg-[#FAF6EF] border border-[#E8D5B7] text-[11px] sm:text-xs font-semibold text-[#7A5A2E] hover:bg-[#F5EBD9] transition-colors no-underline"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-[#C9A87C]" />
+              Founding member: $49/mo + free data migration — first 20 firms
+            </a>
             <h1 className="font-serif text-[clamp(28px,7.5vw,58px)] font-normal leading-[1.1] text-[#1A2E22] mb-4 sm:mb-6 tracking-[-0.5px] [text-wrap:balance]">
               Focus on the <em className="italic text-[#2D6A4F]">design.</em>
               <br className="hidden sm:inline" />
@@ -562,6 +569,69 @@ export default function HomePage() {
               Replace your PM tool, time tracker, and budget spreadsheets with one platform built for landscape architects. Start free, upgrade when you&apos;re ready.
             </p>
           </div>
+
+          {/* Founding Member offer — limited to first 20 firms */}
+          <div
+            id="founding-member"
+            className="mb-14 sm:mb-16 rounded-[14px] bg-gradient-to-br from-[#1A2E22] via-[#2D6A4F] to-[#40916C] p-7 sm:p-10 shadow-[0_20px_60px_rgba(26,46,34,0.25)] scroll-mt-24"
+          >
+            <div className="flex flex-col lg:flex-row gap-6 lg:gap-10 items-start lg:items-center">
+              <div className="flex-1">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-3">
+                  <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold tracking-[0.18em] uppercase text-[#1A2E22] bg-[#C9A87C] px-2.5 py-1 rounded-full">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#1A2E22]" />
+                    Founding member offer
+                  </span>
+                  <span className="text-[11px] font-medium text-white/60 tracking-wide">
+                    Limited to first 20 firms
+                  </span>
+                </div>
+                <h3 className="font-serif text-[clamp(22px,3vw,32px)] text-white mb-3 leading-tight">
+                  $49/mo for 12 months
+                  <em className="italic text-[#B7E4C7]"> + free white-glove migration</em>
+                </h3>
+                <p className="text-white/70 text-sm sm:text-[15px] leading-relaxed max-w-[680px] mb-5">
+                  We&apos;re building Phasewise with our first 20 customers. Founding members get 50% off standard pricing for the first year, plus we import your existing projects, clients, and staff from your current tools — no manual setup. Priority email support and direct team access included.
+                </p>
+                <ul className="grid sm:grid-cols-2 gap-y-2 gap-x-6 text-[13px] text-white/80 max-w-[680px]">
+                  <li className="flex gap-2 items-center">
+                    <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0 text-[#52B788]" strokeWidth={2.5} />
+                    $49/mo first 12 months (then $99 standard)
+                  </li>
+                  <li className="flex gap-2 items-center">
+                    <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0 text-[#52B788]" strokeWidth={2.5} />
+                    Free data migration — typically 4-6 hours saved
+                  </li>
+                  <li className="flex gap-2 items-center">
+                    <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0 text-[#52B788]" strokeWidth={2.5} />
+                    Priority email support (under 4-hour response)
+                  </li>
+                  <li className="flex gap-2 items-center">
+                    <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0 text-[#52B788]" strokeWidth={2.5} />
+                    Direct line for feature requests
+                  </li>
+                </ul>
+              </div>
+              <div className="flex flex-col gap-2 lg:items-end shrink-0 w-full lg:w-auto">
+                <Link
+                  href="/signup?plan=founding"
+                  className="w-full lg:w-auto inline-flex items-center justify-center px-7 py-3.5 rounded-md bg-white text-[#1A2E22] text-sm font-semibold hover:bg-[#F7F9F7] hover:-translate-y-0.5 transition-all shadow-lg"
+                >
+                  Claim founding spot →
+                </Link>
+                <span className="text-[11px] text-white/50 lg:text-right">
+                  After 20 customers, pricing returns to standard.
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="text-center mb-10">
+            <p className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[#A3BEA9]">
+              Standard pricing (after founding member spots fill)
+            </p>
+          </div>
+
           <div className="grid md:grid-cols-3 gap-5 items-start">
             {tiers.map((tier) => (
               <div
