@@ -84,10 +84,11 @@ export async function POST(request: Request) {
           ...(isFoundingMemberCheckout && { foundingMember: "true" }),
         },
       },
-      ...(couponCode && {
-        discounts: [{ coupon: couponCode }],
-      }),
-      allow_promotion_codes: !couponCode, // let users enter codes if we didn't pass one
+      // Stripe treats discounts + allow_promotion_codes as mutually exclusive
+      // (even when allow_promotion_codes is false). Set exactly one.
+      ...(couponCode
+        ? { discounts: [{ coupon: couponCode }] }
+        : { allow_promotion_codes: true }),
       automatic_tax: { enabled: true },
       tax_id_collection: { enabled: true },
       customer_update: {
