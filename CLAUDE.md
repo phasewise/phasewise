@@ -647,6 +647,59 @@ Higher-volume outreach uses the operational playbook at [`marketing/outreach/PLA
 
 ---
 
+## Where We Left Off (2026-06-17 EOD)
+
+**Status: 🟢 Short focused session closing yesterday's P0 gap.** Founding Member offer is now wired end-to-end — marketing copy + Stripe + database all aligned. One commit shipped, schema migrated to Supabase, all 4 critical morning items checked off. Nothing left that could burn an inbound prospect with wrong pricing.
+
+### What shipped
+
+**Kevin (5 min in Stripe Dashboard, live mode):** Created the `FOUNDING50` coupon — 50% off, Repeating, 12 months, Max 20 redemptions, applies to Starter + Professional + Studio. Coupon ID confirmed on the dashboard, usage 0/20, no expiry date.
+
+**Commit `721957f` (Claude, ~75 min):** wired the coupon to the full signup → billing → checkout → webhook flow. Detail:
+
+- **Schema** (`Organization` model): added `foundingMemberCandidate` (set at signup when user arrives with `?plan=founding`) + `isFoundingMember` (durable status, flipped via webhook once paid subscription is established with the coupon). Pushed to Supabase via `npx prisma db push`.
+- **Signup page**: detects `?plan=founding` via `useSearchParams`, shows stone-amber Founding Member context banner above the form, changes H1 to "Claim your founding spot", POSTs `foundingMemberCandidate` to setup API, redirects to `/settings/billing?plan=founding` after signup (skipping `/dashboard` so the offer is next).
+- **API auth/setup**: accepts and stores `foundingMemberCandidate` on Org. Loops contact tagged `userGroup="trial-founding-member"` for future segmentation.
+- **/settings/billing page**: derives `isFoundingContext` from `org.foundingMemberCandidate OR ?plan=founding param` (suppressed once `org.isFoundingMember` is true). Renders forest-green Founding Member banner above the tier grid when active. Section headings + body copy swap. Tier buttons receive `couponCode={FOUNDING50}` and `ctaLabel="Claim founding spot"`.
+- **BillingPlanButton**: now accepts optional `couponCode` + `ctaLabel` props, passes coupon through to the checkout API.
+- **/api/stripe/checkout**: when `couponCode === "FOUNDING50"`, sets `subscription_data.metadata.foundingMember = "true"`. Durable, version-agnostic signal the webhook reads — avoids the expand+discount-API juggling Stripe is currently churning on.
+- **/api/stripe/webhook (syncSubscriptionToOrg)**: reads `subscription.metadata.foundingMember`, flips `Organization.isFoundingMember = true` on first trialing/active state transition. One-way; never unsets (preserves history for case studies + priority routing).
+
+Typecheck clean. Coupon ID hardcoded in two places (`/settings/billing/page.tsx` + `/api/stripe/checkout/route.ts`) — minor consolidation candidate if we add more programmatic offers, fine for now.
+
+### Verify-when-fresh (no urgency, can skip)
+
+In incognito:
+1. `phasewise.io/signup?plan=founding` → banner visible, H1 reads "Claim your founding spot"
+2. Complete signup (any real email) → lands on `/settings/billing?plan=founding` with green banner
+3. Click any tier → Stripe Checkout opens with "Founding Member 50%" line item before payment
+4. (Optional) complete checkout with real card → webhook flips `Organization.isFoundingMember = true` (visible in Supabase Table Editor)
+5. Cancel from Stripe portal afterward if you don't want the subscription
+
+Visual verification through step 3 is enough — no need to actually complete a real-card checkout unless you want to stress-test the webhook.
+
+### Tomorrow's pickup (none of this is urgent)
+
+1. **/migrate form smoke test** in incognito — submit a fake migration request, confirm Loops email + Sentry breadcrumb arrive. Never tested end-to-end.
+2. **Google Ads 24-48h check** — by tomorrow the ads should be approved + serving. Open `Campaign #1 → Keywords → Search terms` report to see actual queries that triggered ads. Add negatives for any junk that slipped through.
+3. **Smartlead warmup** — still warming silently. Don't touch until 2026-06-30.
+4. **Charlie/Recur reply** — week 2 of silence. Acceptable; he's playing a long game.
+
+### Tomorrow's wishlist (not urgent)
+
+- Counter UI on landing + /demo showing "X of 20 founding spots remaining" via Stripe coupon usage API
+- Visual smoke-test the /signup?plan=founding flow end-to-end
+- Consolidate `FOUNDING50` coupon ID into a shared constant
+- Decide on the optional "Apply via promo code" path in case prospects find their way through the standard signup flow without the `?plan=founding` URL param
+
+### Commit shipped today
+
+| Commit | What |
+|---|---|
+| `721957f` | Founding Member backend: wire ?plan=founding to FOUNDING50 Stripe coupon (schema + signup + billing + checkout + webhook) |
+
+---
+
 ## Where We Left Off (2026-06-16 EOD)
 
 **Status: 🟢🟢🟢 Major strategic pivot day — biggest single-session shift since the 2026-04-08 product launch.** Kevin explicitly named the problem: "current plan requires too much founder time and involvement." Pivoted from manual cold-email outreach (15 sends in 60 days → 0 paying customers) to automation-first acquisition. Three channels live or warming. **First real customers expected in 30-60 days via the new stack.** ~8 hours of focused execution. One critical gap surfaced + flagged for tomorrow: the Founding Member offer's backend isn't wired to Stripe yet (UI promises $49/mo but checkout still charges $99).
