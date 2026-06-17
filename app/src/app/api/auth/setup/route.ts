@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   try {
-    const { authId, fullName, firmName, email } = await request.json();
+    const { authId, fullName, firmName, email, foundingMemberCandidate } = await request.json();
 
     if (!authId || !fullName || !firmName || !email) {
       return NextResponse.json(
@@ -33,6 +33,7 @@ export async function POST(request: Request) {
           slug: finalSlug,
           plan: "TRIAL",
           trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days
+          foundingMemberCandidate: foundingMemberCandidate === true,
         },
       });
 
@@ -61,7 +62,7 @@ export async function POST(request: Request) {
         lastName: lastName || undefined,
         userId: result.user.id,
         source: "Phasewise signup",
-        userGroup: "trial",
+        userGroup: foundingMemberCandidate === true ? "trial-founding-member" : "trial",
       }),
       sendTransactional({
         email,

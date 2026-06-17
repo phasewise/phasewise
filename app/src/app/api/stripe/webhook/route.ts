@@ -282,6 +282,17 @@ async function syncSubscriptionToOrg(subscription: Stripe.Subscription) {
     subWithPeriod.cancel_at_period_end === true ||
     (subWithPeriod.cancel_at != null && subWithPeriod.cancel_at > 0);
 
+  // Founding Member promotion — checkout sets metadata.foundingMember
+  // = "true" when the FOUNDING50 coupon was applied. Once we see a
+  // trialing or active subscription with that flag, the org is
+  // permanently flagged as a Founding Member. Never unset — even on
+  // downgrade or cancel, they retain the historical status (used for
+  // case studies, priority routing, etc.).
+  const becomesFoundingMember =
+    !org.isFoundingMember &&
+    subscription.metadata?.foundingMember === "true" &&
+    (subscription.status === "trialing" || subscription.status === "active");
+
   await prisma.organization.update({
     where: { id: org.id },
     data: {
@@ -293,6 +304,7 @@ async function syncSubscriptionToOrg(subscription: Stripe.Subscription) {
       cancelAtPeriodEnd: isScheduledToCancel,
       plan: subscription.status === "active" || subscription.status === "trialing" ? plan : "TRIAL",
       trialEndsAt: subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
+      ...(becomesFoundingMember && { isFoundingMember: true }),
     },
   });
 }

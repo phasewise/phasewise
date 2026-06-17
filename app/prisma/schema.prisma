@@ -74,6 +74,16 @@ model Organization {
   stripeConnectedAccountId   String?           @unique @map("stripe_connected_account_id")
   stripeConnectChargesEnabled Boolean          @default(false) @map("stripe_connect_charges_enabled")
   stripeConnectConnectedAt   DateTime?         @map("stripe_connect_connected_at")
+  // Founding Member program — first 20 firms get $49/mo for 12 months
+  // via the FOUNDING50 Stripe coupon, plus free white-glove migration
+  // + priority support. `foundingMemberCandidate` flips true at signup
+  // when the user arrives with ?plan=founding (so /settings/billing
+  // can pre-fill the coupon). `isFoundingMember` flips true via the
+  // Stripe webhook once a paid subscription is actually established
+  // with the FOUNDING50 coupon applied — that's the durable status
+  // used downstream for badges, priority routing, case studies, etc.
+  foundingMemberCandidate  Boolean             @default(false) @map("founding_member_candidate")
+  isFoundingMember         Boolean             @default(false) @map("is_founding_member")
   createdAt                DateTime            @default(now()) @map("created_at")
   updatedAt                DateTime            @updatedAt @map("updated_at")
 

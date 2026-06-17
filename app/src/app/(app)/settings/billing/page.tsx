@@ -55,10 +55,17 @@ const tiers = [
   },
 ];
 
+// Stripe coupon ID for the Founding Member tier — created manually in
+// the Stripe dashboard (50% off, repeating, 12 months, max 20 redemptions,
+// applies to Starter + Professional + Studio). If the coupon is exhausted
+// or removed, Stripe Checkout will fail-soft with a non-fatal error and
+// the user can still subscribe at standard pricing.
+const FOUNDING_COUPON_ID = "FOUNDING50";
+
 export default async function BillingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; plan?: string }>;
 }) {
   const params = await searchParams;
   const currentUser = await getCurrentUser();
@@ -76,6 +83,17 @@ export default async function BillingPage({
   }
 
   const isOwnerOrAdmin = currentUser.role === "OWNER" || currentUser.role === "ADMIN";
+
+  // Founding Member context is true when:
+  //  (a) the org is flagged as a candidate (set at signup when the
+  //      user arrived via ?plan=founding), OR
+  //  (b) ?plan=founding is on the URL right now (lets existing trial
+  //      users claim the offer if they came back via a Founding link)
+  // Once `org.isFoundingMember` flips true via the Stripe webhook,
+  // they're already a Founding Member — banner stops promoting it.
+  const isFoundingContext =
+    !org.isFoundingMember &&
+    (org.foundingMemberCandidate || params.plan === "founding");
 
   const planLabel: Record<string, string> = {
     TRIAL: "Trial",
@@ -209,10 +227,42 @@ export default async function BillingPage({
         </div>
       </div>
 
+      {!hasActiveSubscription && isFoundingContext && (
+        <div className="mb-8 rounded-2xl bg-gradient-to-br from-[#1A2E22] via-[#2D6A4F] to-[#40916C] p-6 sm:p-8 shadow-[0_20px_60px_rgba(26,46,34,0.25)]">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-3">
+            <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold tracking-[0.18em] uppercase text-[#1A2E22] bg-[#C9A87C] px-2.5 py-1 rounded-full">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#1A2E22]" />
+              Founding member offer applied
+            </span>
+            <span className="text-[11px] font-medium text-white/60 tracking-wide">
+              Limited to first 20 firms
+            </span>
+          </div>
+          <h3 className="font-serif text-xl sm:text-2xl text-white mb-3 leading-tight">
+            50% off for 12 months — applied automatically at checkout
+          </h3>
+          <p className="text-white/70 text-sm leading-relaxed max-w-[620px] mb-4">
+            Pick any plan below — the FOUNDING50 coupon discounts your first 12 months. Free
+            white-glove migration of your existing projects + clients + staff is included; request
+            it at{" "}
+            <Link href="/migrate" className="underline text-[#B7E4C7] hover:text-white">
+              phasewise.io/migrate
+            </Link>{" "}
+            after you start your trial.
+          </p>
+        </div>
+      )}
+
       {!hasActiveSubscription && (
         <div>
-          <h3 className="font-serif text-xl text-[#1A2E22] mb-1">Choose a plan</h3>
-          <p className="text-sm text-[#6B8C74] mb-6">14-day free trial. No credit card required to start.</p>
+          <h3 className="font-serif text-xl text-[#1A2E22] mb-1">
+            {isFoundingContext ? "Pick a plan to claim your founding spot" : "Choose a plan"}
+          </h3>
+          <p className="text-sm text-[#6B8C74] mb-6">
+            {isFoundingContext
+              ? "14-day free trial included. Founding Member 50% discount is applied during checkout — no code to enter."
+              : "14-day free trial. No credit card required to start."}
+          </p>
           {!isOwnerOrAdmin && (
             <div className="mb-6 bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-amber-700 mt-0.5 flex-shrink-0" />
@@ -268,7 +318,13 @@ export default async function BillingPage({
                     </li>
                   ))}
                 </ul>
-                <BillingPlanButton priceId={tier.priceId} featured={tier.featured} disabled={!isOwnerOrAdmin} />
+                <BillingPlanButton
+                  priceId={tier.priceId}
+                  featured={tier.featured}
+                  disabled={!isOwnerOrAdmin}
+                  couponCode={isFoundingContext ? FOUNDING_COUPON_ID : undefined}
+                  ctaLabel={isFoundingContext ? "Claim founding spot" : undefined}
+                />
               </div>
             ))}
           </div>

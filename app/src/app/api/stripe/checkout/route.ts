@@ -65,6 +65,14 @@ export async function POST(request: Request) {
     // Build the session params. Trial only applies on first paid signup.
     const isFirstSubscription = !org.stripeSubscriptionId;
 
+    // Founding Member flag — set when checkout runs with the FOUNDING50
+    // coupon so the webhook can promote the org to isFoundingMember=true
+    // once Stripe confirms the subscription. (Reading the coupon ID off
+    // the subscription afterwards requires expand+API-version juggling;
+    // metadata is a stable, version-agnostic signal we control.)
+    const FOUNDING_COUPON_ID = "FOUNDING50";
+    const isFoundingMemberCheckout = couponCode === FOUNDING_COUPON_ID;
+
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       customer: customerId,
@@ -73,6 +81,7 @@ export async function POST(request: Request) {
         ...(isFirstSubscription && { trial_period_days: 14 }),
         metadata: {
           organizationId: org.id,
+          ...(isFoundingMemberCheckout && { foundingMember: "true" }),
         },
       },
       ...(couponCode && {
@@ -91,6 +100,7 @@ export async function POST(request: Request) {
       metadata: {
         organizationId: org.id,
         targetPlan,
+        ...(isFoundingMemberCheckout && { foundingMember: "true" }),
       },
     });
 

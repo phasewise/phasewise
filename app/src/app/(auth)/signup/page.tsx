@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Eye, EyeOff } from "lucide-react";
 
@@ -25,6 +25,8 @@ export default function SignupPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isFoundingMember = searchParams.get("plan") === "founding";
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -66,6 +68,7 @@ export default function SignupPage() {
         fullName,
         firmName,
         email,
+        foundingMemberCandidate: isFoundingMember,
       }),
     });
 
@@ -76,7 +79,14 @@ export default function SignupPage() {
       return;
     }
 
-    router.push("/dashboard");
+    // Founding members go straight to billing so they can lock in the
+    // $49/mo rate with the FOUNDING50 coupon. Everyone else lands on
+    // the dashboard as before.
+    if (isFoundingMember) {
+      router.push("/settings/billing?plan=founding");
+    } else {
+      router.push("/dashboard");
+    }
     router.refresh();
   }
 
@@ -90,8 +100,25 @@ export default function SignupPage() {
           </span>
         </Link>
 
+        {isFoundingMember && (
+          <div className="mb-5 rounded-[14px] bg-gradient-to-br from-[#FAF6EF] to-[#F5EBD9] border border-[#E8D5B7] p-5">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#7A5A2E] bg-[#E8D5B7] px-2 py-0.5 rounded-full">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#7A5A2E]" />
+                Founding member
+              </span>
+            </div>
+            <p className="text-sm text-[#3D5C48] leading-relaxed">
+              <strong className="text-[#1A2E22]">50% off for 12 months</strong> ($49/mo) + free
+              white-glove migration applied after signup. Limited to the first 20 firms.
+            </p>
+          </div>
+        )}
+
         <div className="bg-white border border-[#E2EBE4] rounded-[14px] p-8 shadow-[0_4px_24px_rgba(26,46,34,0.06)]">
-          <h1 className="font-serif text-2xl text-[#1A2E22] mb-1">Start your free trial</h1>
+          <h1 className="font-serif text-2xl text-[#1A2E22] mb-1">
+            {isFoundingMember ? "Claim your founding spot" : "Start your free trial"}
+          </h1>
           <p className="text-[#6B8C74] text-sm mb-6">14 days free. No credit card required.</p>
 
           <form onSubmit={handleSubmit} className="space-y-5">

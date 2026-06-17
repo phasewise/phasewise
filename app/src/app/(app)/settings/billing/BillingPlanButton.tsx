@@ -7,9 +7,17 @@ type Props = {
   priceId: string;
   featured?: boolean;
   disabled?: boolean;
+  couponCode?: string;
+  ctaLabel?: string;
 };
 
-export default function BillingPlanButton({ priceId, featured = false, disabled = false }: Props) {
+export default function BillingPlanButton({
+  priceId,
+  featured = false,
+  disabled = false,
+  couponCode,
+  ctaLabel,
+}: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -21,7 +29,7 @@ export default function BillingPlanButton({ priceId, featured = false, disabled 
       const res = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ priceId }),
+        body: JSON.stringify({ priceId, ...(couponCode && { couponCode }) }),
       });
 
       const data = await res.json();
@@ -60,7 +68,7 @@ export default function BillingPlanButton({ priceId, featured = false, disabled 
         disabled={loading || disabled}
         className={`${baseClasses} ${featured ? featuredClasses : defaultClasses}`}
       >
-        {loading ? "Loading..." : "Start Free Trial"}
+        {loading ? "Loading..." : ctaLabel ?? "Start Free Trial"}
         {featured && !loading && <ArrowRight className="w-4 h-4" />}
       </button>
       {error && <p className="text-xs text-[#B04030] mt-2 text-center">{error}</p>}
