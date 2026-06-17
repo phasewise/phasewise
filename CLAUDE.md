@@ -647,6 +647,145 @@ Higher-volume outreach uses the operational playbook at [`marketing/outreach/PLA
 
 ---
 
+## Where We Left Off (2026-06-16 EOD)
+
+**Status: 🟢🟢🟢 Major strategic pivot day — biggest single-session shift since the 2026-04-08 product launch.** Kevin explicitly named the problem: "current plan requires too much founder time and involvement." Pivoted from manual cold-email outreach (15 sends in 60 days → 0 paying customers) to automation-first acquisition. Three channels live or warming. **First real customers expected in 30-60 days via the new stack.** ~8 hours of focused execution. One critical gap surfaced + flagged for tomorrow: the Founding Member offer's backend isn't wired to Stripe yet (UI promises $49/mo but checkout still charges $99).
+
+### The pivot itself
+
+Marketing plan reassessed end-to-end. Manual cold outreach (Wave 1-3) produced zero replies across ~15 sends — sample too small to draw strong conclusions, but the pattern + Kevin's founder-time bandwidth made the math hopeless. Chose **3 automation channels** over 6 to start: Smartlead cold email + Founding Member offer + Google Ads. Capterra PPC explicitly deferred (too expensive pre-reviews — $200-300 CPL at lowest tier).
+
+### Founding Member offer + white-glove migration system shipped
+
+**The offer:** $49/mo for first 12 months (then $99 standard), free white-glove data migration, priority email support, direct team access — limited to first 20 firms. Real urgency (numbered cap), real value (migration removes the actual switching-cost barrier LA firms face), anonymity-safe.
+
+**Code shipped:**
+- `app/scripts/import-org-data.ts` — CSV bulk-importer CLI. Reads clients, staff (as invitations), projects, project phases. Idempotent on clients + staff. Linkage by name/projectNumber. ~10-min processing per new customer vs 4-6 hours manual.
+- `app/scripts/migration-templates/` — 4 reference CSVs + README documenting the format
+- `app/src/app/migrate/page.tsx` + `MigrationRequestForm.tsx` — customer-facing request page (firm name, current tool, project/staff/client counts, format notes). Linked from offer pages.
+- `app/src/app/api/migration-request/route.ts` — creates Loops contact (tagged `founding-member-candidate`), sends optional transactional via Loops, captures Sentry breadcrumb so requests never get lost. Rate-limited 5/hour/IP.
+- Landing page hero: stone-amber Founding Member tag above H1, links to `#founding-member` anchor
+- Landing pricing section: full offer banner above standard tier grid with 4 benefit bullets + claim CTA → `/signup?plan=founding`
+- `/demo` index: Founding Member panel replacing bottom CTA
+- `/demo/[slug]` per-clip pages: Founding Member side card replacing the trial card
+- Reply playbook "Tell me more" template now leads with Founding Member context paragraph
+- `MIGRATION_REQUEST` Loops template ID env var added (graceful no-op when not set)
+
+**Commit:** `8d9cb04` — "Marketing pivot: Founding Member offer + white-glove migration system"
+
+### 🚨 Critical gap surfaced at session end — Founding Member backend NOT wired
+
+The marketing copy promises $49/mo + free migration but the **Stripe checkout still charges $99 if someone clicks "Claim founding spot" right now.** What's missing:
+
+| What's promised | What's wired | Gap |
+|---|---|---|
+| `?plan=founding` URL routes to discounted plan | URL param ignored by /signup | ❌ |
+| 50% off for 12 months | No coupon in Stripe | ❌ |
+| 20-spot cap | No tracking | ❌ |
+| Founding Member status visible to user | No `User.isFoundingMember` field | ❌ |
+| Free white-glove migration | `/migrate` form works ✓ + CSV importer ready ✓ | ✅ (manual) |
+
+Realistic traffic risk overnight: near-zero (pinned X tweet + n8n auto-blog don't link to `?plan=founding`, Google Ads ads pending review, Smartlead doesn't fire for 2 weeks). But this MUST be wired before any cold-email send goes out (June 30) or any prospect clicks through from outreach replies. **This is tomorrow's #1 task.**
+
+### Smartlead cold-email automation — live, warming
+
+- **Account:** kevin@phasewise.io / Phasewise Team / Basic plan trial ($39/mo when active)
+- **Two inboxes connected:**
+  - `kevin@phasewise.io` via Google OAuth (required Google Admin Console → Security → API Controls → Domain-wide Delegation setup with Smartlead's client ID + scopes)
+  - `hello@phasewise.io` via SMTP relay (auth as kevin@ with Google App Password `Smartlead` generated at myaccount.google.com/apppasswords, sends as hello@ alias via Workspace Send-mail-as)
+- **Custom tracking domain:** `link.phasewise.io` → CNAME → `open.sleadtrack.com` (Cloudflare DNS-only, gray cloud). Verified green in Smartlead. Reused across both inboxes.
+- **Sending caps:** 25 messages/day per inbox, 10-min gap between sends, total 50/day capacity once warm
+- **Warmup config (both inboxes):** 25-40/day randomized range, 5/day rampup, 20% reply rate, 10 daily replies to inbound, weekdays only. Both inboxes warming since ~2026-06-16 evening.
+- **Real campaign sending starts ~2026-06-30** (14-day warmup minimum)
+- **From-line strategy locked:** all real outreach will go from `hello@phasewise.io` only; `kevin@` kept warm as backup/redundancy but never assigned to campaigns
+- **Anonymity tell to remember:** Gmail filter created to auto-archive Smartlead warmup emails to label `Smartlead Warmup` (skip inbox, mark as read, never spam) — filter matches `tryleadmachine.com OR mailwarm OR warmupinbox OR lemwarm OR warmupcheckers`
+
+### Capterra PPC — evaluated + deferred
+
+Reviewed in Google Digital Markets vendor portal. CPL pricing was much higher than expected:
+- $84,500/mo: $497-746 CPL (enterprise tier)
+- $28,500/mo: $400-600 CPL
+- $1,000/mo: $200-300 CPL (lowest tier — only realistic option)
+
+At zero paying customers + zero reviews on the listing, $1,000/mo is paying retail for half the conversion value. Capterra PPC traffic converts much better once buyers see star ratings. **Decision: revisit after first 3-5 Founding Members leave Capterra reviews (~2-3 months out).**
+
+### Google Ads Search campaign — LIVE
+
+- **Campaign:** Phasewise — Founding Member Launch
+- **Type:** Search (escaped Smart Mode + Performance Max default by navigating to https://ads.google.com/aw/expertmode after completing minimum required Smart-Mode wizard)
+- **Budget:** $15/day custom (~$455/mo); ignored Google's $63/day recommendation
+- **Bid strategy:** Maximize Clicks with $4 max CPC cap (will switch to Maximize Conversions after 20-30 historical conversions in ~30 days)
+- **Locations:** United States + Canada · **Language:** English
+- **Networks:** Google Search ONLY (turned off Search Partners + Display Network — those would burn budget on garbage clicks)
+- **15 positive keywords** spanning Monograph-alternatives, LA-software, MWELO-calculator, LA-billing-software themes. ~5 high-volume head terms eligible; ~7-8 long-tail terms flagged "low search volume" but kept (cost nothing if they don't serve, broad match catches related queries via the head terms).
+- **46 campaign-level negative keywords** added preemptively: `free`, `jobs`, `salary`, `school`, `degree`, `course`, `tutorial`, `pdf`, `download`, `torrent`, `crack`, `github`, `youtube`, `reddit`, `wikipedia`, `definition`, `meaning`, `what is`, `how to become`, `license`, `exam`, `homework`, `project examples`, `portfolio examples`, etc.
+- **15 headlines + 4 descriptions** with mix of product names (MWELO Calculator, Submittal Logs Built In), offer hooks ($49/mo, First 20 Firms Get 50% Off), and identity (Built for LA Firms). Ad Strength: Average (Good after sitelinks).
+- **4 sitelinks:** Watch 9-Min Demo (/demo), MWELO Calculator (/demo/mwelo), Free Data Migration (/migrate), Founding Member Offer (/#founding-member)
+- **GA4 ↔ Google Ads linked** — conversion tracking + audience sharing via existing Phasewise GA4 property (537571375)
+- **Conversion goal:** Sign ups → URL phasewise.io/dashboard (where users land post-signup)
+- **Promo claimed:** $500 spend → $1,000 in Ads credit. Effectively first ~3 months of ad spend free at $15/day. Deadline Aug 15, 2026 — well within reach.
+- **Account state:** Campaign #1 Eligible (green dot), Bid strategy learning, ad pending Google review (24h typical). First real clicks expected within 24-48h after review clears.
+
+### Cost summary going forward
+
+| Item | Monthly |
+|---|---|
+| Smartlead Basic | $39 |
+| Google Ads | ~$455 (effectively $0 through ~Aug-Sept via $1,500 promo) |
+| Hunter.io free tier | $0 |
+| **Net out-of-pocket month 1-3** | **~$39/mo** |
+| Net out-of-pocket month 4+ | ~$494/mo |
+
+### Tomorrow morning's first task (🚨 P0 blocker)
+
+**Wire the Founding Member offer to Stripe.** Two parts:
+
+**Kevin (5 min, Stripe dashboard):** Create a coupon called `FOUNDING50` in Stripe live mode with: 50% off · Repeating · 12 months · Max redemptions 20 · Applies to Starter + Professional + Studio products.
+
+**Code work (~90 min Claude):**
+1. Modify `/api/stripe/checkout` (or wherever the Stripe Checkout Session is created) to detect `plan=founding` query param and pass `discounts: [{coupon: 'FOUNDING50'}]` to Stripe
+2. Update `/signup` page to show "Founding Member offer detected — your first 12 months will be $49/mo" banner when `?plan=founding` is in URL
+3. Add `User.isFoundingMember Boolean @default(false)` to Prisma schema; set true after successful Founding Member signup
+4. (Optional) Counter UI on landing showing "X of 20 founding spots remaining" via Stripe coupon usage API
+5. Test end-to-end with a test card
+
+**Test plan:**
+- Visit phasewise.io/signup?plan=founding in incognito
+- Confirm banner appears
+- Complete signup + Stripe checkout with test card
+- Verify subscription has coupon attached, reflects $49/mo
+- Verify User.isFoundingMember = true in DB
+
+### Tomorrow's secondary tasks (after Founding Member backend lands)
+
+1. **Test /migrate form** in incognito to verify Loops + Sentry capture works end-to-end (we never tested it)
+2. **Check Google Ads Campaign #1** — verify ads cleared review (status: Eligible instead of Pending). Look at Search terms report. Add negatives for any junk that slipped through.
+3. **No other changes for 48 hours** — let Google's learning phase settle. Premature tuning destabilizes the algorithm.
+
+### Active waits (cron-style, no action)
+
+- **2026-06-30 (Mon):** Smartlead warmup mature → build campaign with Wave 4 prospects + MWELO-clip-led template + Founding Member messaging. ~45 min focused work.
+- **24-48h from 2026-06-17:** Google Ads first clicks
+- **Anytime:** Charlie (Recur Holding) reply — sent 2026-06-10 evening; no response yet
+- **After first paying customer:** ask for Capterra review → revisit Capterra PPC once 3-5 reviews accumulate
+
+### Commits shipped this session
+
+| Commit | What |
+|---|---|
+| `8d9cb04` | Marketing pivot: Founding Member offer + white-glove migration system (CSV importer + /migrate page + offer copy on landing/demo/per-clip pages + reply playbook update) |
+
+(Smartlead config and Google Ads campaign are external services — no commits, but their state is documented above for future reference.)
+
+### Worth knowing for future sessions
+
+- Smartlead **From-line trick:** OAuth-connected Workspace inboxes are locked to the underlying mailbox. To send from an alias (hello@), use the SMTP path with App Password authenticated as the underlying user (kevin@) but configure From Email as the alias. Gmail Send-mail-as relay accepts this.
+- Google Ads **Smart Mode trap:** new accounts force-route into Smart Mode. Direct URL `https://ads.google.com/aw/expertmode` does NOT work pre-account-creation. Either complete the Smart Mode wizard minimally then switch, or click "view other campaign types" link inside the Performance Max default to escape.
+- Google Ads **low search volume warnings** are normal for niche B2B keywords. Broad match keywords with higher volume catch related queries — long-tail specific phrases that show "low volume" cost nothing if they don't serve.
+- Capterra PPC pricing for landscape architecture vertical: $200-300 CPL minimum tier. Worth it after social proof (reviews) accumulates; not before.
+
+---
+
 ## Where We Left Off (2026-06-13 EOD)
 
 **Status: 🟢🟢 Three-day push (6/11 → 6/13). Closed every concrete item that was queued in the 6/10 wrap. Launched the self-hosted demo at phasewise.io/demo and got it posted to X. Strategically committed to Fork B (Loom-style walkthroughs + audio-only Meet for first 5 customers) — the anonymity-vs-sales-call wall is now sized correctly. Five commits shipped, 10 close-out outreach emails out the door, demo video rendered + hosted, blog auto-pipeline hardened against future broken links.**
