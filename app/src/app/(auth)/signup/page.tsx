@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -16,7 +16,37 @@ function PhaseLogo() {
   );
 }
 
+// Next.js 16 requires useSearchParams() to be inside a Suspense boundary so
+// static rendering can defer the search-params read to client. We split the
+// page wrapper from the form that actually calls the hook.
 export default function SignupPage() {
+  return (
+    <Suspense fallback={<SignupFormSkeleton />}>
+      <SignupForm />
+    </Suspense>
+  );
+}
+
+function SignupFormSkeleton() {
+  return (
+    <div className="min-h-screen bg-[#F7F9F7] flex items-center justify-center px-4 py-12">
+      <div className="w-full max-w-sm">
+        <div className="flex items-center justify-center gap-2.5 mb-10">
+          <PhaseLogo />
+          <span className="text-[19px] font-semibold tracking-[-0.4px] text-[#1A2E22]">
+            phase<em className="not-italic font-light text-[#2D6A4F]">wise</em>
+          </span>
+        </div>
+        <div className="bg-white border border-[#E2EBE4] rounded-[14px] p-8 shadow-[0_4px_24px_rgba(26,46,34,0.06)]">
+          <div className="h-6 w-40 bg-[#E2EBE4] rounded mb-2 animate-pulse" />
+          <div className="h-4 w-56 bg-[#E2EBE4] rounded animate-pulse" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SignupForm() {
   const [fullName, setFullName] = useState("");
   const [firmName, setFirmName] = useState("");
   const [email, setEmail] = useState("");
