@@ -647,6 +647,114 @@ Higher-volume outreach uses the operational playbook at [`marketing/outreach/PLA
 
 ---
 
+## Where We Left Off (2026-06-19 AM)
+
+**Status: 🟡 Google Ads targeting misfire caught + fixed.** Came back 2 days early on what was supposed to be a hands-off checkpoint and found the 3-day search-terms data was a disaster. Campaign was bleeding $15/day budget on DIY homeowner queries (AI yard design, garden AI, backyard generators) — 0 conversions from 12 clicks, ~$28 spent on traffic that has zero chance of converting on a $99-349/mo B2B SaaS. Added 40 campaign-level negative keywords (now 85 total). No code changes; pure ad-targeting hygiene.
+
+### The 3-day numbers (Jun 16-19)
+
+| Metric | Value | Read |
+|---|---|---|
+| Impressions | 212 | Healthy reach for $15/day |
+| Clicks | 12 | Decent volume |
+| CTR | 5.66% | Strong — ad copy resonates |
+| Avg CPC | $3.96 | Under $4 cap |
+| Spend | $47.48 | Trending $470/mo |
+| **Conversions** | **0** | The signal that matters |
+
+CTR being *good* was the problem — ad was attracting clicks from the wrong audience entirely.
+
+### What the search terms revealed
+
+Of 90 unique search terms that triggered ads:
+- **~50% contained "ai"** variants (terraink, ai landscape design, garden AI, ai garden design, ai backyard, redesign backyard with AI, best AI for landscape design)
+- **DIY homeowner intent dominated** — backyard, yard, garden, patio, pool design, sprinkler design, "design my yard"
+- **3D visualization tools** were a major bucket — Realtime Landscape Architect, Uvision, Iscape, Structure Studios (VIP3D)
+- **Generic CAD plugin searches** — Revit, Archicad, Dynascape
+- **Sprinkler/irrigation design** — not what Phasewise is
+
+Of the 12 actual clicks, the breakdown was even worse:
+1. "structure studios" (VIP3D homeowner pool design competitor) — $4.56
+2. "landscape planning tool" — ambiguous
+3. "ai app for landscaping" — DIY homeowner
+4. "garden ai" — DIY homeowner
+5. "landscape plugin for revit" — possibly real LA firm (one of 12)
+6. "landscaping design app" — DIY/contractor
+7. "yard design ai" — DIY homeowner
+
+**6-7 of 12 clicks were definitively wrong audience.** Maybe 1 was a real LA firm prospect. At $3.96 avg CPC, that's $24-28 of $47.48 wasted on traffic that has zero chance of converting on B2B SaaS.
+
+### Why it happened
+
+The 15 positive keywords mixed broad-match terms that catch consumer queries:
+- "landscape architect software" (broad) → matches "landscape architect app", "landscape design app", "ai landscape design"
+- "landscape design software" (broad) → catches DIY consumer queries by intent
+- Google's close-variant matching for exact-match keywords was also pulling DIY queries via semantic similarity
+
+Yesterday's "1 impression, on-target" read was based on a single data point. By Friday morning the pollution was obvious.
+
+### What we did this morning
+
+Added 40 campaign-level negative keywords (broad match). Existing 46 negatives + new batch = **85 total**. The single highest-impact addition was the bare word **"ai"** — kills every variant containing AI in 50+ of the polluting search terms.
+
+Full negative batch added today:
+```
+ai · homeowner · diy · backyard · yard · garden · patio · sprinkler · irrigation
+3d · render · rendering · visualizer · visualization · generator
+structure studios · vip3d · pool studio · iscape · terraink · uvision · realtime landscape
+archicad · dynascape · revit · plant identifier
+paver · deck design · fence design · pond design · hardscape design
+my yard · my garden · my backyard
+free · app · mobile app · android · ipad · iphone
+```
+
+**No code changes. No keyword changes. No bid strategy changes. No ad-copy changes.** One variable at a time, give the negatives 3 days to filter, then reassess.
+
+### Predicted impact (revisit Tue/Wed)
+
+- Impressions: 70/day → 25-35/day (60-70% drop expected — wanted)
+- CTR: 5.66% → likely 3-5% (harder competition for the remaining serious queries)
+- Avg CPC: may go up (less cheap junk diluting the average)
+- **Click quality: junk → qualified prospects**
+
+Promo credit ($1,500) lasts 3-5× longer at the new throughput. If still 0 conversions after 7 more days of clean targeting, the next move is to **kill broad-match keywords entirely** and only run phrase + exact on firm-ops-specific terms (project management, billing rates, MWELO calculator, Monograph alternatives).
+
+### Positive signals worth knowing (no action)
+
+**Google Search Console (90-day organic):**
+- 25 clicks / 1.24K impressions / 18.6 avg position
+- Top query: **"phasewise"** at position 2.5 — brand-search traffic is appearing (n8n blog content + outreach + Workspace/X are doing their job indirectly)
+- "landscape architecture software" at position 48.6 — too deep yet, but topical authority is building
+- 22 pages indexed, 10 not indexed (healthy ratio)
+
+**GA4 (last 7 days):**
+- 46 active users, 44 new users
+- 413 events, 3 key events
+- Real human traffic is showing up, mostly fresh
+
+The organic + GA4 trends are encouraging. Google Ads was the leaky bucket; just patched it.
+
+### Next checkpoint: Tue 2026-06-23 or Wed 2026-06-24
+
+Same Search Terms drill — pull the 3-day window after the negatives have had time to filter. Expect:
+- Sharply reduced impressions
+- Higher proportion of LA-firm-ops queries in the residue
+- If still 0 conversions: re-evaluate keywords (kill broad match)
+- If 1-2 conversions: stay the course, let the algorithm learn
+
+### No commits today
+
+Pure ad-platform work. Nothing landed in the repo besides this CLAUDE.md update.
+
+### Active waits (cron-style, no action)
+
+- **2026-06-23/24:** Google Ads Search Terms re-check
+- **2026-06-30 (Mon):** Smartlead warmup matures → build campaign with Wave 4 prospects + MWELO/Founding Member messaging
+- **Anytime:** Charlie (Recur Holding) reply, pinned-tweet inbound, first organic signup
+- **After first paying customer:** Capterra review → revisit Capterra PPC
+
+---
+
 ## Where We Left Off (2026-06-17 EOD)
 
 **Status: 🟢🟢 Morning verification sweep — every pending item from yesterday's queue closed in one session.** Founding Member flow verified end-to-end including the Stripe Checkout discount line. /migrate form verified end-to-end with the contact landing in Loops correctly tagged. Google Ads campaign confirmed eligible + serving + on-target. Pinned X tweet rewired to drive traffic into the Founding Member funnel. Two more commits shipped (one yesterday's Vercel build fix, one critical Stripe API bug Kevin caught during the smoke test). Nothing left for human attention until the next checkpoint in 3-5 days.
