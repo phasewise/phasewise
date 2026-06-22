@@ -148,11 +148,16 @@ function slugToTitle(slug) {
 
 // =====================================================================
 // FIND FIRST UNUSED KEYWORD
-// GitHub returns an array of file objects; each has a .name field.
-// We strip .md to compare against our generated slugs.
+// n8n splits GitHub's directory listing into one item per file (e.g. 17
+// items for 17 files), NOT one item with a 17-element array. Pull each
+// item's .json to assemble the real file list.
+//
+// The earlier $input.first().json approach returned a single file object,
+// so Array.isArray(...) was false, existingFiles became [], the Set was
+// empty, and dedup quietly picked the first keyword every run — leading
+// to slug-collision errors on Commit to GitHub.
 // =====================================================================
-const githubFiles = $input.first().json;
-const existingFiles = Array.isArray(githubFiles) ? githubFiles : [];
+const existingFiles = $input.all().map(item => item.json);
 const existingSlugs = new Set(
   existingFiles
     .filter(f => f.name && f.name.endsWith('.md'))
@@ -273,6 +278,16 @@ return [{
 2. **Added dynamic `relatedReadingList`** that builds a markdown bullet list from the actual existing slugs returned by GitHub, sorted alphabetically.
 3. **Replaced the hardcoded 10-article list** in the prompt with `${relatedReadingList}` interpolation, so the list auto-updates as new articles ship.
 4. **Strengthened the constraint language** with explicit "DO NOT invent URLs", explicit reference to past failure mode, and explicit fallback instruction.
+
+## 2026-06-22 follow-up fix — `$input.first()` vs `$input.all()`
+
+**Symptom:** Friday 2026-06-19 auto-run failed at Build prompt with a JavaScript error; subsequent manual run on 2026-06-22 progressed past Build prompt but failed at Commit to GitHub with `"sha" wasn't supplied` — a slug-collision error meaning the workflow tried to create a file that already exists.
+
+**Root cause:** n8n splits the GitHub directory-listing response into **one item per file** (e.g. 17 items for 17 .md files), not one item containing a 17-element array. The original `const githubFiles = $input.first().json` returned the **first file object**, not the array. `Array.isArray(...)` was false, `existingFiles` became `[]`, the `existingSlugs` Set was empty, and the dedup loop silently picked **the first keyword in the priority list every single run** (`best software for landscape architects` — whose article had already shipped 2026-04-25). GitHub rejected the create because the file already existed.
+
+The 6/12 run that successfully shipped "Landscape Architecture Submittal Log: A Practical Guide" likely succeeded because of an earlier code path; the dedup bug existed in the 6/11 update but its impact was masked until 6/19.
+
+**Fix:** replace `$input.first().json` with `$input.all().map(item => item.json)`. Confirmed working on 2026-06-22 — Build prompt now correctly skips the first 5 shipped keywords and lands on `BQE Core alternatives landscape architecture`. Article shipped to /blog cleanly.
 
 ## Note on the workflow.json file
 

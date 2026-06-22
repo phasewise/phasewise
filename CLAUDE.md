@@ -647,6 +647,68 @@ Higher-volume outreach uses the operational playbook at [`marketing/outreach/PLA
 
 ---
 
+## Where We Left Off (2026-06-22)
+
+**Status: 🟢 Two unrelated breakages caught + one fixed cleanly. One strategic decision deferred.** Blog auto-pipeline was silently broken since the 2026-06-11 prompt hardening; took two failed Friday runs (6/19 + 6/22) before the symptom was unambiguous enough to diagnose. Google Ads dropped a separate fire — advertiser-verification mandate with a 2026-07-22 deadline that forces an anonymity-vs-paid-acquisition decision.
+
+### Issue 1 (FIXED): n8n blog pipeline — slug-collision bug from the 6/11 update
+
+**Symptom on 6/22:** Manually triggered run progressed past Build prompt but Commit to GitHub failed with `"sha" wasn't supplied` — a 422 from GitHub when you try to create a file that already exists. Build prompt's output showed `keyword: "best software for landscape architects"` + `slug: "best-software-for-landscape-architects"` — but that article had already shipped on 2026-04-25.
+
+**Root cause:** n8n splits the GitHub directory listing into **one item per file** (17 items in the input stream for 17 .md files), NOT one item containing an array. The Build prompt code used `$input.first().json` which returned a **single file object** (the first one), not the array. `Array.isArray(...)` was false, `existingFiles` became `[]`, the `existingSlugs` Set was empty, and the dedup loop quietly picked the first keyword in the priority list every single run. Until that first keyword's article was published — at which point Commit to GitHub started 422'ing.
+
+**Why 6/12 looked successful and 6/19 broke:** the 6/12 article ("Landscape Architecture Submittal Log") had a slug not present in the rotation, so it must have shipped through a different code path or under a different keyword interpretation. Once that article landed, the next Friday run (6/19) — with the broken dedup — picked the same already-shipped first keyword and threw a JS parse error during the unhandled retry path. The Friday runs at 6/13 and 6/19 likely both failed silently because nobody manually checked /blog until today.
+
+**Fix:** one-line change in the Build prompt node — replace `$input.first().json` with `$input.all().map(item => item.json)`. Test step now correctly skips the first 5 already-published keywords and lands on "BQE Core alternatives landscape architecture" — high-commercial-intent keyword (firms actively shopping for Monograph/BQE replacements). Article shipped to /blog cleanly on 2026-06-22. Pipeline is now live again for Friday 6/26's scheduled run.
+
+**Reference doc updated:** [`automation/n8n-build-prompt-update-2026-06-11.md`](automation/n8n-build-prompt-update-2026-06-11.md) has the corrected code block + a postmortem section explaining the 6/22 follow-up fix so future sessions reading the canonical reference don't reintroduce the bug.
+
+**Lesson:** the original 6/11 fix tested OK in n8n's Test step (Kevin saw it run successfully) but the success was based on an empty existingSlugs Set still producing a valid first-keyword pick. The bug only surfaced when (a) that first keyword's article landed in the repo AND (b) someone actually checked /blog on a Friday. **Three weekly silent failures before discovery.** Worth adding a Sentry/email alert to the n8n workflow's error handler so future failures don't silently rot for weeks.
+
+### Issue 2 (DECISION DEFERRED): Google Ads advertiser verification by 2026-07-22
+
+Google now requires the advertiser's name + location to appear in the Ads Transparency Center. Email warning landed today: complete verification by 2026-07-22 or all ads pause. Verification takes 1-7 business days, so realistic deadline to act is ~2026-07-14.
+
+**Three options laid out for Kevin (no decision made):**
+- **(A) Verify as individual** — fastest, breaks anonymity strategy (Kevin Gallo + Fresno CA published in Google's transparency tool)
+- **(B) Verify as registered business** — requires using existing Verifield Inc. (DBA?) OR registering Phasewise LLC. Preserves brand anonymity
+- **(C) Don't verify; let ads pause 7/22** — preserves anonymity entirely, kills paid acquisition channel, $1,500 promo credit expires unused
+
+**Claude's honest read shared with Kevin:** the campaign is currently bleeding budget with 0 conversions despite 6 days running and 523 impressions. Conversion tracking isn't fully set up (per Google's own recommendations panel, +9.8% optimization opportunity). Option C may actually be the right call — pause ads, accept $96 spent as a learning, focus on Smartlead launching 6/30 + organic SEO + outreach + pinned tweet path.
+
+**Not decided today.** Kevin to sleep on it. Revisit before 2026-07-14.
+
+### Issue 3 (PARKED): Google Ads — negatives didn't filter as expected
+
+The 39 negatives added 6/19 should have dropped daily impressions from ~75/day to ~25-35/day. Instead, **impressions roughly doubled** (Jun 19-22 saw 311 impressions, vs 212 in the prior 4 days). 0 conversions persists. 98% of impressions are coming from one keyword: `landscape architecture software` (broad match) — 514 of 523 impressions, 25 of 25 clicks, $96.02 of $96.02 spend.
+
+Two plausible explanations: (a) Google's bid algorithm is exploring more aggressively during learning phase, OR (b) conversion tracking is incomplete so the algorithm has no signal to optimize for and falls back to clicks-maximizing.
+
+**Not investigating today** because the verification decision (Issue 2) determines whether Ads is even a live channel by August. If Option C wins, none of this matters.
+
+### Commits shipped today
+
+| Commit | What |
+|---|---|
+| _pending_ | n8n doc: append 6/22 postmortem + fix the canonical code block in `automation/n8n-build-prompt-update-2026-06-11.md`. CLAUDE.md gets this section. |
+
+(The actual production fix landed in the running n8n workflow, not in this repo. The n8n-workflow.json file remains out-of-date relative to the live workflow.)
+
+### Wishlist surfaced today
+
+- **n8n workflow error notification** — when a Friday run fails, currently NO ONE knows. Add a Sentry alert OR an email send OR a Slack ping on workflow error. Three weeks of silent failures before discovery is unacceptable.
+- **n8n workflow.json re-export** — the committed workflow.json hasn't tracked the running n8n state since 6/11. Re-export and commit so the repo reflects reality.
+- **Visual blog-pipeline health check** — quick way to know "did this Friday's article ship?" without manually checking /blog. Could be a daily automated curl + diff against expected slugs.
+
+### Next checkpoint
+
+- **Tue 2026-06-23 or Wed 2026-06-24:** original Google Ads Search Terms re-check — IF Kevin chooses Option A or B on verification. Otherwise skip.
+- **Fri 2026-06-26 07:00 UTC:** next scheduled n8n auto-article. Worth checking /blog Friday morning to confirm a new article landed.
+- **2026-06-30:** Smartlead warmup matures → build campaign.
+- **Before 2026-07-14:** advertiser verification decision must be made.
+
+---
+
 ## Where We Left Off (2026-06-19 AM)
 
 **Status: 🟡 Google Ads targeting misfire caught + fixed.** Came back 2 days early on what was supposed to be a hands-off checkpoint and found the 3-day search-terms data was a disaster. Campaign was bleeding $15/day budget on DIY homeowner queries (AI yard design, garden AI, backyard generators) — 0 conversions from 12 clicks, ~$28 spent on traffic that has zero chance of converting on a $99-349/mo B2B SaaS. Added 40 campaign-level negative keywords (now 85 total). No code changes; pure ad-targeting hygiene.
