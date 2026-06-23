@@ -647,6 +647,54 @@ Higher-volume outreach uses the operational playbook at [`marketing/outreach/PLA
 
 ---
 
+## Where We Left Off (2026-06-23)
+
+**Status: 🟢 Closed yesterday's top wishlist item — n8n workflow now has email-on-failure alerting wired.** No more silent multi-week failures. Single deliverable, ~30 min of n8n setup, zero code changes.
+
+### What shipped
+
+New n8n workflow: **`Phasewise pipeline error alerts`** (workflow ID inside n8n Cloud; not in repo).
+
+- **Trigger:** Error Trigger node (no parameters — invoked by reference from other workflows that fail)
+- **Action:** Gmail "Send a message" node → `kevin@phasewise.io` with HTML body containing workflow name, failed node, failed timestamp, error stack, and a link back into n8n to inspect the execution
+- **Status:** Inactive (correct state for error-trigger workflows — they fire by reference, not by their own active toggle)
+- **Wired into:** `Phasewise SEO content pipeline` Settings → Error Workflow field. When ANY node in the SEO pipeline fails, Error Trigger fires within seconds and the email lands at kevin@phasewise.io within ~30s.
+
+### Anonymity flag worth knowing
+
+The Gmail credential currently used by the Error Notifier workflow in n8n is **`Verifield Support <support.verifield@gmail.com>`** — wired to Kevin's Verifield brand, NOT Phasewise. This is fine for the internal alerting use case (only lands in Kevin's own inbox; nobody else sees it), but **future n8n workflows that send EXTERNAL email MUST NOT use the default "Gmail account" credential** — it'll publicly cross-link Verifield + Phasewise.
+
+If any future workflow needs to send outbound prospect-facing email from n8n, the right move is to add a separate Phasewise-branded Gmail OAuth credential first (signed in as kevin@phasewise.io with "Send mail as" alias hello@phasewise.io).
+
+### Mock data quirk for future reference
+
+Error Trigger's default mock-data placeholder is `[{name: "First item", code: 1}, {name: "Second item", code: 2}]` — TWO items. The Gmail node runs once per input item by default, so testing with mock data sends two emails. In production, the Error Trigger emits a single item per real workflow failure, so failures generate exactly one email. The mock data also doesn't have a `workflow` / `execution` field shape, so the email template falls through to its `|| 'unknown'` fallbacks during testing — that's expected, not a bug.
+
+### Tested end-to-end
+
+Executed the Gmail node with mock data → two emails landed at kevin@phasewise.io within ~30 seconds. Subject + body rendered correctly with the fallback strings. Email mechanic verified working.
+
+### What's next (no urgency)
+
+- **Fri 2026-06-26 07:00 UTC:** next scheduled SEO pipeline auto-run. If anything fails, the alert email is the canary. If it succeeds silently, that's also fine — no email is good news.
+- **Before 2026-07-14:** Google Ads advertiser verification decision (Issue 2 from yesterday, deferred).
+- **2026-06-30:** Smartlead warmup matures → build Wave 4 campaign.
+
+### Commit shipped today
+
+| Commit | What |
+|---|---|
+| _pending_ | CLAUDE.md: today's 6/23 wrap. (Error alerting itself lives entirely inside n8n Cloud — no repo changes.) |
+
+### Updated wishlist (item closed)
+
+- ✅ ~~n8n workflow error notification — flagged 6/22~~ (shipped 6/23)
+- **n8n workflow.json re-export** — still open. The committed `automation/n8n-workflow.json` doesn't reflect today's error-workflow wiring OR the 6/22 dedup fix. Worth re-exporting next session.
+- **Add Phasewise-branded Gmail credential to n8n** — needed before any external outbound email is sent from n8n workflows. Currently default Gmail credential is Verifield-branded and would leak the cross-brand link if used externally.
+- **Visual blog-pipeline health check** — daily curl + diff against expected slugs. Still open.
+
+---
+
 ## Where We Left Off (2026-06-22)
 
 **Status: 🟢 Two unrelated breakages caught + one fixed cleanly. One strategic decision deferred.** Blog auto-pipeline was silently broken since the 2026-06-11 prompt hardening; took two failed Friday runs (6/19 + 6/22) before the symptom was unambiguous enough to diagnose. Google Ads dropped a separate fire — advertiser-verification mandate with a 2026-07-22 deadline that forces an anonymity-vs-paid-acquisition decision.
