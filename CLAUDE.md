@@ -677,14 +677,15 @@ Executed the Gmail node with mock data → two emails landed at kevin@phasewise.
 ### What's next (no urgency)
 
 - **Fri 2026-06-26 07:00 UTC:** next scheduled SEO pipeline auto-run. If anything fails, the alert email is the canary. If it succeeds silently, that's also fine — no email is good news.
-- **Before 2026-07-14:** Google Ads advertiser verification decision (Issue 2 from yesterday, deferred).
+- **Before 2026-07-14:** Google Ads advertiser verification decision (still deferred, see PM addendum below).
 - **2026-06-30:** Smartlead warmup matures → build Wave 4 campaign.
 
 ### Commit shipped today
 
 | Commit | What |
 |---|---|
-| _pending_ | CLAUDE.md: today's 6/23 wrap. (Error alerting itself lives entirely inside n8n Cloud — no repo changes.) |
+| `fb51550` | CLAUDE.md: morning 6/23 wrap documenting n8n error alerting. (Error alerting itself lives entirely inside n8n Cloud — no repo changes.) |
+| _pending_ | CLAUDE.md: PM addendum — paused Google Ads to stop bleed pending verification decision. |
 
 ### Updated wishlist (item closed)
 
@@ -692,6 +693,36 @@ Executed the Gmail node with mock data → two emails landed at kevin@phasewise.
 - **n8n workflow.json re-export** — still open. The committed `automation/n8n-workflow.json` doesn't reflect today's error-workflow wiring OR the 6/22 dedup fix. Worth re-exporting next session.
 - **Add Phasewise-branded Gmail credential to n8n** — needed before any external outbound email is sent from n8n workflows. Currently default Gmail credential is Verifield-branded and would leak the cross-brand link if used externally.
 - **Visual blog-pipeline health check** — daily curl + diff against expected slugs. Still open.
+
+### PM addendum — Google Ads paused
+
+Pulled fresh Google Ads + Search Console data later in the day. The Ads picture got worse, not better, since 6/19:
+
+| Metric | 6/16-19 (pre-negatives) | 6/16-29 (cumulative) | Read |
+|---|---|---|---|
+| Impressions | 212 (53/day) | 1,311 (~100/day) | Negatives didn't reduce volume — Google bid more aggressively |
+| Clicks | 12 | 55 | More clicks, same audience |
+| Spend | $47.48 | $195.33 | Burning the promo credit |
+| Conversions | 0 | **0** | 13 days, 55 clicks, still zero |
+
+`landscape architecture software` (broad match) still captures 95% of all impressions + clicks. Negatives filter search terms but the underlying keyword keeps pulling DIY traffic via close-variant matching. Google's own panel flags conversion tracking as +9.8% incomplete — the algorithm has no conversion signal, so it falls back to maximizing clicks regardless of quality.
+
+**Decision: paused Campaign #1 at 9:something AM Pacific.** Logic:
+- Verification deadline (2026-07-22) forces a decision in ~3 weeks anyway
+- Every day = ~$15 more on traffic that has demonstrated zero conversion intent
+- $1,300 of promo credit (good through 2026-08-15) preserved by pausing now
+- Pause is reversible — campaign structure, keywords, ad copy, sitelinks all intact
+
+**Verification decision (Issue 2 from 6/22) is still open.** Three options unchanged:
+- (A) Verify as individual (Kevin Gallo, Fresno) — breaks anonymity
+- (B) Verify as registered business (Verifield DBA or Phasewise LLC) — preserves anonymity, requires ~1-4 weeks legal setup
+- (C) Don't verify; let ads stay paused / expire 7/22 — preserves anonymity, kills paid channel
+
+Claude's read leans Option C given (a) 0 conversions across the experiment, (b) Smartlead + organic SEO + outreach + pinned tweet are working channels, (c) anonymity strategy still load-bearing for Caltrans-overlap reasons. Kevin to make the call before 2026-07-14.
+
+### Search Console — healthy, no action
+
+For the record so future sessions don't worry: GSC at 6/29 shows 28 clicks / 1.56K impressions / 1.8% CTR / 18.9 avg position over 90d. Top query "phasewise" at position 2.5 (62 imp, 11.3% CTR — brand searches landing). 22 pages indexed, 10 not (5 reasons, none new). Today's BQE Core Alternatives auto-article already flagged in GSC recommendations as a rising-impression page. Trends pointing the right direction without any intervention.
 
 ---
 
