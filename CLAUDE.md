@@ -647,6 +647,61 @@ Higher-volume outreach uses the operational playbook at [`marketing/outreach/PLA
 
 ---
 
+## Where We Left Off (2026-06-29 — pre-Smartlead prep)
+
+**Status: 🟢 Sunday prep block before Monday's Smartlead launch. Wave 4 refreshed + Wave 5 researched + Phasewise Gmail credential registered in n8n.** All three sub-steps of pre-launch prep closed cleanly. Monday's launch has a 10-firm verified prospect list ready.
+
+### What shipped today
+
+**1. Wave 4 drafts refreshed with Founding Member P.S.** — 6 existing cold drafts (Emails 25-29 + LASD substitute in `OUTREACH-DRAFTS.private.md`) got a scarcity signal appended: `P.S. Founding-member offer: first 20 firms get $49/mo for 12 months + we handle the data migration for free. phasewise.io/signup?plan=founding.` — surfaces the offer without displacing the value-first MWELO-calculator hook. Voice preserved.
+
+**2. Wave 5 research completed (5 new candidates added as Tier D continuation D7-D11).** Fanned out research via WebSearch + WebFetch across LA / OC / Inland Empire / SD with the tightened ICP filter (founded 2010-2022, 4-15 staff, public/civic/multifamily portfolio, licensed CA PLA principals). Honest finding: pool is thin — 9 candidates surfaced, 5 shortlisted, 4 skipped as marginal.
+- **D7 HKLA** (Downtown LA, 12 staff, DBE/SBE/MBE stack) — 🟢🟢 STRONGEST fit
+- **D8 NVD Studio** (Pasadena Tier-1 MWELO, streetscape+civic+multifamily mix) — 🟢 verify size before send
+- **D9 City Fabrick** (Long Beach nonprofit, grant-funded work) — 🟢 unusual angle worth pitching
+- **D10 NAVA** (LA Highland Park, city guidelines + parks + K-12) — 🟡 verify size before send
+- **D11 In-Site** (SD, 8 staff, older 2007 founding — soft skip) — 🟡 backup only
+
+Full details in `PROSPECTS.md` Tier D — Wave 5 section, drafts as Emails 30-33 in `OUTREACH-DRAFTS.private.md`.
+
+**3. Phasewise-branded Gmail OAuth credential registered in n8n.** Yesterday's setup surfaced the anonymity risk: the default Gmail credential (`Gmail account`) was wired to `support.verifield@gmail.com`. Any future external-email workflow would leak the Verifield-Phasewise cross-brand link publicly.
+- New credential: **`Gmail — Phasewise (hello@)`** — OAuth signed in as `kevin@phasewise.io` with all Gmail scopes granted
+- **Error notifier workflow swapped** from `Gmail account` to `Gmail — Phasewise (hello@)` — internal alerts now arrive from `Phasewise Team <hello@phasewise.io>` with the phase-bars logomark rendering in Gmail's inbox pane
+- The Verifield credential is left in place for existing Verifield-branded workflows (quadrum, 05, 11) — no change to those.
+
+### Monday launch inventory (10 firms)
+
+**Wave 4 (6 firms, all research complete):** BASE Landscape (SF), PLUS (SF), BLOCS (Oakland), Segal Shuart (Sherman Oaks), LASD or [place] (wildcard), + BASE has published `admin@` (5 need Hunter).
+
+**Wave 5 (4 firms, 3 have published `info@`):** HKLA (LA), NVD Studio (Pasadena), City Fabrick (Long Beach), NAVA (LA).
+
+Kevin's manual pre-launch checklist:
+- 5-9 Hunter.io lookups (`plus-spaces.com`, `blocs.design`, `segalshuart.com`, `lasdstudio.com`, `plac-e.com` required; optionally `baselandscape.com`, `hklainc.com`, `nvdstudio.com`, `nava-la.com` for direct-to-principal opens)
+- Headcount verification for NVD Studio + NAVA (visit team pages, count staff)
+- Load emails into Smartlead campaign with hello@phasewise.io sender + Day 0/+5/+10 sequence
+- Fire Monday 6/30
+
+### Coverage gaps flagged for Wave 6
+
+- **Inland Empire** heavily skip-listed already — Wave 6 needs to look at landscape sub-teams inside civil engineering firms.
+- **SD North County** (Carlsbad/Encinitas/Vista) mostly residential-only among candidates found.
+- **Middle-tier LA firms founded 2018-2022** don't surface via WebSearch — LinkedIn + LATC public license roster + ASLA FirmFinder (403-blocked to automation, human-viewable) would likely yield 5-10 more in one focused research block.
+
+### What's next
+
+- **Mon 2026-06-30:** Smartlead launch (Kevin action)
+- **Before 2026-07-14:** Google Ads advertiser verification decision (still open — see 6/23 PM addendum)
+- **Fri 2026-07-03 07:00 UTC:** next scheduled SEO article — pipeline running clean, no intervention expected
+- **After first paying customer:** Capterra review → revisit Capterra PPC
+
+### Commits shipped today
+
+| Commit | What |
+|---|---|
+| _pending_ | This CLAUDE.md wrap. Wave 4 refresh + Wave 5 research live in `OUTREACH-DRAFTS.private.md` + `PROSPECTS.md` (both gitignored). n8n Phasewise Gmail credential + swap live in n8n Cloud (not in repo). |
+
+---
+
 ## Where We Left Off (2026-06-23)
 
 **Status: 🟢 Closed yesterday's top wishlist item — n8n workflow now has email-on-failure alerting wired.** No more silent multi-week failures. Single deliverable, ~30 min of n8n setup, zero code changes.
