@@ -643,7 +643,92 @@ Higher-volume outreach uses the operational playbook at [`marketing/outreach/PLA
 
 **Research-pass cadence (Path A):** target 5 outbound sends/day, Mon-Thu mornings (8-10am Pacific). Each off-day or weekend session: 1-2 hours of research to add 10-15 candidates to PROSPECTS.md Tier B section, draft personalized emails, queue via Gmail Schedule Send.
 
-**Sending mechanic (current):** Claude drafts personalized emails in `OUTREACH-DRAFTS.private.md`; Kevin paste-and-sends via Gmail's "Send mail as" on `hello@phasewise.io` with Schedule Send for next morning. **No Resend API yet** — at 5/day the marginal time saved by API automation is small and human-in-the-loop catches name/email/anonymity mistakes before they hit sender reputation. Revisit Resend if we ever sustain 10+/day or want open/click tracking.
+**Sending mechanic (current):** Claude drafts personalized emails in `OUTREACH-DRAFTS.private.md`; Kevin paste-and-sends via Gmail's "Send mail as" on `hello@phasewise.io` with Schedule Send for next morning. **No Resend API yet** — at 5/day the marginal time saved by API automation is small and human-in-the-loop catches name/email/anonymity mistakes before they hit sender reputation. Revisit Resend if we ever sustain 10+/day or want open/click tracking. **NOTE 2026-08-02:** the Smartlead automation platform (referenced in 6/16 pivot) was set to launch 6/30. As of 2026-08-02 resumption, actual Smartlead operational status is TBD — Kevin to confirm campaign performance. Warmup emails were still hitting inbox and needed filtering. See 2026-08-02 WWLO entry.
+
+---
+
+## Where We Left Off (2026-08-02 — resuming after 5-week gap)
+
+**Status: 🟡 Session resume. Multiple channels' state needs verification before executing.** Kevin returned after a 5-week gap. Two things I can verify from the repo, plus a handful I need him to confirm.
+
+### What the repo shows
+
+- **Only ONE Friday blog auto-article shipped since our last session on 6/29** — `construction-documents-checklist-landscape.md` dated Jul 8 (that's the 7/3 cron committed a few days late). Then **four Fridays passed with zero new articles** (7/10, 7/17, 7/24, 7/31). That's a 4-week silent failure.
+- **No git commits from Claude sessions between 6/29 and today.**
+- **n8n workflow is currently Active** per Kevin's screenshot. Manual execution just now completed successfully (24 articles pulled, all downstream nodes green). So pipeline logic is fine — root cause is in the Schedule Trigger config. Diagnostic in progress.
+- **The workflow has "1/3" version indicator** — suggests it was edited twice during the gap. Someone (or something) changed the workflow between 6/23 and now.
+
+### What Kevin reports (2026-08-02)
+
+- ✅ **Flagloma LLC entity conversion in Stripe: COMPLETE.** Legal name now on Flagloma LLC (Wyoming LLC filed 6/30 via Northwest Registered Agent). See "Stripe LLC conversion" section below for what to verify.
+- ✅ **Mercury business bank account connected to Stripe** as the LLC's payout account.
+- 🟡 **Smartlead is running** — warmup emails are hitting Kevin's personal inbox and need filtering.
+- ❓ **No status yet** on: Smartlead campaign performance (sends, opens, replies, conversions), organic Founding Member signups, Charlie Serota reply, Google Ads verification decision outcome, n8n error alerts (or absence thereof) during the blog outage.
+
+### Stripe LLC conversion — what needs verification
+
+Kevin's message confirms the LLC conversion completed. Three things to audit post-conversion (in Phasewise Stripe account, not org level):
+
+1. **Business info → Business details tab** → Legal business name should now display **"Flagloma LLC"** on customer-facing surfaces (not Kevin Gallo). Statement descriptor should still be `PHASEWISE.IO`.
+2. **Bank accounts and currencies tab** → Mercury account listed and marked as **default for payouts**. Any prior personal bank account should be removed or de-listed.
+3. **Account status tab** → no yellow "requirements due" or "verification pending" banners. Green all clear.
+
+Because Stripe's shared-legal-entity conversion affects all three accounts (Phasewise + FocusTrack + Quadrum), all three should show the same "Flagloma LLC" identity now. Kevin to confirm.
+
+### n8n blog pipeline diagnostic
+
+Manual execution proved the pipeline works. Silent 4-week failure is in the Schedule Trigger. Diagnostic path:
+
+1. n8n workflow → **Executions** tab → check if any auto-runs fired between 7/10 and 7/31. If none: trigger was not firing. If some with errors: alerts should have fired (but Kevin didn't mention receiving any).
+2. n8n workflow → **Schedule Trigger** node → check schedule config (interval, day, time, timezone). Suspect: someone or something changed it during the 5-week gap.
+3. Fix + re-test: reset to Weekly / Friday / 07:00 UTC and confirm one run happens on next scheduled fire.
+
+### Smartlead warmup email flood — mute path
+
+Kevin asked how to stop warmup emails from hitting inbox. Two-path fix documented in the todo list below (Gmail filter + Smartlead volume reduction). Warmup should never be zero (kills sender reputation over time) but can drop from ~30/day to ~5-10/day without harming deliverability.
+
+### Anonymity state (post-LLC conversion)
+
+Customer-facing anonymity is now essentially closed:
+- ✅ Legal name on invoices/receipts: Flagloma LLC (was Kevin Gallo)
+- ✅ Statement descriptor: PHASEWISE.IO (already anonymous)
+- ✅ Support address: 421 Broadway San Diego (was Fresno home)
+- ✅ Support phone: (408) 905-8783 (was personal)
+- ✅ Support email: hello@phasewise.io (was kgallo22@gmail.com)
+- ✅ Business bank: Mercury (Flagloma LLC) — payments route through LLC entity
+- ✅ Sender identity on transactional email: Phasewise Team <hello@mail.phasewise.io>
+- ✅ n8n error alerts: Phasewise Team <hello@phasewise.io>
+
+Remaining unavoidable non-customer-facing exposures (federal BSA/KYC requirements):
+- Stripe internal records still hold Kevin's SSN + DOB + home address as Beneficial Owner / Account Representative
+- IRS filings will list Kevin as Responsible Party for Flagloma LLC
+- Kevin's personal Fresno address remains on Stripe as Account Rep home address (KYC requirement)
+
+Not customer-visible, not on receipts, not in Ads Transparency Center. As anonymous as a US business can legally be.
+
+### Google Ads status (assumed but unverified)
+
+Last known state (2026-06-23): Campaign paused pending advertiser verification decision. Deadline was 2026-07-22. Kevin was leaning Option C (let it lapse). If Kevin did nothing by 7/22, Google would have automatically deactivated the campaign. Kevin to confirm current campaign status (paused / deactivated / verified + active).
+
+### Longer-arc marketing state
+
+- **Blog:** 20 articles committed to repo (was ~24 in n8n's view, suggests some may exist in main branch that I don't have latest of). Need to resume weekly cadence urgently.
+- **Google Search Console:** last known (6/29) 28 clicks / 1.56K impressions / 18.9 avg position / 22 pages indexed. Direction: healthy organic growth. Update-check due.
+- **Vercel Analytics + GA4:** should still be tracking. Kevin to check for any traffic spikes / new geographic clusters.
+- **Pinned tweet:** still driving `?plan=founding` traffic (as of 6/17). Should still be live unless Kevin unpinned.
+- **X @phasewise:** organic growth trajectory unknown; 6/17 pinned tweet was the last major touch.
+
+### Session's active tasks (in order)
+
+1. **Diagnose n8n Schedule Trigger** — Kevin to screenshot Executions history + trigger config; I fix.
+2. **Filter Smartlead warmup out of inbox** — Gmail filter update + Smartlead volume reduction.
+3. **Stripe LLC audit** — Kevin screenshots 3 tabs, I confirm no dangling requirements.
+4. **Gather status data** — Kevin reports Smartlead performance, subs, ads, replies.
+5. **Update forward-looking priorities** — see "🚨 Current active queue (2026-08-02)" in the TODO section for a paying-users-focused ranked plan.
+
+### Commits shipped today
+
+_pending — this CLAUDE.md update. n8n Schedule Trigger fix likely follows._
 
 ---
 
@@ -2892,6 +2977,54 @@ After a strategy discussion this session, Kevin confirmed that his top prioritie
 - Emmett Brown (`kgallo22+ebrown@gmail.com`) — test invite acceptance, PM role in FiveTest Studio
 
 ## TODO (Operational, non-code)
+
+### 🚨 Current active queue (2026-08-02) — path to first paying customer
+
+Reframe: everything else is table stakes. The ONE metric that matters between now and the next session is **first paying customer**. Every task below is ranked by contribution to that outcome.
+
+**Priority 0 — Diagnose + restore (this session, ~30-60 min):**
+- [ ] **n8n Schedule Trigger diagnostic** — Kevin screenshots Executions history + Schedule Trigger config; identify why 4 Fridays (7/10, 7/17, 7/24, 7/31) had no auto-runs while the workflow appeared Active. Suspect: trigger interval/day/timezone was edited during the gap (workflow shows "1/3" version count).
+- [ ] **n8n Schedule Trigger fix** — most likely: reset to Weekly / Friday / 07:00 UTC. Verify next Friday's fire.
+- [ ] **Filter Smartlead warmup emails out of inbox** — Gmail filter (auto-archive) + Smartlead volume reduction (drop from ~30/day to ~10/day per warm inbox).
+- [ ] **Stripe LLC audit** (~3 min) — Kevin screenshots (a) Business details tab showing Legal name = Flagloma LLC, (b) Bank accounts and currencies showing Mercury as default payout, (c) Account status tab confirming no yellow warnings.
+
+**Priority 1 — Status gathering (Kevin owns, need answers before I can plan):**
+- [ ] **Smartlead performance report** — since 6/30 launch: how many outbound total, open rate %, click rate %, reply count, positive/neutral/negative reply mix, any trials or paid conversions attributable.
+- [ ] **Organic conversion count** — trials started, paid subscribers, waitlist adds (via Founding Member pinned tweet, /demo page, blog CTAs, direct-URL entries).
+- [ ] **Google Ads status confirmation** — verify decision executed (Option A / B / C from 6/23 EOD entry). Campaign #1 current state: paused / deactivated / verified + active?
+- [ ] **Charlie Serota / Recur Holding reply?** — did he respond to the 6/10 email? If yes: what did he say?
+- [ ] **Any n8n error-alert emails at kgallo22@gmail.com** between 7/3 and today? If yes: which workflow, when. If no: why didn't Schedule Trigger failures alert (means our error-notifier workflow may also be misconfigured).
+
+**Priority 2 — This week (customer acquisition + revenue plumbing):**
+- [ ] **If Smartlead is stalled (< 5% reply rate):** diagnose root cause (deliverability via test to external inbox / messaging / list quality / ICP misfit). Iterate messaging OR pause + rebuild.
+- [ ] **If Smartlead is working:** load Wave 6 into pipeline (~20 more MWELO-strict SoCal firms via ASLA FirmFinder + LATC roster methodology, not WebSearch).
+- [ ] **Restore blog auto-cadence** — once Schedule Trigger fixed, watch first Friday fire (~2026-08-08).
+- [ ] **Review OUTREACH-REPLY-PLAYBOOK.private.md** — ensure templates still align with Founding Member offer + LLC-branded voice. Anything showing "Kevin Gallo" or referencing pre-LLC email should be swept.
+- [ ] **Test /signup?plan=founding end-to-end** post-LLC — verify Stripe Checkout still shows "Founding Member 50% — 12 months" discount + Legal name on receipt reads Flagloma LLC.
+- [ ] **Test Send-to-client + auto-invoicing flows** — post-LLC, confirm invoices display Flagloma LLC as the payee and Mercury for ACH remittance (if bank details are wired to invoice PDF).
+
+**Priority 3 — Next 2-4 weeks (compound-interest plays):**
+- [ ] **Google Search Console progress check** — Performance + Indexing reports. If organic clicks growing → keep blog cadence steady. If flat 5+ weeks → article quality audit.
+- [ ] **First paying customer → Capterra review request** — reactivate the Capterra revisit chain from prior sessions.
+- [ ] **Wave 6 research pass** via LATC roster + ASLA FirmFinder if pipeline needs volume.
+- [ ] **Reactivate Google Ads?** — if verification decision was Option C (let lapse) but Smartlead is working and want to add channel, reopen Ads with LLC-verified identity (safer now that Ads Transparency Center will show Flagloma LLC not Kevin Gallo).
+- [ ] **Extend n8n error alerting to Verifield workflows** (quadrum, 05, 11) — same setup as SEO pipeline.
+
+**Priority 4 — Ongoing product polish (below the sales-motion cut):**
+- [ ] **Middleware extension-based allowlist refactor** — prevent recurring "new asset doesn't load" bug class.
+- [ ] **Tier 0 #2 smoke test steps 7-17** — timesheet flow through invoice cancellation.
+- [ ] **Tier 0 #3 in-app "report a problem" widget** — cheap customer trust signal.
+- [ ] **Tier 0 #5 mobile timesheet entry test** — POC_SCOPE says this must work; unverified.
+- [ ] **Loops Company Address swap** to PO Box / virtual mailbox — CAN-SPAM footer currently exposes residential address.
+
+**Priority 5 — Brand + ops long-tail:**
+- [ ] **USPTO trademark filing for "Phasewise"** — ~$350; do before any real market presence.
+- [ ] **Auto-post blog articles to socials** — extend n8n pipeline.
+- [ ] **AlternativeTo listing submission** — copy-paste ready in `directory-listings.md`.
+- [ ] **G2 listing submission** — separate from Capterra; requires 3+ reviews to gain visibility.
+- [ ] **Product Hunt launch** — one-time event; needs prep + assets.
+
+### Historical operational TODOs (frozen — for context only, most are done or superseded)
 
 - [x] Google Workspace — domain verified + Gmail active ✅ 2026-04-15
 - [x] Create Supabase Storage buckets: `profile-photos` + `compliance-docs` ✅ 2026-04-15
