@@ -647,6 +647,111 @@ Higher-volume outreach uses the operational playbook at [`marketing/outreach/PLA
 
 ---
 
+## Where We Left Off (2026-08-03 → 2026-08-20 — outreach pipeline build + return audit)
+
+**Status: 🟡 In-house outreach pipeline built to 95% complete on 2026-08-03 but never went live. Session ended mid-verification. Kevin returned 2026-08-20 for a fresh audit + reprioritization; agreed to launch 2026-08-21.**
+
+**Note on this entry:** written retroactively on 2026-08-21 to capture the 8/3 build work + 17-day gap. No WWLO section was written at end of the 8/3 session — session ended abruptly mid-Workflow-B verification. This entry reconstructs from git history, file timestamps, code content, and prior session memory. Future sessions: use file-by-file review (workflow JSONs, prospects CSV) as the authoritative state, not this summary.
+
+### What shipped on 2026-08-03 (the build day)
+
+Built an in-house cold-outreach automation to replace the expired Smartlead trial — n8n + Gmail + Google Sheets, $0 incremental cost. Design doc at [`automation/n8n-outreach-pipeline-design.md`](automation/n8n-outreach-pipeline-design.md).
+
+**Prospect data pipeline:**
+- Two background research agents ran: Wave 6 LA firm research (6 net-new candidates, honest thin-pool result) + PROSPECTS.md → CSV parser (73 rows with HIGH/MEDIUM/LOW confidence flags).
+- Wave 6 candidates appended to CSV.
+- CSV audit round 1: 5 mid-cycle Wave 2 firms (Studio PAD, Mark Tessier, Clark & Green, KDA, Hermann) moved to `closed_silent` per Kevin's Gmail-verified 7-week silence.
+- CSV audit round 2: 3 remaining flagged rows resolved (Community Works + DVD → do_not_contact; Verdance → pivot targeting from ops-manager Kaitlin to founder John Black).
+- Final CSV: 79 data rows (`automation/prospects-import.csv`), 4 comment lines.
+
+**Google Sheet + n8n credential setup (Kevin):**
+- "Phasewise Outreach Tracker" created in Kevin's Drive with 4 tabs (Prospects, Config, SendLog, ReplyLog).
+- Sheet ID: `1yfil7-nPn0EYOVV0OhaV0ZFpUgB8Ty0myH4UNtM1VMQ`.
+- Config tab populated: PAUSED=FALSE, campaign_start_date=2026-08-04, daily_cap_hello=8, follow_up_days=5, breakup_days=5, TEST_MODE=TRUE, TEST_RECIPIENT=`kgallo22+outreachtest@gmail.com`.
+- n8n credential `Google Sheets — Phasewise` wired via OAuth to kevin@phasewise.io.
+- CSV imported cleanly to Prospects tab (80 rows total = 1 header + 79 data).
+
+**Workflow A — Queue builder + Sender** (`automation/n8n-workflow-A.json`):
+- 9 nodes: Schedule Trigger → Read Config → Read SendLog → Read Prospects → Decide + Compose (Code) → IF send → Send via Gmail → Update Prospect Row → Append SendLog.
+- Schedule: every 15 min, Mon–Thu, 15:00–24:00 UTC (8am–5pm Pacific).
+- Full Code node JS at [`automation/n8n-workflow-A-code-node.js`](automation/n8n-workflow-A-code-node.js).
+- **TEST_MODE support**: when Config `TEST_MODE=TRUE`, sends go to TEST_RECIPIENT instead of real prospect email; subject prefixed with `[TEST → real@prospect.com]`. Code path is otherwise identical to production.
+- **Gmail attribution footer**: `options.appendAttribution: false` in the Gmail node — "This email was sent automatically with n8n" footer disabled.
+- Test run #1 succeeded end-to-end BUT surfaced 2 bugs (see below).
+
+**Two bugs caught + fixed on 2026-08-03:**
+
+*Bug 1 — Personalization note leakage.* First test send picked Envision Landscape Studio; its `personalization_note` field contained internal analytical shorthand (`"⚠️ This is a design-build firm — pitch time tracking + per-job profitability, NOT submittal log + ball-in-court."`) which the template interpolated verbatim into the outbound email body. Root cause: the parser had extracted Kevin's internal PROSPECTS.md hook analysis (written for Kevin, not prospects) directly into the personalization_note column. Fix: added `isProspectSafeNote()` validator in the Code node with a `BAD_PATTERNS` array covering emoji (via `\p{Extended_Pictographic}/u` — unicode-aware to catch VS16-paired glyphs), directives (`pitch X NOT Y`, `verify before`), analytical shorthand (`= MWELO`, `→` arrows), internal categorization (Wave/Tier/ICP), and identity-leak terms (`Caltrans`, `Cal Poly`, `Hunter.io`, `playbook`). Added self-tests that throw on execute if the validator regresses against 4 canonical cases (including Envision's exact note). Also added defensive filter checks for `firm_name` and `assigned_inbox` — prevents Google Sheets' default 1000-row grid from producing garbage picks.
+
+*Bug 2 — n8n attribution footer.* Same test showed "This email was sent automatically with n8n" appended. Fixed via Gmail node's `options.appendAttribution: false`. Verified gone on re-test.
+
+**Re-test after Bug 1 + 2 fixes**: Studio West Landscape Architecture picked (validator correctly skipped Envision + 44 other unsafe-shorthand rows), clean email arrived at test recipient, no attribution footer, self-tests passed. Studio West's note was safe but read fragment-y (`"Boutique, recent vintage, public-realm + institutional (e.g., Elephant Odyssey at SD Zoo)."`) — flagged as the calibration bar for the CSV audit rewrite pass.
+
+**Workflow B — Reply Detector** (`automation/n8n-workflow-B.json`):
+- 7 nodes: Schedule Trigger → Get Gmail Messages → Read Prospects → Read ReplyLog → Classify Replies (Code) → Update Prospect Row → Append ReplyLog.
+- Schedule: every 30 min, 24/7.
+- Full Code node JS at [`automation/n8n-workflow-B-code-node.js`](automation/n8n-workflow-B-code-node.js).
+- Classifies incoming inbox messages as `bounce` / `ooo` / `negative` / `positive`, matches sender email against Prospects, halts sequence via status change, appends ReplyLog.
+- Dedup by Gmail message + thread ID against ReplyLog — no double-processing.
+
+**Bug in Workflow B caught during Kevin's end-to-end test:** Append ReplyLog's 7 field mappings used implicit `$json.X` which read from the immediately-upstream Update Prospect Row node (whose output shape doesn't contain reply data), producing an empty appended row. Same class of bug as Workflow A's Append SendLog had originally. Fix: changed all 7 fields to explicit `$('Classify Replies').item.json.X` references. Applied to both the JSON file and the reference documentation. **Kevin never got to run the confirmation re-test** — session ended after the fix was applied but before re-verification.
+
+### Verified vs. left hanging on 2026-08-03
+
+| What | Status at 8/3 EOD |
+|---|---|
+| Workflow A build + all fixes | ✅ Verified working end-to-end in TEST_MODE |
+| Workflow A validator (v2 with self-tests) | ✅ Verified — skipped 45 unsafe rows, picked Studio West |
+| Workflow A Gmail attribution off | ✅ Verified — no footer in re-test |
+| Workflow B build | ✅ Structure complete |
+| Workflow B Classify Replies logic | ✅ Verified — correctly classified test reply |
+| Workflow B Update Prospect Row | ✅ Verified — status flipped correctly |
+| **Workflow B Append ReplyLog fix** | ⚠️ **Fix applied to JSON, never re-tested** |
+| Pre-flight checklist | ❌ Never run |
+| TEST_MODE → FALSE + activate | ❌ Never done |
+
+### Test pollution state (as of 8/3, still uncleaned as of 8/20)
+
+Nothing was cleaned. Carrying forward:
+
+- **~10 prospect rows** in the Prospects sheet have their status accidentally advanced (queued → sent_1) from Workflow A test runs on 2026-08-03. Identify via filter `last_sent_date = 2026-08-03`. Need to revert: status → `queued`, current_step → `0`, last_sent_date + next_action_date cleared.
+- **~10 SendLog rows** dated 2026-08-03 — all test pollution. Delete all rows in SendLog (should be empty of real sends).
+- **1 fake test prospect row at row 81** — added during Workflow B testing (firm_name `[TEST] Reply Detector Verification`, email `kgallo22+replytest@gmail.com`, `do_not_contact=TRUE`). Delete before launch.
+- **ReplyLog test entries** — Kevin's 8/3 notes reference "2 real ReplyLog test rows from the successful Workflow B validation"; the initial reconstruction draft claimed "1 empty row from the pre-fix test." These claims don't match. **Do not delete blindly.** At Step 3, pull up the actual ReplyLog tab, read the contents, then decide what to delete.
+- **Config `daily_cap_hello`** — was raised to 20 mid-day 8/3 for testing, then reset back to 8. Currently correct at 8. Verify on launch day.
+
+### The 17-day gap (2026-08-04 → 2026-08-20)
+
+Zero human activity. Two autonomous blog articles shipped via the n8n SEO pipeline: `sites-certification-guide-landscape-architecture` on 2026-08-07 + `how-to-write-landscape-architecture-specifications` on 2026-08-14. Blog pipeline continues self-driving.
+
+One file-system fingerprint worth noting: `automation/n8n-workflow-B.json` was modified 2026-08-14 per file timestamp — content is byte-for-byte the correct post-fix version (all 7 Append ReplyLog fields use `$('Classify Replies').item.json.X`). Likely a Kevin re-save without material change; unable to reconstruct context. Not blocking.
+
+### 2026-08-20 return audit findings
+
+Kevin returned for a fresh assessment before committing to relaunch. Full audit against the P0-P3 pending list:
+
+- **Stale item removed:** OUTREACH-REPLY-PLAYBOOK.private.md review was on the P2 list. Actually reading the playbook: already clean — sign-off rule is "Phasewise Team," no personal name, explicit warning against kgallo22@gmail.com, Founding Member $49/mo language + white-glove migration copy already integrated. Kevin's stale-refs concern was unwarranted. Removed from list.
+- **Priority elevation:** `/signup?plan=founding` end-to-end test moved from P2 to P0 (Step 5 in the launch sequence). Runs before TEST_MODE flip. Reason: if Stripe Checkout still displays "Kevin Gallo" as Legal Name or the Founding Member 50% discount fails to apply, the very first cold-email prospect who clicks the link lands on a broken checkout and forms a bad first brand impression. 2-min incognito check gates the launch.
+- **New P1 item added:** CSV audit pass for the ~45 rows the validator skips as unsafe. Missing from Kevin's rebuilt list. Current active pool is only 22 send-ready rows at 8/day × 4 send-days/week = fuel runs out in ~5 days of first-touches. Audit is the fastest way to expand pool without new research.
+
+### Current position heading into 2026-08-21 launch
+
+Locked 7-step execution order:
+
+1. Write this CLAUDE.md WWLO section (this commit)
+2. Re-test Workflow B end-to-end — verify Append ReplyLog fields populate correctly
+3. Reset test pollution — 10 prospect rows + all SendLog rows + row 81 + ReplyLog (contents verified first, not blind-deleted)
+4. Pre-flight checklist — credentials, sheet dropdowns, error workflow wiring, cap = 8
+5. Test `/signup?plan=founding` in incognito — verify Stripe Checkout shows Flagloma LLC as Legal Name + Founding Member 50% discount line; if broken, halt launch
+6. Flip Config `TEST_MODE` → FALSE + activate both workflows
+7. Watch first 30 min — first send should land in hello@ Sent folder + SendLog + Prospects status flip within one 15-min cron tick
+
+If Step 5 fails: PAUSED stays TRUE, TEST_MODE stays TRUE, workflows stay Inactive; investigate Stripe LLC conversion before proceeding.
+
+Post-launch priorities carried forward: CSV audit pass on skipped-45 (P1, unblocks send volume), Wave 7 research decision (P1, prevents Week 2 fuel starvation), Stripe LLC audit verification (P2, unconfirmed report from 8/2), various P2 loose ends.
+
+---
+
 ## Where We Left Off (2026-08-02 — resuming after 5-week gap)
 
 **Status: 🟡 Session resume. Multiple channels' state needs verification before executing.** Kevin returned after a 5-week gap. Two things I can verify from the repo, plus a handful I need him to confirm.
