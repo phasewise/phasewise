@@ -647,6 +647,51 @@ Higher-volume outreach uses the operational playbook at [`marketing/outreach/PLA
 
 ---
 
+## Where We Left Off (2026-08-21 — outreach pipeline launch in progress)
+
+**Status: 🟢 Launch sequence 4 of 7 steps complete. On track to go live today pending Stripe Checkout verification (Step 5).**
+
+Kevin picked up from the 8/20 audit and executed the locked launch sequence.
+
+### Progress today
+
+**Step 1 — CLAUDE.md retroactive WWLO** ✅ committed `65f2383` — the 8/3 → 8/20 arc.
+
+**Step 2 — Workflow B end-to-end re-test** ✅ Two sub-fixes surfaced + resolved:
+- **Field mapping spec drift.** Workflow B's Append ReplyLog spec had 7 fields (including `gmail_message_id`) but the ReplyLog sheet had only 6 column headers, so n8n silently dropped the 7th mapping — same class of bug pattern as prior sessions (spec on one side doesn't match schema on the other). Fix: added `gmail_message_id` as column H in ReplyLog, then added the missing mapping in the Append ReplyLog node (`{{ $('Classify Replies').item.json.gmail_message_id }}`). All 7 fields now populate correctly on fresh test.
+- **Mystery 8/15 ReplyLog rows resolved.** Pre-existing rows in ReplyLog dated 2026-08-15 turned out to be leftovers from an untracked mid-August session — matches the 8/14 file-timestamp on `automation/n8n-workflow-B.json` noted in the 8/20 audit. Fresh test today (from `kgallo22@gmail.com` → `hello@phasewise.io`) populated row 4 with all 7 fields including a hex string in the new `gmail_message_id` column. Fix verified working.
+
+**Step 3 — Test pollution cleanup** ✅
+- SendLog cleared to header-only.
+- ReplyLog cleared to header-only (removed 8/15 leftover rows + today's re-test row).
+- Fake test prospect row 81 (`[TEST] Reply Detector Verification`) deleted.
+- **Correction to the retroactive 8/3 → 8/20 WWLO:** it claimed "~10 prospect rows had status accidentally advanced from 8/3 test runs." That was wrong. Actual filter on `last_sent_date` showed zero rows dated 2026-08-03. Either the 8/3 test runs didn't populate that field, or Kevin cleaned during the untracked 8/14-15 session. Either way, current Prospects state is clean and there was nothing to reset. Retroactive-reconstruction error, not a real bug.
+
+**Step 4 — Pre-flight** ✅
+- Config verified: PAUSED=FALSE, TEST_MODE=TRUE (still — flips in Step 6), daily_cap_hello=8, TEST_RECIPIENT=`kgallo22+outreachtest@gmail.com`, send window 15-24 UTC, follow_up/breakup=5.
+- Both workflows visually confirmed Inactive.
+- Error Workflow set to `Phasewise pipeline error alerts` on both Workflow A and Workflow B.
+
+### Remaining launch steps
+
+- **Step 5 — Stripe Checkout verification.** Test `/signup?plan=founding` in incognito. Confirm Legal Name = Flagloma LLC + Founding Member 50% discount line appears. If either fails, halt launch until Stripe LLC conversion is fixed.
+- **Step 6 — Flip Config `TEST_MODE` → FALSE + activate both workflows.** Single switch that makes it real.
+- **Step 7 — Watch first 30 min.** First send should land in hello@ Sent folder within one 15-min cron tick; SendLog row + Prospects status flip should follow.
+
+### Observations for post-launch follow-up
+
+- **Item count inflation.** Read Prospects returned 160 items and Read ReplyLog returned 320 items during Step 2's test execution. Expected ~80 and ~3. Google Sheets is probably returning grid rows past the data OR n8n's Sheets node is duplicating reads. Non-blocking (Classify Replies filters correctly by email match) but worth investigating post-launch if any behavior seems off in production.
+- **ReplyLog schema change.** Now 7 columns; `gmail_message_id` added as column H.
+- **Fake test prospect row 81 removed.** Future Reply Detector regression tests will need a fresh temp row.
+- **Config `campaign_start_date` is stale** (2026-08-04, ~17 days old). No functional impact — Code node doesn't gate on it, only used as a reference marker for weekly ramp planning. Update when scaling cap above 8/day.
+
+### Commits shipped today
+
+- `65f2383` — CLAUDE.md retroactive WWLO for 2026-08-03 build + 2026-08-20 return audit (Step 1).
+- _pending_ — this checkpoint entry.
+
+---
+
 ## Where We Left Off (2026-08-03 → 2026-08-20 — outreach pipeline build + return audit)
 
 **Status: 🟡 In-house outreach pipeline built to 95% complete on 2026-08-03 but never went live. Session ended mid-verification. Kevin returned 2026-08-20 for a fresh audit + reprioritization; agreed to launch 2026-08-21.**
