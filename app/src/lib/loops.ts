@@ -50,6 +50,37 @@ type SendOptions = {
   attachments?: LoopsAttachment[];
 };
 
+// Ceiling on individual Loops API calls. Normal response time is <1s, but
+// Sentry caught p95 = 2.78 min stalls in Aug 2026 (POST /transactional AND
+// PUT /contacts/update both timing identically, consistent with Loops-side
+// degradation). This wrapper fails loudly (logged + returned as error) rather
+// than silently blocking on Vercel's function timeout, so a stalled call can
+// never eat the whole function budget or silently drop a welcome email.
+const LOOPS_TIMEOUT_MS = 30_000;
+
+function withTimeout<T>(
+  promise: Promise<T>,
+  ms: number,
+  label: string,
+): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timeoutId = setTimeout(
+      () => reject(new Error(`[loops] ${label} timed out after ${ms}ms`)),
+      ms,
+    );
+    promise.then(
+      (value) => {
+        clearTimeout(timeoutId);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timeoutId);
+        reject(error);
+      },
+    );
+  });
+}
+
 /**
  * Send a transactional email via Loops.
  *
@@ -73,13 +104,17 @@ export async function sendTransactional({
   }
 
   try {
-    const result = await loops.sendTransactionalEmail({
-      email,
-      transactionalId,
-      ...(dataVariables && { dataVariables }),
-      ...(attachments && attachments.length > 0 && { attachments }),
-      addToAudience: true,
-    });
+    const result = await withTimeout(
+      loops.sendTransactionalEmail({
+        email,
+        transactionalId,
+        ...(dataVariables && { dataVariables }),
+        ...(attachments && attachments.length > 0 && { attachments }),
+        addToAudience: true,
+      }),
+      LOOPS_TIMEOUT_MS,
+      `sendTransactional to ${email}`,
+    );
     return { success: result.success === true };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown Loops error";
@@ -114,7 +149,11 @@ export async function upsertContact(params: {
   }
 
   try {
-    await loops.updateContact({ email, properties: cleanProps });
+    await withTimeout(
+      loops.updateContact({ email, properties: cleanProps }),
+      LOOPS_TIMEOUT_MS,
+      `upsertContact ${email}`,
+    );
     return { success: true };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown Loops error";
