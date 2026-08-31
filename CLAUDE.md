@@ -647,6 +647,110 @@ Higher-volume outreach uses the operational playbook at [`marketing/outreach/PLA
 
 ---
 
+## Where We Left Off (2026-08-31 — 4 Sentry fixes + 3 API integrations + ramp verification)
+
+**Status: 🟢🟢 Substantial session. 4 real bugs shipped from a Sentry review (including one silent-money-path fix that was killing conversions). Google Sheets + n8n + Loops APIs all set up for direct future-session access. Write-access operating model formally locked in. Monday ramp verified via API with a critical visibility gap surfaced (2 real bounces went silent). One real user found and flagged (lfinn31313, Aug 28) that hasn't been looked at yet.**
+
+### 4 Sentry fixes shipped today
+
+| Commit | Fix | Real-world impact |
+|---|---|---|
+| `35dd04e` | Blog `dynamicParams = false` on `[slug]/page.tsx` | Prevents cache-tag TypeError when externally-truncated URLs (ellipsis-in-slug) hit the blog. Auto-published articles unaffected. |
+| `c990536` | Loops SDK calls wrapped in 30s `withTimeout` helper (`lib/loops.ts`) | Was silently stalling up to 2.78 min on Loops-side degradation (confirmed for Aug 28 signups). On Vercel Hobby's 60s timeout, welcome emails would have been silently killed with no signal. Wrapper makes stalls loud in Sentry via existing `console.error` path. |
+| `20b0298` | `binaryTargets = ["native", "rhel-openssl-3.0.x", "rhel-openssl-1.0.x"]` in `schema.prisma` | Prisma cold-start `detect_platform` was stalling 6-11 min on ~14% of Vercel Lambdas (Aug 25 + 8/28 x2 spans confirmed). Precompiled RHEL binaries mean init finds a match immediately instead of hunting at runtime. |
+| `1d9949b` | **Money-path fix**: middleware returns 401 JSON for `/api/*` instead of redirecting to `/login` | **This was silently killing every anonymous pricing-button conversion on the landing page.** Chain: user clicks pricing → POSTs to `/api/stripe/checkout` → middleware 307-redirects to `/login` → fetch follows preserving POST → `/login` returns 405 empty body → `res.json()` throws SyntaxError → user sees a broken button. Sentry caught 1 event Aug 28 (real Chrome/Windows user, `vercel-production`). **How long this has been broken is unknown.** The `PricingButton` already has correct 401 handling (redirects to `/signup?priceId=X`) — it just never got a chance to run. |
+
+**Key methodological lesson from #4:** Sentry alerts on money-path routes are lost-revenue signals, not log noise. A single "1 event / High priority" alert on `/`  or `/signup` or `/settings/billing` merits drill-in, not dismissal. Escalate this reflex.
+
+### 3 new API integrations LIVE in `C:\BUSINESS\PHASEWISE\phasewise-secrets\`
+
+All follow the same secrecy pattern established for Hunter (locked folder, gitignore-hardened, shell-substitution access only, never `Read` into agent context):
+
+| File | Service | Auth pattern | Verified against |
+|---|---|---|---|
+| `google-sheets-sa.json` | Google Sheets API (service account) | JWT sign locally with private key → OAuth token → `spreadsheets` scope | Read Prospects/Config, write batchUpdate for bounce marking |
+| `n8n.env` | n8n Cloud Public API | Bearer key in `X-N8N-API-KEY` header | List workflows/executions, activate/deactivate workflows |
+| `loops.env` | Loops.so v1 API | Bearer key in Authorization header | `/api-key` account verify, `/contacts/find` by email |
+
+**Cloud-project setup notes for Google Sheets** (worth remembering): new Google Cloud orgs auto-apply an `iam.managed.disableServiceAccountKeyCreation` policy. Had to override at project scope (not org scope) via IAM & Admin → Organization Policies. That's the friction point if we ever need another service account.
+
+### Write-access operating model formalized
+
+**Default:** read-and-report. Read-only checks (query n8n, read a sheet, WebFetch a URL, `git diff`) don't need permission.
+
+**For any write to a live system** (Google Sheet cells, n8n workflow config, Loops contacts, code commits + pushes, CLAUDE.md edits): give Kevin a plain-language summary of exactly what's about to change and why, wait for explicit go-ahead. **Each distinct change gets its own confirmation** — no batching multiple writes under one approval.
+
+Applied cleanly all session. Made sheet edits, activated n8n workflows, and shipped code commits under this discipline.
+
+### Monday ramp — verified via API, but a critical gap surfaced
+
+Read via n8n API + Google Sheets API:
+
+- **Workflow A fired 8 times today at exact 15-min intervals starting 8:00 AM PT** — all cron ticks landed, all executions succeeded
+- **Workflow B fired 34+ times, all successful**
+- **Zero retry-on-fail activations, zero cascade issues** — the retry + Execute Once fixes from 8/26-28 are holding
+
+**But the ReplyLog was empty despite the inbox actually having 2 hard bounces from today** (`info@eptdesign.com` and `info@lglalandscape.com`, both at 8:15 and 8:30 AM PT). Cause: Workflow B's Classify Replies matches bounces by SENDER email against the prospect list, but bounce senders are `mailer-daemon@googlemail.com` which never matches a prospect. Every bounce silently drops as "no_prospect_match" and never lands in ReplyLog.
+
+**I initially reported "0 bounces, clean ramp" based on ReplyLog. That was wrong.** Only caught it because Kevin screenshot-ed the inbox. Correction: 2 bounces out of 7 sends = 28.5% (down from Wed's 60%, but not the 0% I claimed). Both marked bounced + DNC via Sheets API with dated audit notes.
+
+**This upgrades the auto-bounce detection work from P1 to P0.** Without it, every future ramp check needs human inbox review to be honest. See "Auto-bounce detection design" below.
+
+### Audit methodology learning: "visible on website" ≠ deliverable
+
+Both EPTDESIGN and Lisa Gimmy LGLA bounces were addresses I found via WebFetch on Friday's audit ("verified published on their contact page"). Both bounced. The WebFetch pass catches what firms DISPLAY, but display doesn't mean the address ACCEPTS mail — Hunter's Email Verifier does actual SMTP probing which is why it caught the dead Verde/Strata/Quadriga addresses last week.
+
+**New rule for the CSV audit process:** any "visible on website" finding must be paired with a Hunter deliverability verify before the address goes into the pipeline. For addresses that come from other sources (published in industry directories, LATC roster, etc.), same rule.
+
+### Error alerts workflow re-Activated via API
+
+Workflow `4vMDPCf6O68xVO0C` "Phasewise pipeline error alerts" showed `active: false` last week, and we weren't sure whether that meant broken (no future error alerts) or fine (n8n Error Triggers may not require active flag). n8n Public API doesn't expose manual-trigger for workflow testing, so we couldn't cleanly verify by triggering. Instead: POST /workflows/{id}/activate to force it Active. Read-back confirmed `active: true`. Future errors in Workflow A/B fire alerts to `hello@phasewise.io` within ~30 sec.
+
+### Config keys investigation: dead config
+
+Config sheet has `send_window_start_utc = 15` and `send_window_end_utc = 24` that aren't referenced anywhere in Workflow A's Code node. Send-window enforcement is done via the cron expression (`*/15 8-16 * * 1-4` in Pacific TZ), not via Config values. Left as-is per Kevin — flagged for cleanup in next data-quality pass.
+
+### JAL LLC (Patrick + Carlos) — NOT actually signups
+
+Kevin flagged patrick@jalallc.com and carlos@jalallc.com as "two real signups came in organically over the weekend." Full investigation via Loops + Supabase Auth reveals:
+
+- **Both are in the Loops audience** with `source: "API"`, empty firstName/lastName/userGroup/userId
+- **Neither exists in Supabase Auth** (verified against 10-user total — the newest actual user is `lfinn31313@gmail.com` "crs" from Aug 28)
+- **Neither could have gone through `/api/auth/setup`** — that endpoint sets `source: "Phasewise signup"` with all fields populated. Similarly ruled out `/api/waitlist` and `/api/migration-request`.
+- **Kevin's Gmail Sent folder shows he manually emailed both Aug 28 4:00 PM** from `hello@phasewise.io` with a "Thanks for signing up for Phasewise!" note framing the Founding Member offer
+
+**Actual story:** Kevin likely added them to Loops audience manually (Loops dashboard defaults source to "API" for manual adds), then sent the manual welcome-style note as sales positioning. **They're leads/prospects, not signups.** The "verify welcome email delivery" task was moot — no welcome would have ever fired for them, by design (they never touched the signup flow).
+
+Decision on Founding Member reach-out deferred to a separate conversation.
+
+### Real signup worth looking at next: lfinn31313@gmail.com ("crs")
+
+Only actual completed signup between Aug 21 and Aug 31 that hasn't been reviewed. Created via `/api/auth/setup` on Fri 8/28. Worth a next-session look at: welcome delivery status (should have auto-fired), trial status (should be TRIAL plan with 14-day expiry ~Sep 11), which plan they're evaluating, whether they've hit Stripe checkout, and just as a data point on how organic signups are actually flowing through the funnel now that we know the anonymous-pricing-button path was broken.
+
+### Committed today
+
+| SHA | Description |
+|---|---|
+| `35dd04e` | Fix blog cache-tag TypeError from non-ASCII slugs |
+| `c990536` | Wrap Loops SDK calls in 30s timeout to fail loudly, not stall |
+| `20b0298` | Set Prisma binaryTargets to prevent detect_platform stalls on Vercel |
+| `1d9949b` | Fix broken landing-page pricing checkout for unauthenticated visitors |
+
+### Left uncommitted in working tree (Kevin authorize when ready)
+
+- `.gitignore` additions from earlier session (secrets folder patterns + `prospects*.csv` protection) — session-old, still uncommitted, active protection is on disk but won't survive a fresh clone
+
+### Next-session pick-ups
+
+- **P0: build auto-bounce detection** in Workflow B (parse mailer-daemon bodies to extract intended recipient email → mark that prospect bounced). Estimated ~45-60 min. Blocks any reliable "did the ramp work" check without inbox screenshots.
+- **P1: check lfinn31313 signup state** — welcome delivery, trial status, plan interest, Stripe activity
+- **P1: draft trial-nudge sequence** in Loops (Path A per prior recommendation: audience sequence, no code, ~30 min)
+- **P2: quick check of Loops → Forms sidebar** to close the loop on how Patrick/Carlos actually got in the audience (30 sec, non-blocking)
+- **P2: data-quality cleanup** — dead Config keys, Studio Petrichor notes bleed, Mark Scott subject_line stray text
+- **Deferred: Founding Member reach-out to JAL LLC** — separate conversation, not a technical task
+
+---
+
 ## Where We Left Off (2026-08-21 — outreach pipeline launch in progress)
 
 **Status: 🟢 Launch sequence 4 of 7 steps complete. On track to go live today pending Stripe Checkout verification (Step 5).**
