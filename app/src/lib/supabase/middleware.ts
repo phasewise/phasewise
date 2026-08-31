@@ -94,6 +94,20 @@ export async function handleAuth(request: NextRequest) {
     path.startsWith("/monitoring");
 
   if (!user && !isPublicPath) {
+    // For API routes, return 401 JSON instead of redirecting to /login.
+    // NextResponse.redirect() defaults to 307, which preserves POST — so
+    // fetch clients follow the redirect, hit /login (page-only, GET-only),
+    // and get back 405 + empty body, causing res.json() to throw
+    // SyntaxError on the client. Route handlers and client code (e.g.
+    // PricingButton on the landing page) already expect a 401 for
+    // unauthenticated calls and handle it correctly (redirect to /signup
+    // with the intended action preserved).
+    if (request.nextUrl.pathname.startsWith("/api/")) {
+      return NextResponse.json(
+        { error: "Not authenticated." },
+        { status: 401 }
+      );
+    }
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
