@@ -11,3 +11,30 @@ private/
 # Claude Code local harness files — local settings + runtime locks.
 # Never belong in the repo.
 .claude/
+
+# Secrets — never commit any .env variant, even accidentally.
+# The real secrets store lives OUTSIDE this repo at
+# C:\BUSINESS\PHASEWISE\phasewise-secrets\ — this is belt-and-suspenders
+# in case something ever gets copied into the repo tree by mistake.
+.env
+.env.*
+.env.local
+*.env
+hunter.env
+loops.env
+stripe*.env
+!.env.example
+!*.env.example
+
+# Secrets folders — same defense against accidental repo copies.
+phasewise-secrets/
+.phasewise-secrets/
+secrets/
+.secrets/
+
+# Prospect data — contains personal contact info, personalization notes with
+# analytical shorthand, Caltrans-overlap warnings, and Kevin-specific decision
+# annotations. Never belongs in the public repo, even under phasewise/phasewise.
+automation/prospects*.csv
+prospects*.csv
+PROSPECTS-*.csv

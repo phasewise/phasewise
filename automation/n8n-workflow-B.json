@@ -1,0 +1,219 @@
+{
+  "name": "Outreach — Reply Detector",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "*/30 * * * *"
+            }
+          ]
+        }
+      },
+      "id": "2a000000-0000-0000-0000-000000000001",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "getAll",
+        "returnAll": false,
+        "limit": 100,
+        "simple": false,
+        "filters": {
+          "q": "is:inbox newer_than:2h"
+        },
+        "options": {}
+      },
+      "id": "2a000000-0000-0000-0000-000000000002",
+      "name": "Get Gmail Messages",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [460, 300],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "placeholder-gmail-cred-id",
+          "name": "Gmail — Phasewise (hello@)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1yfil7-nPn0EYOVV0OhaV0ZFpUgB8Ty0myH4UNtM1VMQ",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Prospects",
+          "mode": "name",
+          "cachedResultName": "Prospects"
+        },
+        "options": {}
+      },
+      "id": "2a000000-0000-0000-0000-000000000003",
+      "name": "Read Prospects",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [680, 300],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "placeholder-gsheets-cred-id",
+          "name": "Google Sheets — Phasewise"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1yfil7-nPn0EYOVV0OhaV0ZFpUgB8Ty0myH4UNtM1VMQ",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "ReplyLog",
+          "mode": "name",
+          "cachedResultName": "ReplyLog"
+        },
+        "options": {}
+      },
+      "id": "2a000000-0000-0000-0000-000000000004",
+      "name": "Read ReplyLog",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [900, 300],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "placeholder-gsheets-cred-id",
+          "name": "Google Sheets — Phasewise"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "// STUB — Replace this with the full contents of automation/n8n-workflow-B-code-node.js\n// Stub returns no items so downstream nodes stay dormant if pasted-JS is missing.\nreturn [];"
+      },
+      "id": "2a000000-0000-0000-0000-000000000005",
+      "name": "Classify Replies",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1yfil7-nPn0EYOVV0OhaV0ZFpUgB8Ty0myH4UNtM1VMQ",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Prospects",
+          "mode": "name",
+          "cachedResultName": "Prospects"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "email": "={{ $json.prospect_email }}",
+            "status": "={{ $json.new_status }}",
+            "thread_id": "={{ $json.gmail_thread_id }}",
+            "do_not_contact": "={{ $json.new_do_not_contact }}",
+            "notes": "={{ $json.new_notes }}"
+          },
+          "matchingColumns": ["email"]
+        },
+        "options": {}
+      },
+      "id": "2a000000-0000-0000-0000-000000000006",
+      "name": "Update Prospect Row",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1340, 300],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "placeholder-gsheets-cred-id",
+          "name": "Google Sheets — Phasewise"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1yfil7-nPn0EYOVV0OhaV0ZFpUgB8Ty0myH4UNtM1VMQ",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "ReplyLog",
+          "mode": "name",
+          "cachedResultName": "ReplyLog"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "timestamp_utc": "={{ $('Classify Replies').item.json.timestamp_utc }}",
+            "prospect_email": "={{ $('Classify Replies').item.json.prospect_email }}",
+            "firm_name": "={{ $('Classify Replies').item.json.firm_name }}",
+            "reply_type": "={{ $('Classify Replies').item.json.reply_type }}",
+            "reply_snippet": "={{ $('Classify Replies').item.json.reply_snippet }}",
+            "gmail_thread_id": "={{ $('Classify Replies').item.json.gmail_thread_id }}",
+            "gmail_message_id": "={{ $('Classify Replies').item.json.gmail_message_id }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "2a000000-0000-0000-0000-000000000007",
+      "name": "Append ReplyLog",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1560, 300],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "placeholder-gsheets-cred-id",
+          "name": "Google Sheets — Phasewise"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [[{"node": "Get Gmail Messages", "type": "main", "index": 0}]]
+    },
+    "Get Gmail Messages": {
+      "main": [[{"node": "Read Prospects", "type": "main", "index": 0}]]
+    },
+    "Read Prospects": {
+      "main": [[{"node": "Read ReplyLog", "type": "main", "index": 0}]]
+    },
+    "Read ReplyLog": {
+      "main": [[{"node": "Classify Replies", "type": "main", "index": 0}]]
+    },
+    "Classify Replies": {
+      "main": [[{"node": "Update Prospect Row", "type": "main", "index": 0}]]
+    },
+    "Update Prospect Row": {
+      "main": [[{"node": "Append ReplyLog", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}
