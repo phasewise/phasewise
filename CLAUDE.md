@@ -647,6 +647,219 @@ Higher-volume outreach uses the operational playbook at [`marketing/outreach/PLA
 
 ---
 
+## Where We Left Off (2026-09-01 — trial-nudge sequence LIVE + Loops product distinctions learned)
+
+**Status: 🟢🟢🟢 Multi-hour, layered build. Trial-nudge sequence went from "nothing" to "activated in production with 5 templates and a working orchestrator" in one sitting. lfinn31313 mystery fully unwound — she's a real JALA Associates founder who lost her welcome email to the Aug 28 Loops stall; retroactive welcome delivered today. Made a real bug decision: the intermittent Loops SDK stall reproduced live during smoke test, so Sentry-alerting-on-Loops-timeout got elevated from "someday" to explicit next-session priority. Company address swapped from residential to iPostal1 (421 Broadway San Diego). One code deploy: `cc0ad2b` extends `upsertContact` with `firmName` + `trialEndDate` so Workflow emails can hydrate contact properties.**
+
+### lfinn31313 = real JALA Associates founder (not a test)
+
+Full backstory finally uncovered:
+
+- Signed up Fri 2026-08-28 11:22 AM PT via standard `/signup` (not `?plan=founding`)
+- Created **JALA Associates** (Jeff Allen Landscape Architecture Associates), org id `fcfc61ad-a055-4275-8a85-93e9c0323b7a`
+- Plan: TRIAL, trial ends 2026-09-11, no Stripe customer / never hit checkout
+- **Role: OWNER** at JALA Associates — not an invitee
+- Display name: `crs` (initials — actual name not surfaced; email is `lfinn31313@gmail.com`)
+- Billing rate 150.00, salary 80000, title Landscape Architect
+- **She invited Patrick Pleasants + Carlos Navarro** as SUPERVISOR + PM at `jalallc.com` emails right after signing up
+- Both Patrick + Carlos have `pending_*` auth_ids — never accepted invites (expired ~2026-09-04)
+
+**What killed her welcome**: her Aug 28 signup hit the exact Loops SDK stall pattern that Aug 28 spans in Sentry documented. The `/api/auth/setup` fire-and-forget `upsertContact` + `sendTransactional(WELCOME)` calls silently timed out. Result: real user created in Supabase + Prisma, zero Loops presence, zero welcome email.
+
+**Confusion resolved**: when Kevin sent Patrick and Carlos "Thanks for signing up for Phasewise!" emails on Aug 28 4pm PT, he was addressing the wrong people. Patrick and Carlos were lfinn31313's invitees. She was the actual signup. The Loops entries with `source: "API"` for Patrick + Carlos = the JAL LLC invite acceptance flow adding placeholder contacts (matches prior 8/31 investigation finding).
+
+**Retroactive welcome shipped this morning** via Loops API — one-off `Welcome (retroactive catch-up)` template (`cmtiv0v1n101l0i1nnu483g36`) with hardcoded copy acknowledging the delay, 3-step onboarding, Patrick/Carlos invite-expiry heads-up, Founding Member mention.
+
+### Trial-nudge sequence — full architecture LIVE
+
+**Purpose**: automated 14-day onboarding + trial-end conversion sequence. Fires when a new `Contact added` event matches `userGroup contains "trial"`. Complements (does not replace) the existing WELCOME transactional.
+
+**Loops Transactional templates (all published, all Contact-Property-flavored)**:
+
+| Template | Loops ID | Position in sequence | Purpose |
+|---|---|---|---|
+| Trial-nudge 1 · Day 0 · Getting started | `cmtix6d45001z0jw68jmu0xse` | ⚠️ Built, REMOVED from Workflow late in session | (Kept in Loops Transactional as backup) |
+| Trial-nudge 2 · Day 3 · MWELO spotlight | `cmtiy1lvv00qc0jxf3ig6ut6q` | Workflow Email 1 (Day 3) | Feature spotlight — MAWA/ETWU 3-min vs 2-4 hrs |
+| Trial-nudge 3 · Day 7 · Auto-invoicing | `cmtiycghy004w0i0xshyzmf3a` | Workflow Email 2 (Day 7) | Feature spotlight — invoice from approved timesheets in 3 clicks |
+| Trial-nudge 4 · Day 10 · Founding Member | `cmtiylsrb00bx0j49dkoo11vq` | Workflow Email 3 (Day 10) | Conversion pitch — $49/mo for 12 months, first 20 firms |
+| Trial-nudge 5 · Day 13 · Last day | `cmtiyt00s00co0j1uf4pvppg3` | Workflow Email 4 (Day 13) | Last day, two-path close (paid or feedback) |
+
+**Retroactive welcome (one-off)**: `cmtiv0v1n101l0i1nnu483g36` — sent to lfinn31313 today, hardcoded copy, no reuse expected.
+
+**Final Workflow structure (post double-welcome decision)**:
+
+```
+Trigger: Contact added
+  ↓
+Audience filter: Trial users (userGroup contains "trial")
+  ↓
+Timer: 3 days                    ← was Send email (Getting Started), now dropped
+  ↓
+Send email: Trial-nudge 2 (MWELO)      ← Day 3 of enrollment
+  ↓
+Timer: 4 days
+  ↓
+Send email: Trial-nudge 3 (Auto-invoicing)  ← Day 7
+  ↓
+Timer: 3 days
+  ↓
+Send email: Trial-nudge 4 (Founding Member) ← Day 10
+  ↓
+Timer: 3 days
+  ↓
+Send email: Trial-nudge 5 (Last day)   ← Day 13
+  ↓
+Exit
+```
+
+**Day-by-day user experience**:
+- Day 0 (signup): existing `WELCOME` transactional fires via `sendTransactional` in `/api/auth/setup`
+- Day 3: MWELO spotlight
+- Day 7: Auto-invoicing spotlight
+- Day 10: Founding Member conversion pitch (only email that mentions the offer — clean single edit point when spot 20 fills)
+- Day 13: Last day, two-path close (paid or feedback)
+- Day 14: trial ends, no auto-charge (no card at signup)
+
+**Double-welcome decision**: WELCOME transactional (fires at signup via `/api/auth/setup`) is the immediate first-touch. Trial-nudge Email 1 was too similar in tone + created duplicate-email UX for every signup. Cleaner architecture: keep the always-on transactional untouched, drop Email 1 from the Workflow, let the sequence start at Day 3 (MWELO). Preserves timing of Emails 2-5.
+
+### Loops product distinctions we learned the hard way
+
+This ate a couple hours of unnecessary debugging today. Encoding it fully so it doesn't ambush future sessions.
+
+**Loops has TWO variable-tag systems** with different rendering contexts:
+
+**1. Data Variables** (`{{firstName}}` style)
+- Set via Loops's Transactional template editor (right sidebar "Data variables" section, "TYPE TO CREATE" popup)
+- Hydrated by explicit API `dataVariables: { firstName: "Kevin", ... }` param on `POST /transactional`
+- Work ONLY for transactional sends (via `sendTransactional` in the app)
+- If used in a Workflow-triggered send, Loops's validator REJECTS the workflow with "unsupported event property tags" (see 4pm error today)
+- Preview mode renders empty as `LOOPS_DATA_VARIABLE_IS_MISSING` (or in the picker context, `(data variable not available in preview)`)
+
+**2. Contact Properties** (`{First Name}` style, distinct visual styling)
+- Inserted via the Workflow-native email editor by typing `{` — brings up a "CONTACT PROPERTIES" picker
+- Fallback text is prompted when inserting (e.g., "there" for First Name, "your firm" for Firm Name, "soon" for Trial End Date)
+- Hydrated at Workflow-send time from the contact's stored record (e.g. `contact.firstName`)
+- Work ONLY within Workflow email nodes (or transactional-with-contact-property references via API + explicit contact match — untested)
+- Preview mode renders as `(firstName)` etc. — different styling from Data Variable placeholders
+
+**When you're building Workflow emails, always use Contact Properties. When you're building transactional templates called from `sendTransactional` with `dataVariables`, always use Data Variables. Don't mix within a single email.**
+
+**Consequence: our 5 trial-nudge templates were built as Transactional templates with Data Variables, then imported into the Workflow via "Copy existing email" — which broke on Workflow validation.** Fix: opened each Send email node in the Workflow's own editor, deleted each Data Variable, retyped each with `{` to insert Contact Property equivalent + fallback text. All 5 emails required this manual conversion (plus Email 5's subject line separately). Then Workflow validator accepted the activation.
+
+**Also relevant**: the Workflow-native email editor's insertion mechanic is TYPE `{` (not click the `{}` toolbar icon — that's for Data Variables). This differs from the transactional editor UI and is not signposted.
+
+### Loops Company Address swap — CAN-SPAM footer fix
+
+**Before**: Loops Settings → Domain → Company Address showed Kevin's residential Fresno address. Every Workflow-class email (marketing/automation) auto-appends this in the CAN-SPAM footer. Transactional emails skip the footer (CAN-SPAM exempt) so we hadn't noticed.
+
+**After**: `421 Broadway, San Diego, CA 92101` (iPostal1 virtual mailbox account Kevin had previously set up but hadn't wired into Loops). Verified in a real Workflow email preview + delivered send.
+
+**Address consistency**: matches Kevin's existing brand-anonymous business setup (Stripe, invoice remit-to, support address per Aug 2 CLAUDE.md). No cross-brand tell.
+
+### Code shipped today
+
+Single commit: **`cc0ad2b` — Extend Loops upsertContact with firmName + trialEndDate for trial-nudge sequence**
+
+Two files, +15 lines net:
+
+- **`app/src/lib/loops.ts`**: extended `upsertContact` params type to accept `firmName?: string` and `trialEndDate?: string`. Body unchanged — existing `Object.entries` spread already flows any properties through to Loops's SDK.
+- **`app/src/app/api/auth/setup/route.ts`**: added `formatTrialEndDate` helper (`Intl.DateTimeFormat en-US` with `month: "long", day: "numeric"` → `"September 15"`). Extended the `upsertContact` call to pass `firmName` (already in the signup form request body) and the formatted `trialEndDate` (from `Organization.trialEndsAt`, which is already set to `signup + 14 days` at Org creation).
+
+**Format consistency**: `"September 15"` (no year) matches the retroactive welcome copy sent to lfinn31313 + the trial-nudge template variables. Loops picks up these two new custom fields automatically — no additional Loops schema config needed.
+
+### Loops SDK intermittent stall — repeated LIVE today
+
+**Confirmed pattern (Aug 28 lfinn signup + Sep 1 Kevin Final smoke signup)**: the `/api/auth/setup` fire-and-forget `Promise.all([upsertContact(), sendTransactional(WELCOME)])` occasionally stalls Loops SDK calls. The `withTimeout` wrapper shipped in `c990536` (2026-08-31) prevents indefinite hangs by throwing after 30s, but the failure is silent to Kevin — logged to `console.error` (Vercel function logs) but NOT surfaced anywhere he'd notice.
+
+**Real user impact**: real trial signup succeeds in Supabase + Prisma but never gets welcome email + never enters Loops audience → never enters trial-nudge Workflow. Silent churn risk.
+
+**Workaround demonstrated today**: manually create the Loops contact via API with all 7 properties (email, firstName, lastName, source, userGroup, firmName, trialEndDate). Loops fires the `Contact added` trigger normally. Workflow enrolls the contact. Email 1 (well, Email 2 now with the new architecture) fires within ~1 min. Salvages the enrollment; still loses the welcome email that WELCOME transactional would have sent.
+
+**Elevated to explicit next-session priority**: Sentry alerting on Loops timeouts, scoped below.
+
+### Sentry Loops-timeout alerting — scoped for next session
+
+**~35 min total work**. Ready to execute.
+
+**Code change** in `app/src/lib/loops.ts`:
+
+```ts
+import * as Sentry from "@sentry/nextjs";  // new at top
+
+// Inside sendTransactional's catch block, after the existing console.error:
+const isTimeout = message.includes("timed out");
+Sentry.captureException(error, {
+  tags: {
+    loops_operation: "sendTransactional",
+    loops_timeout: isTimeout ? "true" : "false",
+  },
+  extra: { email, transactionalId },
+});
+
+// Same pattern in upsertContact's catch:
+Sentry.captureException(error, {
+  tags: {
+    loops_operation: "upsertContact",
+    loops_timeout: isTimeout ? "true" : "false",
+  },
+  extra: { email, source, userGroup, firmName },
+});
+```
+
+**Sentry alert rule** (dashboard, not code):
+- Sentry → Alerts → Create Alert Rule → Issues type
+- Project: `javascript-nextjs`
+- Trigger: `An event is seen`
+- Filter: `tag[loops_timeout] equals "true"`
+- Action: Send email to `hello@phasewise.io`
+- Rate limit: Sentry's default issue grouping (won't spam on repeat)
+
+**Test option**: temporarily set `LOOPS_TIMEOUT_MS = 100` locally → any signup triggers a timeout → verify Sentry alert fires → revert timeout. Optional; can also just wait for organic stall to prove it.
+
+**Purpose**: get email visibility every time a real signup hits the stall, so we can manually create the Loops contact + salvage the enrollment. Not a fix for the stall itself — that's a bigger lift (background job / queue / raw fetch replacement) that'll come later once Sentry data tells us frequency.
+
+### Loopsbot inbound signal worth knowing
+
+Loops sends `[Loops] New contact added to Phasewise` emails to `hello@phasewise.io` every time a contact enters the audience. Practical use:
+
+- If a real trial signup happens but NO Loopsbot notification arrives within ~1 min → signal that the Loops stall hit again
+- Manual response: check Supabase Auth to confirm the signup succeeded → manually create the Loops contact via API to salvage the trial-nudge enrollment
+
+Not a replacement for the Sentry alert. Useful stopgap monitoring until Sentry is wired.
+
+### Test data hygiene applied
+
+Two operations across today's session:
+
+**Retag 13 test accounts** (`kgallo22+*`, `brianjgallo`, `kevin@gallodesigns.com` — all had `userGroup: "trial"` or `"trial-founding-member"` from prior test signups). All flipped to `userGroup: "test"` so they don't clutter the trial-nudge audience filter. Real users going forward (via `/api/auth/setup`) still get tagged `trial` naturally.
+
+**Post-verification cleanup**: 2 test signups from today (`Test User Smoke` / `Smoke Test LLC` and `Kevin Final` / `Trial Test Final LLC`) deleted from Supabase Auth + Prisma (Kevin did this in the dashboard) and from Loops contacts (via API).
+
+**lfinn31313 temp safety retag + restore**: retagged to `userGroup: "test"` right before clicking Start on the Workflow to prevent any retro-enrollment risk. Confirmed post-activation that Loops didn't retro-enroll (their documented behavior — Workflows only fire on future `Contact added` events). Then restored to `userGroup: "trial"` at session close. Her real user state is preserved.
+
+### Committed today
+
+| SHA | Description |
+|---|---|
+| `cc0ad2b` | Extend Loops upsertContact with firmName + trialEndDate for trial-nudge sequence |
+
+Only one commit. Everything else was Loops dashboard work, Sheets API writes, and API interactions with no repo impact.
+
+### Uncommitted in working tree
+
+Same as prior sessions: `automation/n8n-workflow-A*` files, various design docs, `brand_v2/exports/`, `marketing/`. Still awaiting Kevin's decision on whether to commit those separately.
+
+### Next-session pick-ups (ranked)
+
+1. **🚨 Sentry Loops-timeout alerting** — ~35 min. Scope above. Priority: near-term.
+2. **P2 cleanup that surfaced today**: delete Loops template `cmtix6d45001z0jw68jmu0xse` (Trial-nudge 1 · Getting Started, removed from Workflow) if we don't want it as a backup. Cosmetic.
+3. **Loops SDK stall root fix** — bigger lift (background job / queue / raw fetch). Wait for Sentry data first.
+4. **P2 backlog**: Loops Forms sidebar check (Patrick/Carlos origin), MIG cdistefano DNC add, data-quality cleanup, Maggie/ECHO soft-bounce watch, Stripe KYC, Google Ads verification, Smartlead filter, Charlie Serota, Workflow A files uncommitted.
+5. **Deferred**: Founding Member reach-out to JAL LLC / lfinn31313 direct outreach.
+6. **Ops reminder**: edit Trial-nudge Template 4 when Founding Member spot 20 fills.
+
+---
+
 ## Where We Left Off (2026-08-31 — 4 Sentry fixes + 3 API integrations + ramp verification)
 
 **Status: 🟢🟢 Substantial session. 4 real bugs shipped from a Sentry review (including one silent-money-path fix that was killing conversions). Google Sheets + n8n + Loops APIs all set up for direct future-session access. Write-access operating model formally locked in. Monday ramp verified via API with a critical visibility gap surfaced (2 real bounces went silent). One real user found and flagged (lfinn31313, Aug 28) that hasn't been looked at yet.**
