@@ -4,6 +4,17 @@ import { upsertContact, sendTransactional, LOOPS_TEMPLATES } from "@/lib/loops";
 
 export const dynamic = "force-dynamic";
 
+// Human-readable trial end date for Loops contact property. Matches the
+// format used in trial-nudge sequence templates (e.g. "September 11").
+// No year — consistent with the retroactive welcome copy for lfinn31313.
+function formatTrialEndDate(date: Date | null): string {
+  if (!date) return "";
+  return new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    day: "numeric",
+  }).format(date);
+}
+
 export async function POST(request: Request) {
   try {
     const { authId, fullName, firmName, email, foundingMemberCandidate } = await request.json();
@@ -63,6 +74,8 @@ export async function POST(request: Request) {
         userId: result.user.id,
         source: "Phasewise signup",
         userGroup: foundingMemberCandidate === true ? "trial-founding-member" : "trial",
+        firmName,
+        trialEndDate: formatTrialEndDate(result.org.trialEndsAt),
       }),
       sendTransactional({
         email,

@@ -135,6 +135,8 @@ export async function upsertContact(params: {
   userId?: string;
   source?: string;
   userGroup?: string;
+  firmName?: string;
+  trialEndDate?: string;
 }): Promise<{ success: boolean; error?: string }> {
   if (!loops) {
     return { success: false, error: "Loops not configured" };
