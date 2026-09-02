@@ -777,7 +777,23 @@ Two files, +15 lines net:
 
 **Elevated to explicit next-session priority**: Sentry alerting on Loops timeouts, scoped below.
 
-### Sentry Loops-timeout alerting — scoped for next session
+### Sentry Loops-timeout alerting — SHIPPED 2026-09-02
+
+**Follow-up landed the next morning.** Commit `1556636` wires `Sentry.captureException` into both catch blocks in `lib/loops.ts` with `loops_operation` (`sendTransactional` | `upsertContact`) + `loops_timeout` (`true` | `false`) tags. Fire-and-forget semantics preserved — both catches still return `{ success: false, error: message }` so signup + webhooks stay unblocked.
+
+Sentry dashboard alert rule **"Loops SDK timeout"** created + verified:
+
+- **Project:** `javascript-nextjs`
+- **WHEN:** "A new issue is created" OR "A resolved issue regresses"
+- **IF:** `loops_timeout` equals `true`
+- **THEN:** Notify Team → #phasewise (routes to kevin@phasewise.io via team-member email)
+- **Throttling:** Notify on every trigger
+
+**Test notification confirmed** — Sentry test-notification email landed at kevin@phasewise.io within ~2 min at 9:12 AM PT. Routing verified end-to-end.
+
+From here forward, any real Loops SDK stall in production → tagged Sentry event → email within seconds. Enables the manual salvage flow (create the Loops contact via API to trigger Workflow enrollment) documented in the original scope below.
+
+### Sentry Loops-timeout alerting — original scope (for reference)
 
 **~35 min total work**. Ready to execute.
 
