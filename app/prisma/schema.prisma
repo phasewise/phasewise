@@ -202,6 +202,14 @@ model Invitation {
   token           String   @unique @default(uuid())
   expiresAt       DateTime @map("expires_at")
   acceptedAt      DateTime? @map("accepted_at")
+  // Stamped by the invite-reminders cron the first time it fires a
+  // "your invite expires soon" email to the org OWNER for this
+  // invitation. Prevents duplicate reminders once we enter the T-1
+  // to T-3 window (the cron runs daily and would otherwise re-send
+  // for 2-3 consecutive days). Also used as a manual dedup marker
+  // when a founder-touch outreach email already covered the same
+  // invite-expiry topic and we don't want the cron to double-nag.
+  reminderSentAt  DateTime? @map("reminder_sent_at")
   createdAt       DateTime @default(now()) @map("created_at")
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
