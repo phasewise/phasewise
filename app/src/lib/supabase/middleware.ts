@@ -80,6 +80,17 @@ export async function handleAuth(request: NextRequest) {
     path.startsWith("/api/public/invoices/") ||
     path.startsWith("/api/auth/") ||
     path.startsWith("/api/invitations/") ||
+    // Scheduled cron endpoints. Vercel Cron invokes these internally
+    // and bypasses the edge middleware, but external manual triggers
+    // (curl, `vercel dev`, health checks) previously hit this auth
+    // gate first and got 401 before the route's own CRON_SECRET check
+    // ran — making the cron routes untestable from outside Vercel.
+    // Each cron route enforces its own `Authorization: Bearer
+    // CRON_SECRET` check, which is the real gate; the middleware here
+    // was redundant defense-in-depth in exchange for real usability
+    // loss. Same pattern as /api/stripe/webhook — public at edge,
+    // HMAC-verified inside the route.
+    path.startsWith("/api/cron/") ||
     // Migration request form on /migrate — accepts a POST from
     // unauthenticated visitors.
     path === "/api/migration-request" ||
