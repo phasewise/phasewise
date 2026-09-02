@@ -647,6 +647,126 @@ Higher-volume outreach uses the operational playbook at [`marketing/outreach/PLA
 
 ---
 
+## Where We Left Off (2026-09-02 — Sentry alerts done, warm-lead rescue, Fix A shipped end-to-end)
+
+**Status: 🟢🟢🟢 Layered execution day. Sentry Loops-timeout alerting closed out with dashboard rule + verified test. Auto-bounce detection proved itself live catching a real Primaterra bounce. Warmest lead (lfinn31313 / JALA Associates) rescued from silent churn with a founder-touch email sent via Gmail Send-mail-as. Fix A (invite-expiry reminder cron) shipped end-to-end: schema migrated, cron endpoint deployed, Loops template published, env var set, middleware patched to enable external cron testing, backfilled to prevent duplicate nag to lfinn, verified against production with a real curl. 4 commits shipped, 1 schema migration, 1 Loops template created, 1 Vercel env var + redeploy, 1 middleware fix that unblocks future cron testing across the board.**
+
+### Sentry Loops-timeout alerting — CLOSED
+
+Started as the "next-session" item from the 2026-09-01 WWLO. Two commits landed today:
+
+- **`1556636` — code side.** `Sentry.captureException` wired into both catch blocks in `lib/loops.ts` with `loops_operation` (`sendTransactional` | `upsertContact`) + `loops_timeout` (`true` | `false`) tags derived from `message.includes("timed out")`. Extras carry the recipient email + template/audience context for salvage. Fire-and-forget semantics preserved.
+- **Sentry dashboard rule "Loops SDK timeout"** — configured with two triggers (New issue created + Resolved issue regresses), filter `tag[loops_timeout] equals "true"`, action Notify Team → #phasewise, throttling on every trigger. Test notification verified landing at kevin@phasewise.io within ~2 min.
+- **`2d1a637` — CLAUDE.md follow-up.** Marked the previous session's "next session" item as shipped with the dashboard config recorded.
+
+From here forward: any real Loops SDK stall → tagged Sentry event → email within seconds → salvage-flow (manual contact create via API + Workflow enrollment) can start immediately instead of only being caught by inbox eyeballing.
+
+### Auto-bounce detection proved itself live in production
+
+**Real-world validation of the 2026-09-01 P0 fix (commit `9c99068`).** At 8:15 AM PT today Smartlead sent an outbound to `info@primaterrastudio.com`; the address bounced immediately (`550 5.1.1 recipient rejected`). At 8:30 AM PT the next Workflow B cron cycle fired, classified the mailer-daemon message as a bounce, extracted the intended recipient email from the message body, matched it to the Primaterra row in Prospects, and marked it fully:
+
+- **ReplyLog:** new row at 15:30:04.243Z with `prospect_email=info@primaterrastudio.com`, `reply_type=bounce`, both Gmail message + thread IDs captured
+- **Prospects sheet:** Primaterra row auto-flipped to `status=bounced`, `do_not_contact=TRUE`, notes appended with `Auto-DNC 2026-09-02: hard bounce (extracted recipient info@primaterrastudio.com from mailer-daemon@googlemail.com).`
+- **n8n Workflow B "Outreach — Reply Detector"** — firing every 30 min all day, all successes (15:30, 16:00, 16:30, 17:00 UTC all green in 4-8 sec)
+
+Only the 3rd ReplyLog entry ever (header + EPTDESIGN 9/1 + Primaterra 9/2), but the pattern is confirmed working across two consecutive days on different bounce cases. The 2026-08-31 visibility gap where 2 bounces silently dropped is genuinely closed — no more manual inbox eyeballing to catch this class.
+
+### Lfinn31313 (JALA Associates) warm-lead rescue
+
+**Context:** lfinn31313 signed up Aug 28 (5 days before today), invited Patrick + Carlos as SUPERVISOR-role teammates that same day, both invitations expired 9/4 without acceptance. Trial ends 9/11 (Day 14). She's the single warmest lead in the pipeline — real signup, real workflow testing.
+
+**State diagnostic** (via Prisma read against Supabase, script at `scratchpad/check-lfinn-state.js`):
+- **Signup 8/28:** OWNER of JALA Associates org (`fcfc61ad-a055-4275-8a85-93e9c0323b7a`), display name `crs`, billing rate $150/hr, salary $80k
+- **Activity 8/31 6:43 AM PT (Mon):** logged back in, created first real project **"Parrish"**, logged 4 time entries in 11 min
+- **Since 8/31:** silent through today (Day 5)
+- **Zero conversions:** no clients added, no compliance/submittals/invoices, no Stripe customer
+- **Blocker identified:** both invitations expired on 9/4 without acceptance, she has no in-app signal about it
+
+**Read:** WARM, not cold. Solo-founder-testing-in-earnest usage that stalled at team collaboration when teammates never activated.
+
+**Founder-touch email sent** — Kevin drafted a "no sales pitch, service-first" note that:
+- Leads with the invite-expiry heads-up (concrete, time-sensitive, non-sell)
+- Acknowledges her Parrish project + time-entry activity ("great start")
+- Asks for feedback on friction ("we build for firms your size")
+- Notes trial timeline (9/11) with a soft close: "if it's not the fit, a quick reply telling us why would help"
+- Anonymity-clean sign-off `— The Phasewise team`
+- Explicitly does NOT offer a call — Kevin's Fork-B compromise reserves audio-only calls for the first 5 paying customers only, and offering upfront would poison the "no pitch" framing
+
+**Mechanic decision:** sent from Gmail Send-mail-as with `hello@phasewise.io` as the From alias, NOT via Loops API. Rationale documented for future rescues: the email's own copy says "no sales talk, just a real hello" — sending it from a marketing-automation platform contradicts that framing at the infrastructure layer even if the words are identical. Loops-via-API path (with a one-off transactional template) was offered as Option B and explicitly declined.
+
+Sent 9:59 AM PT. ~1h post-send at wrap: no bounce, no reply, no signal — normal outcome for a check-in email; not a bad sign.
+
+### Fix A shipped end-to-end — invite-expiry reminder cron
+
+**The class of problem:** owner invites teammate → invitee never sees/acts on the link → invitation silently expires after 7 days → owner has no signal that team activation didn't happen. Lfinn's live case was the trigger; the fix generalizes.
+
+**Full-fledged spec approved before writing any code** (schema, cron logic, Loops template variables, kevin-manual steps, blast radius, deferred scope, effort estimate). Real spec-driven build instead of vibes-driven code.
+
+**Schema migration** (`prisma db push` to Supabase):
+- `Invitation.reminderSentAt DateTime? @map("reminder_sent_at")` — nullable, additive, back-compat safe
+- Purpose: dedup guarantee. Cron runs daily and would otherwise fire 2-3 reminders per invite as it moves through the T-1 to T-3 window. The stamp caps it at exactly one reminder per invite.
+
+**Cron endpoint** — `app/src/app/api/cron/invite-reminders/route.ts`, ~180 lines including comments:
+- CRON_SECRET Bearer auth (same pattern as existing crons)
+- Query: `acceptedAt: null, reminderSentAt: null, expiresAt: (now+1d, now+3d]`
+- Fetches org's active real-authId OWNERs (skips deactivated + pending_*)
+- Looks up pending User record to surface human name (falls back to "your teammate")
+- Sends via Loops with 8 data variables (recipientName, firmName, inviteeName, inviteeEmail, inviteeRole, expiresInDays, expiresOnDate, teamPageUrl)
+- `Promise.allSettled` across owner sends — one Loops failure doesn't block the batch or the reminderSentAt stamp
+- **Always stamps reminderSentAt AFTER send loop, even if every send failed** — otherwise persistent Loops failures would spam Sentry daily forever. Sentry alert (from earlier today) provides the visibility; the stamp keeps the queue draining.
+- Silent skip if `LOOPS_TEMPLATE_INVITE_EXPIRING` unset (defense-in-depth for env-var lag)
+
+**vercel.json** — added daily `0 14 * * *` (2 PM UTC / 7 AM PT) cron entry.
+
+**Loops template `Invite expiring reminder`** (`cmtkfpfhw012c0ky35f44d06i`) — Transactional (not Workflow), Data Variables (not Contact Properties — this is a `sendTransactional` call, not a Workflow trigger). Sender `Phasewise Team <hello@mail.phasewise.io>`, Reply-To `hello@phasewise.io`. Anonymity-clean.
+
+**Env var `LOOPS_TEMPLATE_INVITE_EXPIRING`** set on all 3 Vercel envs (Config type, not Secret — matches other template ID pattern) + local `.env`. Redeploy required (learned the hard way: Vercel env var changes don't propagate to existing deployment; new invocations of the SAME deployment don't pick up new vars — only NEW deployments do). Corrected earlier session note that claimed otherwise.
+
+**Backfill for lfinn's two invitations** — one-off script at `scratchpad/backfill-lfinn-invite-reminders.js` stamped `reminderSentAt = now()` on both her invitations (Patrick + Carlos). Safety gates: read-first + assert-expected-emails + no-extras + read-back-and-verify. Reason: Kevin's manual founder-touch email at 9:59 AM PT already covered the invite-expiry topic explicitly; without backfill, the cron's next run would fire an automated duplicate reminder to her. Solved via one `updateMany` scoped to org UUID + email IN [2 emails].
+
+**Middleware fix** (Option D over Option C) — commit `0812aab`:
+- **Problem surfaced during verification:** external curl to `/api/cron/*` returned 401 `{"error":"Not authenticated."}` because `lib/supabase/middleware.ts` gated ALL non-public paths with Supabase auth, and cron routes weren't on the public list.
+- **Root cause:** ALL crons (not just the new one) were double-gated — middleware rejected before route's own CRON_SECRET check ran. External testing of any cron endpoint was impossible; existing crons only worked because Vercel Cron invokes internally, bypassing middleware.
+- **Fix:** added `path.startsWith("/api/cron/")` to `isPublicPath`. Security model unchanged — each cron route enforces its own CRON_SECRET internally. Same pattern as `/api/stripe/webhook` (public at edge, HMAC-verified inside route).
+- **Value beyond today:** unblocks all future cron endpoint testing via curl + external monitoring / health checks. Small permanent cleanup, not just a workaround for today.
+
+**End-to-end verification** — real curl against production after middleware redeploy:
+- Without CRON_SECRET → `{"error":"Unauthorized"}` HTTP 401 (from route's own gate, not middleware — "Unauthorized" vs prior "Not authenticated." message confirms the middleware fix worked)
+- With CRON_SECRET → HTTP 200 in 0.77s with `{"success":true,"message":"No invitations in reminder window.","remindersScanned":0,"remindersSent":0,"ownersNotified":0}`
+- Zero risk of unintended send: lfinn's backfilled invites correctly excluded, no other invites in window
+
+### Two operational learnings worth encoding
+
+**1. Vercel env var propagation.** Session note earlier today ("Vercel will apply this to the next serverless function invocation without a redeploy") was WRONG. Env var changes require a fresh deployment to take effect — the Vercel dashboard even shows a "Redeploy" toast when you save a new var. For any future env var change: add + redeploy. Cron endpoint reads env at cold-start, which is per-deployment.
+
+**2. Vercel Cron invocation path.** Scheduled crons work in production even when middleware blocks external requests, because Vercel Cron invokes internally (bypasses edge middleware). This masks external-test gaps. Any new cron endpoint should be verified with an explicit external curl during ship, not just left to the scheduled fire to catch problems.
+
+### Committed today
+
+| SHA | Description |
+|---|---|
+| `1556636` | loops: Sentry.captureException on send + upsert failures with loops_timeout tag |
+| `2d1a637` | CLAUDE.md: Sentry Loops-timeout alerting shipped 2026-09-02 |
+| `ead68c2` | Fix A: invite-expiry reminder cron to alert org OWNER (schema + cron + vercel.json + loops.ts) |
+| `0812aab` | middleware: allow /api/cron/* through auth gate |
+
+### Uncommitted in working tree
+
+Same untracked items as prior sessions: `automation/n8n-workflow-A*` files, various design docs, `brand_v2/exports/`, `marketing/`. Still awaiting deliberate commit decision.
+
+Also: `app/.env` line 27 added (`LOOPS_TEMPLATE_INVITE_EXPIRING=cmtkfpfhw012c0ky35f44d06i`) — gitignored, no commit needed.
+
+### Next-session pick-ups (ranked)
+
+1. **🚨 Lfinn31313 reply monitoring** — check inbox for reply to her rescue email. If she replies "tell me more" or asks specifics, use the reply playbook — Kevin can offer audio-only Google Meet at that point (matches Fork-B compromise). If silent through 9/8 or so, consider one more light touch before trial expires 9/11.
+2. **Loops SDK stall root fix** — bigger lift (background job / queue / raw fetch replacement). Wait for Sentry data (now flowing) to prove frequency before investing.
+3. **P2 cleanup:** delete Loops template `cmtix6d45001z0jw68jmu0xse` (Trial-nudge 1 · Getting Started, removed from Workflow) if not kept as backup.
+4. **P2 backlog:** Loops Forms sidebar check (Patrick/Carlos origin), MIG cdistefano DNC add, data-quality cleanup, Maggie/ECHO soft-bounce watch, Stripe KYC, Google Ads verification, Smartlead filter, Charlie Serota, Workflow A files uncommitted.
+5. **Ops reminder:** edit Trial-nudge Template 4 when Founding Member spot 20 fills.
+6. **Fix B watch:** if the invite-reminder cron flow proves valuable AND Fix A generalizes well, consider whether to build an in-app Team-page visual indicator for expiring invites (in-product complement to the email nudge). Not urgent — email alone is meaningful uplift.
+
+---
+
 ## Where We Left Off (2026-09-01 — trial-nudge sequence LIVE + Loops product distinctions learned)
 
 **Status: 🟢🟢🟢 Multi-hour, layered build. Trial-nudge sequence went from "nothing" to "activated in production with 5 templates and a working orchestrator" in one sitting. lfinn31313 mystery fully unwound — she's a real JALA Associates founder who lost her welcome email to the Aug 28 Loops stall; retroactive welcome delivered today. Made a real bug decision: the intermittent Loops SDK stall reproduced live during smoke test, so Sentry-alerting-on-Loops-timeout got elevated from "someday" to explicit next-session priority. Company address swapped from residential to iPostal1 (421 Broadway San Diego). One code deploy: `cc0ad2b` extends `upsertContact` with `firmName` + `trialEndDate` so Workflow emails can hydrate contact properties.**
