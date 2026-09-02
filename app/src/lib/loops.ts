@@ -1,4 +1,5 @@
 import { LoopsClient } from "loops";
+import * as Sentry from "@sentry/nextjs";
 
 if (!process.env.LOOPS_API_KEY) {
   // Don't throw — emails should never block the app from booting.
@@ -119,6 +120,14 @@ export async function sendTransactional({
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown Loops error";
     console.error(`[loops] Failed to send to ${email}:`, message);
+    const isTimeout = message.includes("timed out");
+    Sentry.captureException(error, {
+      tags: {
+        loops_operation: "sendTransactional",
+        loops_timeout: isTimeout ? "true" : "false",
+      },
+      extra: { email, transactionalId },
+    });
     return { success: false, error: message };
   }
 }
@@ -160,6 +169,19 @@ export async function upsertContact(params: {
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown Loops error";
     console.error(`[loops] Failed to upsert contact ${email}:`, message);
+    const isTimeout = message.includes("timed out");
+    Sentry.captureException(error, {
+      tags: {
+        loops_operation: "upsertContact",
+        loops_timeout: isTimeout ? "true" : "false",
+      },
+      extra: {
+        email,
+        source: params.source,
+        userGroup: params.userGroup,
+        firmName: params.firmName,
+      },
+    });
     return { success: false, error: message };
   }
 }
