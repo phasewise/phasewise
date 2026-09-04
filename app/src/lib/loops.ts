@@ -117,6 +117,26 @@ export async function sendTransactional({
       LOOPS_TIMEOUT_MS,
       `sendTransactional to ${email}`,
     );
+    // Loops SDK returns { success: false, message: "..." } on API-side
+    // rejections (template variable mismatch, plan-limit, blocklisted
+    // recipient, etc.) WITHOUT throwing. Our earlier Sentry.captureException
+    // in the catch block only fires on thrown exceptions, so this class
+    // of failure was invisible. Capture it explicitly. Non-fatal — the
+    // caller still gets { success: false } back and the fire-and-forget
+    // pattern is preserved.
+    if (result.success !== true) {
+      Sentry.captureMessage(
+        `[loops] sendTransactional returned success:false for ${email}`,
+        {
+          level: "warning",
+          tags: {
+            loops_operation: "sendTransactional",
+            loops_result_success: "false",
+          },
+          extra: { email, transactionalId, loopsResponse: result },
+        },
+      );
+    }
     return { success: result.success === true };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown Loops error";
