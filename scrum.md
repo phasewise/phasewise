@@ -189,6 +189,8 @@ Build the **Minimum Viable Product**. Rapid prototyping, iterate with real users
 | **Team Member** | Claude, in execution mode. Writes the code, runs the migrations, drafts the emails. |
 | **Backlog** | The Product Wishlist section of `CLAUDE.md` + "Next-session pick-ups (ranked)" lists at the bottom of each WWLO. |
 | **Definition of Done** | tsc clean · committed · pushed · deployed · verified end-to-end (external curl, real send, dashboard confirmation) · WWLO note captured. |
+| **Definition of Done — class-closure** | For any claim that a pipeline / system / class of failure is "proven working": N successful cases across M variance in inputs over T time, verified independently. One clean catch is one case, not a class-closure. Added 2026-09-08 after the 8/31 auto-bounce-detection "proved itself live" framing needed a walk-back once soft-to-hard escalation and a Sep 7 mailer-daemon variant both silently dropped. |
+| **Definition of Done — diagnostic script** | Before running a scan-and-report script whose output shapes a decision, test the filter / regex / condition against known-good data (rows it should match AND rows it shouldn't). Cost: seconds. Prevents shipping a wrong count. Added 2026-09-08 after a `type === 'bounce'` filter missed `soft_bounce` entries and under-reported ReplyLog state to Kevin. |
 | **Daily Stand-up** | Start of each session — recap where we left off, what's queued, what's blocking. |
 | **Sprint Retrospective** | The WWLO write-up at session close. Captures what shipped, what surprised us, what didn't work, what changes next time. |
 | **Demo or Die** | The verification step. Fix A shipped in skip mode → env var set → real curl confirmed 200 response with expected JSON. No feature is "done" without a demo. |
@@ -198,6 +200,16 @@ Build the **Minimum Viable Product**. Rapid prototyping, iterate with real users
 | **Waste elimination** | Middleware fix (`0812aab`) killed a class of double-gated cron routes so future testing takes minutes not hours. Reject anything that adds new toil the operator has to remember. |
 | **Small teams / small increments** | Ship one commit at a time. Show diff. Get approval. Commit. Push. Verify. Move to the next. No batched multi-write approvals. |
 | **Spec before code** | Fix A had a full spec (schema, cron logic, template variables, blast radius, effort) approved before I wrote a line. Not vibes. |
+
+### Cadences
+
+**Backlog grooming — quarterly.** Every ~3 months, walk the Product Wishlist in `CLAUDE.md`:
+- Cut items that have aged out (no longer relevant, superseded by other work, or overtaken by events).
+- Add acceptance criteria to items that only describe the problem, not the target end state.
+- Re-rank remaining items by current value + risk.
+- Cost: ~1 hour. Prevents the wishlist from bloating into write-only noise.
+
+Added 2026-09-08 after acknowledging that Product Wishlist items from May 2026 were still open with no periodic re-rank. Next grooming: **2026-12-08**. If a session naturally lands near that date, that's a good stop-in-place moment.
 
 ### Phasewise as "a team" for landscape architecture firms
 
@@ -230,6 +242,8 @@ Before I write any code for a new feature or workflow, walk through this:
 **Definition of Done (Chapter 4)**
 - What does "done" look like — tsc clean, deployed, verified how?
 - What's the "Demo or Die" step — the concrete moment I know it works for a real user?
+- **Class-closure claim?** If this ships as "the X pipeline / system / class of failure is proven working," what's the criterion — N successful cases across M input variance over T time, verified independently? One clean catch is one case, not a class-closure.
+- **Diagnostic script?** If this scan-and-report script's output will shape a decision, has the filter / regex / condition been tested against known-good data (rows it should match AND rows it shouldn't) before running?
 
 **Waste check (Chapter 5)**
 - **Muri:** Is the timeline reasonable, or am I signing up for impossible work?
