@@ -647,6 +647,118 @@ Higher-volume outreach uses the operational playbook at [`marketing/outreach/PLA
 
 ---
 
+## Where We Left Off (2026-09-08 — Category 6 backfill + Warwick fix + first Resend-data signal + a real bounce-pipeline regression)
+
+**Status: 🟢🟡 Solid morning of data + operations work with two related open problems carried into next session. Hunter Category 6 backfill filled in 12 of the 22 empty-email prospect rows (5 send-ready emails + 7 audit notes) at ~90% of monthly free-tier budget. Warwick Hunt's Loops firstName typo (`Wrawick` → `Warwick`) fixed via API before the next Workflow send. Confirmed Workflow B fired the Day 3 MWELO email to Warwick on schedule (though with the pre-fix typo). First Sentry data point on the Resend migration question landed: zero `loops_result_success:false` events in 14 days → hybrid-stays-hybrid still holds. But: caught two regressions on the auto-bounce detection pipeline — ECHO LA's Sep 5 hard bounce (soft-to-hard escalation) not resolved to state change, and an unrelated Sep 7 bounce silently dropped. Workflow B ran cleanly across both days at 30-min cadence with zero execution failures — classification is failing, not execution. Both need the actual bounce email content to diagnose next session. Also: scrum.md added as a working reference file for how we build Phasewise.**
+
+### Category 6 Hunter backfill — 12 of 22 rows written, 9 deferred
+
+**Context:** 22 prospect rows had `status=queued`, `dnc=FALSE`, and no email on file. Named "Category 6" by Kevin. Goal: use Hunter Domain Search to backfill emails within monthly free-tier budget (50 searches, 10 verifiers/month).
+
+**Initial run hit a bug:** first script used `limit=50` — free tier caps responses at 10 emails. All 22 requests returned HTTP 400 with `pagination_error`. Verified via `/v2/account` that failed calls **did not** burn credits (post-test delta was 1, matching a clean single search). Fixed to `limit=10`, added domain-blacklist regex to skip tool references in notes text (row 67 Segal Shuart matched `hunter.io` from "Needs Hunter.io on segalshuart.com" in earlier version), and switched from domain-guessing to Hunter's `company=` fallback for firms without explicit notes hints.
+
+**Budget reality:** Hunter counter was at 37/50 when session started (prior usage this cycle from a session I didn't have full context on). Session added 10 more legit calls → **47/50 used, 3 remaining until 2026-09-21 reset**. Ran 12 total firms (test + 11) instead of the full 22.
+
+**Priority-ranked batch:**
+- **T1 (2)**: PLAT Studio (`fred.liao@platstudio.net`, c=99 Partner Design Director) + Bay Tree Design (`sharon@baytreedesign.com`, c=85, Sharon Danks matched)
+- **T2 (2 kept, 1 held)**: Architerra (`jchamlee@architerradesigngroup.com` Director of Production) + BLOCS (`blake@blocs.design` c=99). Held BMLA `baxter@bmla.net` — real President-level contact but NOT Steve Shirrel who was the original ICP-fit VP-Ops target
+- **T5 (1)**: Segal Shuart `info@segalshuart.com` c=99 generic fallback (Julia Shuart not in Hunter data) — added with an explicit LOW-confidence note flagging 2-5% expected open rate
+- **Notes-only, no email written (7)**: BMLA, PLUS, [place] (all: real domain but wrong-person Hunter hit), Lucas & Lucas (Hunter matched a Dutch firm `lucasenlucas.com`), SOFT STUDIO (Hunter matched a Slovak firm `softstudio.sk`), Mason White + RELM Studio (no domain match)
+
+Batch executed via a single Sheets `batchUpdate` (17 cell writes across 12 rows), read-back verified — 12/12 ✅.
+
+**Discovery on the Prospects sheet structure:** 17 columns, not 16. Column Q is `confidence_reason` (empty on all touched rows) — noted for future audit passes.
+
+**Deferred to October (9 firms + 3 manual-domain-research firms):** Andy De Young, SALT, Stephen Billings, Studio MALA, Studio M MERGE, Boxleaf, GG Landscape, LASD Studio, In-Site, PLA Studio — plus Mason White, RELM, Lucas & Lucas, SOFT STUDIO which need manual domain hunting before the next Hunter round.
+
+### Warwick Hunt firstName typo fixed in Loops
+
+Morning integrity check surfaced Warwick's Loops `firstName` stored as `"Wrawick"` — the typo he entered at signup on 9/3. His Day 3 MWELO email had already fired 9/6 with the typo (unrecoverable). API `PUT /contacts/update` fixed it before the Day 7 Auto-invoicing email — Contact Properties hydrate at send-time in Loops Workflows (per the 9/1 product-distinction lesson), so all remaining Workflow emails (Day 7 / 10 / 13) will greet "Warwick" correctly.
+
+Also flagged: **lfinn31313's `trialEndDate` is stored as `2026-09-11`** (raw ISO), while Warwick's is `September 18` (Intl.DateTimeFormat en-US). The `formatTrialEndDate` helper shipped in `cc0ad2b` after lfinn's 8/28 signup. Any Workflow email referencing her trialEndDate variable would render weirdly. Not blocking (she's not enrolled in the Workflow due to the 9/1 activation retro-enrollment safety work), but worth remembering if we ever manually reach her via that variable.
+
+### Trial-nudge Workflow — Day 3 MWELO confirmed fired to Warwick
+
+Loops Workflows → Metrics view confirmed:
+- Send email node (Trial-nudge 2 MWELO): **Sends = 1, Opens = 0.0%, Clicks = 0.0%**
+- Guardian: 2 checks passed
+- 1 queued contact at downstream Timer (Wait 4 days) → next send ~9/10 (Day 7 Auto-invoicing)
+
+The 1 send is unambiguously Warwick. lfinn31313 didn't enter the sequence (pre-existed audience before 9/1 activation; the temp-tag-to-`test` safety maneuver prevented retro-enrollment).
+
+**Warwick engagement so far:** 0 opens, 0 clicks on MWELO after 2 days. Two possibilities: (a) hasn't opened yet / promotions folder, or (b) inbound-filter quarantine at studioh-inc.com (same hypothesis class as the 9/4 WELCOME investigation). Day 7 gives another data point.
+
+### First Sentry data point on the Resend migration question
+
+`Sentry.captureMessage` on Loops `success:false` responses shipped 9/4 (commit `65c18f0`). Today's Sentry Issues search for `loops_result_success:"false"` over 14D returned **zero events**. Combined with zero `loops_timeout:true` events from the pre-existing alert rule → **4 days of production traffic, zero Loops SDK failures of any kind**.
+
+Small sample, but it's the first real data point and points at **hybrid-stays-hybrid, not migration**. Continue watching for 2 weeks. Migration case remains speculative until concrete failures accumulate.
+
+### 🚨 Bounce-detection pipeline — narrower catch class than we thought
+
+**Two regressions surfaced today.** Correction on the 9/2 WWLO framing: "auto-bounce detection proved itself live" was based on 1 clean catch. Real picture as of today after digging:
+
+**What the pipeline handles well (2 catches):**
+- Sep 1 EPTDESIGN — instant hard bounce, `mailer-daemon@googlemail.com`, caught + auto-DNC ✅
+- Sep 2 Primaterra — instant hard bounce, same format, caught + auto-DNC ✅
+
+**Partial catch (1 case, no resolution):**
+- Sep 3 ECHO LA — Workflow B correctly classified as `soft_bounce` and logged to ReplyLog with `[Auto-detected soft bounce — no state change]` snippet. Fine so far.
+- Sep 4 (Kevin observed additional temp failures in the same thread) — not in ReplyLog as a separate entry; either dedup'd on thread ID or missed.
+- **Sep 5 hard bounce ("Message not delivered")** — NOT auto-caught. ECHO LA's Prospects row still shows `status = sent_fu1, dnc = FALSE, last_sent = 2026-09-02`. Would receive more follow-ups into a dead inbox if outbound resumed.
+
+**Silent drop (1 case, root cause pending):**
+- Sep 7 mailer-daemon bounce — nothing in ReplyLog, no Prospects state change. Root cause narrowed via n8n audit:
+  - Workflow B ran 48/48 successful cron cycles on 9/7 and 37/37 on 9/8. Zero execution failures. **Classification is failing, not execution.**
+  - Three possible paths (all in Classify Replies Code node): body-format variant the extractor doesn't parse; recipient not in Prospects; or dedup collision.
+  - Needs the actual mailer-daemon email content to diagnose. **Kevin to grab + share next session.**
+
+**Design questions the class surfaces (Workflow B v4 scope — not today):**
+1. When a `soft_bounce` logs, should Workflow B watch the same thread for hard-bounce resolution over the following 48-72h and escalate state on terminal failure?
+2. Should a Prospects row for a soft_bounce recipient auto-pause outbound until the resolution is known, to prevent piling more sends into a probably-dead queue?
+
+**Honest reframe of the 8/31 P0 fix (`9c99068`):** it closed *the specific 8/31 case* (extraction from `mailer-daemon@googlemail.com` for instant hard bounces). It did not close the class. Bounce reliability needs another pass to handle soft-to-hard escalation + at least one additional mailer-daemon format variant.
+
+**In-session exposure closure (ECHO LA):** row 11 manually flipped `status=sent_fu1 → bounced`, `dnc=FALSE → TRUE`, notes appended with the soft→hard sequence context + Workflow B v4 reference. Identity-verified read-first (firm + email match), single `batchUpdate` of 3 cells, read-back verified. Existing Thomas Fitzpatrick note preserved. This closes the immediate risk (no more sends queued against a dead inbox) separately from the underlying class fix.
+
+### Morning check trio — outcomes
+
+| Check | Result |
+|---|---|
+| Sentry `loops_result_success:false` | 0 events / 14D → hybrid-stays-hybrid |
+| Loops Trial-nudge 2 to Warwick | 1 send fired 9/6, queued at 4d timer for Day 7 |
+| hello@ inbox for lfinn / Warwick replies | Silence (both continue in their sequences) |
+| Adjacent finding | 2 bounce-detection regressions surfaced (ECHO LA Sep 5 + Sep 7 unknown) — see regression section above |
+| Adjacent finding — correction | The Sep 5 "Re: For ECHO L.A." thread is NOT prospect engagement. It's a Gmail bounce sequence: temp failures on 9/3-9/4, hard bounce on 9/5. Maggie's server at echolastudio.com was unreachable across all 4 attempts. Corresponds to the long-standing Maggie/ECHO LA soft-bounce case on the watch list — now resolved as a hard bounce, but the pipeline didn't propagate that resolution. |
+
+### scrum.md added as working reference
+
+New file at repo root: `scrum.md`. Distilled from Sutherland & Sutherland's *Scrum* (2014) into two layers — **stable** (book Takeaways + OODA/PDCA/Shu Ha Ri cycle summaries) and **living** (Phasewise application table + Claude Review Checklist + multi-industry note). Purpose: guide feature scoping (how we build) AND encode Scrum principles for the LA firms using the tool (what we build). Claude should walk the Review Checklist before writing code for any new feature. Committed as `1544e6a`.
+
+### Committed today
+
+| SHA | Description |
+|---|---|
+| `1544e6a` | Add scrum.md: reference for building Phasewise the Scrum way |
+
+All other today's work was data operations (Loops API contact update, Google Sheets read + batchUpdate, Hunter API queries) with no repo impact. Auto-blog also shipped `b4fe476` overnight (LEED credits article) — 6 pillar articles autonomous now.
+
+### Uncommitted in working tree
+
+Same untracked items as prior sessions: `automation/n8n-workflow-A*` files, `brand_v2/exports/`, `marketing/`. Still awaiting deliberate decision.
+
+### Next-session pick-ups (ranked)
+
+1. **🚨 Bounce-pipeline diagnosis (two cases)** — bring both the Sep 5 ECHO LA hard-bounce email AND the Sep 7 unknown-bounce email content. With the extractor at `automation/n8n-workflow-B-code-node.js`, I can pin the failure mode(s) locally. ECHO LA's Prospects row was manually resolved in-session; the pipeline-side class fix is still outstanding.
+2. **Warwick Day 7 send monitoring** — MWELO Day 7 (Auto-invoicing) fires ~9/10. First correctly-named Workflow email he'll receive. Check delivery + engagement.
+3. **October Hunter round (after 9/21 reset)** — 9 deferred queued firms + 4 manual-domain-research firms (Mason White, RELM, Lucas & Lucas, SOFT STUDIO). Then consider Email Finder targeted lookups on Ari Daman (PLUS), Julia Shuart (Segal Shuart), Steve Shirrel (BMLA) — all three had wrong-person Hunter Domain Search hits.
+4. **Sentry watch continues** — 2 more weeks of `loops_result_success:false` monitoring before locking hybrid vs. migration decision.
+5. **Workflow B v4 scope (once diagnosis done):** soft-to-hard escalation logic + additional mailer-daemon format variants. Not urgent unless bounce volume grows; important for confidence in the P0 fix framing.
+6. **P2 backlog carry-over:** delete unused Loops template `cmtix6d45001z0jw68jmu0xse` (Trial-nudge 1 unused), Loops SDK stall root fix, Loops Forms sidebar check, general data-quality cleanup, Stripe KYC, Google Ads verification (still Path A — do nothing), Smartlead filter tuning, Charlie Serota, Workflow A files uncommitted.
+7. **Ops:** update Trial-nudge Template 4 when Founding Member spot 20 fills.
+
+---
+
 ## Where We Left Off (2026-09-02 — Sentry alerts done, warm-lead rescue, Fix A shipped end-to-end)
 
 **Status: 🟢🟢🟢 Layered execution day. Sentry Loops-timeout alerting closed out with dashboard rule + verified test. Auto-bounce detection proved itself live catching a real Primaterra bounce. Warmest lead (lfinn31313 / JALA Associates) rescued from silent churn with a founder-touch email sent via Gmail Send-mail-as. Fix A (invite-expiry reminder cron) shipped end-to-end: schema migrated, cron endpoint deployed, Loops template published, env var set, middleware patched to enable external cron testing, backfilled to prevent duplicate nag to lfinn, verified against production with a real curl. 4 commits shipped, 1 schema migration, 1 Loops template created, 1 Vercel env var + redeploy, 1 middleware fix that unblocks future cron testing across the board.**
