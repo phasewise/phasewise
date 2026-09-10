@@ -647,6 +647,112 @@ Higher-volume outreach uses the operational playbook at [`marketing/outreach/PLA
 
 ---
 
+## Where We Left Off (2026-09-10 — Workflow B is a bounce detector, not a reply detector; outbound paused pending rebuild)
+
+**Status: 🟡 Class-closure discovery day. Two real inbound replies today — Wilson Design Studio (Keith, "No thank you") + City Fabrick (auto-OOO) — both silently dropped by Workflow B. Applied the diagnostic-script DoD from scrum.md (filter self-test against known-good ReplyLog rows passed cleanly, then reported the real absence). Pulled Workflow B's config from n8n API and found the root cause: the Get Gmail Messages query is `from:mailer-daemon newer_than:1d`, hardcoded to fetch bounces only. Workflow B has never been a reply classifier in production — it's a bounce detector. The 2026-08-03 build-day WWLO's "classifies as bounce/ooo/negative/positive" was aspirational; the 2026-08-31 v3 rebuild explicitly narrowed scope to bounces and the code header confirms it. Wilson exposure closed in-session (row 76 flipped `sent_fu1 → negative_reply`, `dnc=FALSE → TRUE`, `next_action_date` cleared) so his automated FU#2 doesn't fire 9/17 to someone who declined. Workflow A paused via `Config!B2 PAUSED=TRUE` — no more outbound until Workflow B is rebuilt to actually classify replies. Full workflow JSON saved to scratchpad so next session starts with diagnosis in hand.**
+
+### Wilson + City Fabrick inbound replies — both silent-dropped
+
+Two events landed in `hello@` at 8:15 AM (City Fabrick auto-OOO) + 8:45 AM PT (Wilson Design Studio's Keith Wilson, "No thank you"). Both prospects were mid-sequence — Workflow A had sent their FU#1 that same morning, hence the immediate replies.
+
+Verified via ReplyLog + Prospects reads:
+- **ReplyLog: still 3 rows** (EPTDESIGN 9/1 + Primaterra 9/2 + ECHO LA 9/3 soft_bounce). No entries for either 9/10 reply.
+- **Prospects state for both firms unchanged** — `status=sent_fu1`, `dnc=FALSE`, `next_action_date=2026-09-17` (their programmed FU#2 date).
+- **n8n Workflow B executions**: 30 successes since 9/9, zero failures. Pipeline is running cleanly at 30-min cadence — classification is failing, not execution. Same signature as the 9/8 bounce silent-drop.
+
+**Diagnostic-script DoD guardrail applied.** The check script's filter self-test scanned for known-good substrings (`eptdesign`, `primaterra`, `echolastudio`) and confirmed all 3 hits before drawing conclusions on Wilson/City Fabrick — closes the failure mode from the 9/8 script that filtered `type === 'bounce'` and missed `soft_bounce`. The absence of Wilson/City Fabrick ReplyLog entries is real, not a scan bug.
+
+### Root cause — Workflow B is scoped to bounces only
+
+Pulled full Workflow B JSON from n8n API (`GET /workflows/{id}`, saved to `scratchpad/workflow-b-config-2026-09-10.json`). The 7-node workflow's **Get Gmail Messages** node has a query hardcoded to:
+
+```
+from:mailer-daemon newer_than:1d
+```
+
+Real replies from named prospects (Keith at wdsla.com, info@cityfabrick.org, etc.) never match this query. They never enter the Workflow B pipeline. The Classify Replies Code node — 22KB of parsing logic — is bounce-parsing specific (RFC 3464 DSN + Gmail/M365 conversational patterns for extracting the intended recipient from a mailer-daemon body). The v3 code header (dated 2026-08-31) explicitly names itself "AUTO-BOUNCE DETECTION" and its point #6 says:
+
+> "For non-bounces (normal replies): preserves existing DNC + notes unchanged."
+
+That's a **guard clause** protecting manual DNCs from being clobbered by a stray real reply, not a classifier for negative/ooo/positive. The `ooo / negative / positive` classification the 2026-08-03 original design doc promised was never implemented in production — the v3 rebuild explicitly narrowed scope to bounces.
+
+**In short: Workflow B has never classified real replies in production. It has always been a bounce detector.**
+
+### Class-closure honesty — three rounds now
+
+Applying the class-closure DoD from scrum.md (added 2026-09-08 after the 8/31 overclaim). The honest arc:
+
+- **2026-09-01 WWLO:** "auto-bounce detection proved itself live" — based on 1 clean catch (Primaterra 9/2)
+- **2026-09-08 correction:** walked back to "handles instant hard bounces in a specific mailer-daemon format; doesn't handle soft-to-hard escalation or the Sep 7 variant"
+- **2026-09-10 further correction:** Workflow B **is a bounce detector, not a reply detector.** It has never classified any non-bounce reply and was never scoped to. The 8/3 design doc's "classify as bounce/ooo/negative/positive" was aspirational and never made it into production code. The `ooo`, `negative`, and `positive` types have zero ReplyLog entries ever, across the entire pipeline lifetime, and would continue to have zero even if we ran forever with the current Gmail query.
+
+The class-closure guardrail is doing exactly what we wrote it for. Each pass surfaces a real narrower truth than the last. The 8/31 P0 fix should be understood as: fixed the specific 8/31 EPTDESIGN + Primaterra bounce class. Not a "reply-detection" class fix at all.
+
+### In-session exposure closures + safe-mode switch
+
+**1. Wilson Design Studio row 76 — manual negative_reply flip.**
+- `status: sent_fu1 → negative_reply`
+- `dnc: FALSE → TRUE`
+- `next_action_date: 2026-09-17 → ""` (cleared)
+- Notes appended with the full context (Keith's reply, Workflow B classification miss, exposure closure rationale)
+- Identity-verified read-first (firm + email match), 4-cell `batchUpdate`, read-back verified 4/4
+- Without this, Workflow A would have sent his automated FU#2 on 9/17 to someone who explicitly declined
+
+**2. Workflow A paused via `Config!B2 PAUSED=TRUE`.**
+- Config previously: `PAUSED=FALSE, daily_cap_hello=8, TEST_MODE=FALSE`
+- Now `PAUSED=TRUE` — next Workflow A cron tick reads this and skips send
+- Workflow A itself stays active in n8n (cron keeps firing) but the Code node's decide-what-to-send loop exits early on PAUSED=TRUE
+- Rationale: since Workflow B is proven blind to real replies, every outbound day risks sending FU#2 to more silent "no thank you" replies AND burning sender reputation on prospects who already declined. Pause is safer than "manually check inbox daily" while classification is broken.
+
+**3. City Fabrick — NOT manually adjusted.** OOO responses shouldn't halt a sequence; her FU#2 on 9/17 is actually correct behavior. Only the audit-trail entry (ReplyLog row) is missing, which is cosmetic. When Workflow B is rebuilt, we might backfill this manually or accept the gap in the historical log.
+
+### The real fix — two-part, non-trivial
+
+Not a fresh-session quick fix. Real feature scope.
+
+**Part 1: Rewrite the Gmail query.**
+Current: `from:mailer-daemon newer_than:1d`
+Target shape: `newer_than:1d (from:mailer-daemon OR (in:inbox -label:"Smartlead Warmup" -from:me))` (approximate — will need testing)
+Design constraints: catch real replies from prospects, exclude Smartlead warmup traffic, exclude Kevin's own outbound threading, exclude DMARC/Postmaster reports, exclude Loops autoreplies to hello@. Not trivial — needs a real query design pass + regression testing against known-good bounce cases so the existing bounce path doesn't break.
+
+**Part 2: Extend the Classify Replies Code node.**
+The 22KB of existing code handles bounce-only paths. The `ooo`, `negative`, `positive` classification will need to be built. Fortunately today's incidents give us **the perfect test corpus**: Keith Wilson's "No thank you" message (a clear negative) + City Fabrick's OOO auto-response. Real-message test fixtures make classifier development safer than synthetic ones. Would also want to preserve the diagnostic-script DoD discipline — test the new classifier against BOTH types before shipping.
+
+**Estimated effort:** 2-4 hours realistic. Plus verification against Wilson + City Fabrick actual bodies (Kevin has both in his inbox).
+
+### Workflow B v3 code header — what it actually says
+
+Preserved for reference so future sessions don't need to re-pull:
+
+- v3 shipped 2026-08-31 as "AUTO-BOUNCE DETECTION"
+- Detects mailer-daemon senders + parses intended recipient from bounce body (RFC 3464 DSN + Gmail/M365 conversational patterns)
+- Matches extracted recipient to a prospect row
+- Classifies hard vs soft bounce (5xx vs 4xx SMTP + language cues)
+- Hard bounces → `status=bounced`, `dnc=TRUE`, notes appended (preserving prior manual DNCs)
+- Soft bounces → ReplyLog entry only, no state change
+- Non-bounces → **preserved unchanged** (protection against blanking manual DNCs, NOT classification)
+
+**Requires `Simplify=OFF` on the Get Gmail Messages node so `payload.headers[]` + `payload.parts[]` are available.**
+
+### Committed today
+
+No commits landed at time of this WWLO. Live-system operations (Sheets writes for Wilson + Config PAUSED, n8n API reads for diagnosis) had no repo impact.
+
+WWLO commit will follow separately.
+
+### Next-session pick-ups (ranked)
+
+1. **🚨 P0 — Rebuild Workflow B to actually classify replies** — Part 1 (Gmail query) + Part 2 (classifier extension). Test corpus already at hand (Wilson + City Fabrick bodies in Kevin's inbox). Full workflow JSON at `scratchpad/workflow-b-config-2026-09-10.json`. **BLOCKS outbound resumption.**
+2. **Sep 7 bounce diagnosis (still pending from 9/8)** — Kevin to grab the mailer-daemon body from that inbound, share for extractor test. Now folded into the broader Workflow B rebuild.
+3. **ECHO LA 9/5 hard bounce diagnosis (still pending from 9/8)** — same treatment.
+4. **After Workflow B is fixed:** flip `Config!B2 PAUSED` back to `FALSE` to resume outbound.
+5. **Optional backfill:** manually add ReplyLog entries for Wilson negative (9/10) + City Fabrick OOO (9/10) for audit completeness. Cosmetic.
+6. **Sentry watch continues** — `loops_result_success:false` still at zero events.
+7. **P2 backlog carry-over:** delete unused Loops template `cmtix6d45001z0jw68jmu0xse`, Loops SDK stall root fix, Loops Forms sidebar check, Google Ads verification (still Path A), Charlie Serota, Workflow A files uncommitted.
+8. **Ops:** update Trial-nudge Template 4 when Founding Member spot 20 fills.
+
+---
+
 ## Where We Left Off (2026-09-08 — Category 6 backfill + Warwick fix + first Resend-data signal + a real bounce-pipeline regression)
 
 **Status: 🟢🟡 Solid morning of data + operations work with two related open problems carried into next session. Hunter Category 6 backfill filled in 12 of the 22 empty-email prospect rows (5 send-ready emails + 7 audit notes) at ~90% of monthly free-tier budget. Warwick Hunt's Loops firstName typo (`Wrawick` → `Warwick`) fixed via API before the next Workflow send. Confirmed Workflow B fired the Day 3 MWELO email to Warwick on schedule (though with the pre-fix typo). First Sentry data point on the Resend migration question landed: zero `loops_result_success:false` events in 14 days → hybrid-stays-hybrid still holds. But: caught two regressions on the auto-bounce detection pipeline — ECHO LA's Sep 5 hard bounce (soft-to-hard escalation) not resolved to state change, and an unrelated Sep 7 bounce silently dropped. Workflow B ran cleanly across both days at 30-min cadence with zero execution failures — classification is failing, not execution. Both need the actual bounce email content to diagnose next session. Also: scrum.md added as a working reference file for how we build Phasewise.**
