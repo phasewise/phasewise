@@ -647,6 +647,88 @@ Higher-volume outreach uses the operational playbook at [`marketing/outreach/PLA
 
 ---
 
+## Where We Left Off (2026-09-11 — Workflow B v4 shipped end-to-end, `$input.all()` gotcha surfaced + fixed, Workflow A unpaused)
+
+**Status: 🟢🟢🟢 The full arc closed in one long session. Started with the v4 spec Kevin approved yesterday, ended with production classification proven working via a controlled test send, Wilson + City Fabrick manually backfilled to ReplyLog, and Workflow A off pause. The mid-session detour that ate the morning: an n8n runtime gotcha where `$input.all()` in the Classify Replies Code node was silently returning items from Read SendLog (243 rows) instead of Get Gmail Messages (5-6 rows), because I'd inserted Read SendLog upstream and `$input` follows the DIRECTLY PREVIOUS node. Local vm sandbox tests missed it because they mocked `$input.all()` directly with Gmail data — the only way to see the bug was a live-tick production test, which is exactly what Path 2 delivered.**
+
+### Stage D + E — deploy v4 to n8n
+
+Assembled the full workflow-b-v4 JSON from the 2026-09-10 baseline plus:
+- Gmail query rewrite: `from:mailer-daemon newer_than:1d` → `newer_than:1d in:inbox -label:"Smartlead Warmup" -from:me`
+- New Read SendLog node between Read ReplyLog and Classify Replies (Google Sheets read of SendLog tab, reuses existing credential)
+- Classify Replies code node replaced: v3's 22.6 KB bounce-only → v4's 19.9 KB dispatcher (bounce + ooo + negative + positive + unclassified_prospect_reply + noise_skipped)
+- Update Prospect Row `onError: continueRegularOutput` (defensive; OOO with no_match has null prospect_email and Update silently skips instead of crashing the workflow)
+- Position shifts + connection rewire to include Read SendLog
+
+Deployed via n8n Public API PUT to workflow `LrUltZOBQ1zBQs5m`. First deploy at 22:52 UTC 9/10 hit a schema error — `settings` block on GET returns fields the PUT schema rejects (`timeSavedMode`, `callerPolicy`, `availableInMCP`); pruned to the accepted subset and PUT succeeded. Live active preserved through the update.
+
+**Belt-and-suspenders backups:** every PUT is preceded by a fresh GET saved to `scratchpad/workflow-b-live-backup-<timestamp>.json` — so rollback is always one command away.
+
+### 🚨 The n8n runtime gotcha — `$input.all()` vs `$('Named Node').all()`
+
+Deployed classifier passed 14/14 local fixtures + 5/5 real-message tests (via `vm.runInContext` sandbox using actual execution data from exec 3193). Then 31 consecutive live ticks fired successfully — zero errors, zero items emitted. Wilson's negative and City Fabrick's OOO both stayed unclassified in production despite being in the Gmail query results.
+
+Diagnosed by deploying a minimal diagnostic Code node that emitted one item per Gmail message with shape probes: `$input.all().length`, first-item keys, `typeof msg.from`, etc. Tick 3303 fired, and the diagnostic output showed **`$input.all().length = 243`** — the SendLog row count, not the Gmail message count. Every "message" the classifier iterated had `from.typeof: undefined` because SendLog rows don't have a `from` field.
+
+Root cause: **n8n Code node `$input.all()` returns items from the DIRECTLY UPSTREAM node.** When Read SendLog was inserted between Read ReplyLog and Classify Replies in v4, `$input` silently redirected from Get Gmail Messages to Read SendLog. Every classifier iteration hit `noise_skipped: non_prospect_no_pattern` because SendLog rows don't look like emails.
+
+**Fix:** one line —
+
+```diff
+- for (const item of $input.all()) {
++ for (const item of $('Get Gmail Messages').all()) {
+```
+
+Redeployed at 17:02 UTC 9/11. Local vm sandbox against exec 3291 data (which had Wilson + CF) confirmed the fix emits the correct 2 items (`negative` + `ooo`).
+
+**Why local tests missed it:** the pure classifier module never touches `$input` — it takes an already-parsed message + context object as parameters. The 14 fixture tests exercise `classify(message, context)` directly. The e2e wrapper test (`run-live-code-locally.js`) mocked `$input.all()` with Gmail items directly, bypassing the exact bug. **Only a live tick could catch this.** Encoded as a new Definition of Done row in scrum.md and locked with a Path 2 production test going forward — see below.
+
+### Path 2 — controlled production test (the smoke test that actually proved v4)
+
+Wilson (15:45 UTC 9/10) + CF (15:15 UTC 9/10) aged past `newer_than:1d` during the debug hours, so the natural verification path was gone. Instead, added a temp Prospects row 81 for a controllable sender and had Kevin send a real reply.
+
+- Temp row: `email=team@quadrumhq.com, firm_name=[TEST] Workflow B v4 controlled test, status=sent_fu1, dnc=FALSE, notes="[TEMP TEST ROW — delete after…]"`
+- Kevin sent from `team@quadrumhq.com` → `hello@phasewise.io` with subject `Test — v4 verify` + body `hello\n\nNo thank you`. Landed in Primary inbox at 18:07 UTC.
+- Tick 3308 fired at 18:30 UTC → **Classify Replies emitted 1 item → `type=negative, prospect=team@quadrumhq.com, confidence=high, link_method=sender_match`.**
+- Update Prospect Row flipped row 81: `status → negative_reply, dnc → TRUE, thread_id → 1a091a6e4f83218e, notes appended with "Auto-DNC 2026-09-11: negative_reply classification (Workflow B v4, confidence=high). Snippet: \"No thank you\""`.
+- Append ReplyLog wrote row 5: `2026-09-11T18:30:05.483Z / team@quadrumhq.com / [TEST]… / negative / "No thank you" / <real thread id> / <real message id>`.
+
+Every downstream stage (Classify → Update → Append) worked as spec'd against a real inbound message in the actual n8n runtime. Not equivalence proof. Production proof.
+
+### Cleanup + Stage F + Stage G
+
+- **Cleanup**: temp row 81 + temp ReplyLog row 5 deleted via batchUpdate `deleteDimension`. Sheets restored to pre-test state (79 prospects, 3 real ReplyLog rows).
+- **Stage F**: manual ReplyLog backfill for the two 9/10 events —
+  - row 5: `2026-09-10T15:15:15Z / info@cityfabrick.org / City Fabrick / ooo / "[Manual backfill 2026-09-11] I am out of office with limited access to email…" / 1a08be350fb66ce2 / 1a08be350fb66ce2`
+  - row 6: `2026-09-10T15:45:27Z / info@wdsla.com / Wilson Design Studio / negative / "[Manual backfill 2026-09-11] No thank you" / 1a08bff01c55124c / 1a08bff01c55124c`
+  - Both carry the real Gmail thread + message IDs so dedup catches them if they ever re-enter the query window (they won't; already past newer_than:1d).
+- **Stage G**: `Config!B2 PAUSED = TRUE → FALSE`. Read-back verified. **Workflow A resumes on next cron tick — Monday 2026-09-14 at 8am PT (15:00 UTC).** Weekend gap is intentional per the cron `*/15 8-16 * * 1-4` (Mon-Thu Pacific window).
+
+### Committed today
+
+| SHA | Description |
+|---|---|
+| _pending_ | Add `automation/wb-classify-v4.js` + `automation/test-wb-classifier.js` as canonical references. 14 fixtures pass including 3 real-inbox regression cases from 2026-09-10. |
+| _pending_ | scrum.md: add "Definition of Done — n8n Code node addendum" row capturing the `$input.all()` gotcha + Path 2 requirement. |
+| _pending_ | This WWLO. |
+
+All live-system operations (n8n API PUTs, Google Sheets appends/updates/deletes, Config PAUSED flip) had no repo impact — they touched external systems only.
+
+### Uncommitted in working tree
+
+Same as prior sessions: `automation/n8n-workflow-A*` files, `automation/n8n-workflow-B-code-node.js` (still v3, not updated to v4 — v4 lives in n8n and now in `automation/wb-classify-v4.js` as the canonical source), `brand_v2/exports/`, `marketing/`. Deliberate carry-over.
+
+### Next-session pick-ups (ranked)
+
+1. **Monday 9/14 8am PT — watch first Workflow A cron tick after unpause.** First outbound in 4 days. Verify a normal send happens, SendLog row appended, Prospects `last_sent_date` updated. If anything unexpected, we still have Workflow A files in scratchpad and Config to re-pause instantly.
+2. **Monday-Thursday 9/14–9/17 — monitor first real reply classifications.** Any real prospect reply this week is a fresh production data point on the v4 classifier. Watch ReplyLog for new rows with `reply_type ∈ {negative, ooo, positive, unclassified_prospect_reply}`.
+3. **Sep 7 unknown bounce diagnosis** — carried over from 9/8 and 9/10. Grab the mailer-daemon body, run through v4's extractor. If v4 catches it, add to fixture set as bounce_hard case 15. If not, add regex pattern to `BOUNCE_RECIPIENT_PATTERNS` and re-verify.
+4. **ECHO LA 9/5 soft-to-hard escalation** — same treatment. Class fix needed for the underlying state-machine problem (soft_bounce logged, then hard bounce on same thread should escalate). Deferred to v5 per original spec.
+5. **Sentry watch continues** — `loops_result_success:false` still at 0 events per the 2026-09-04 alert rule.
+6. **P2 backlog carry-over**: delete unused Loops template `cmtix6d45001z0jw68jmu0xse`, Loops SDK stall root fix, Loops Forms sidebar check, Google Ads verification (still Path A), Charlie Serota, Workflow A files uncommitted.
+
+---
+
 ## Where We Left Off (2026-09-10 — Workflow B is a bounce detector, not a reply detector; outbound paused pending rebuild)
 
 **Status: 🟡 Class-closure discovery day. Two real inbound replies today — Wilson Design Studio (Keith, "No thank you") + City Fabrick (auto-OOO) — both silently dropped by Workflow B. Applied the diagnostic-script DoD from scrum.md (filter self-test against known-good ReplyLog rows passed cleanly, then reported the real absence). Pulled Workflow B's config from n8n API and found the root cause: the Get Gmail Messages query is `from:mailer-daemon newer_than:1d`, hardcoded to fetch bounces only. Workflow B has never been a reply classifier in production — it's a bounce detector. The 2026-08-03 build-day WWLO's "classifies as bounce/ooo/negative/positive" was aspirational; the 2026-08-31 v3 rebuild explicitly narrowed scope to bounces and the code header confirms it. Wilson exposure closed in-session (row 76 flipped `sent_fu1 → negative_reply`, `dnc=FALSE → TRUE`, `next_action_date` cleared) so his automated FU#2 doesn't fire 9/17 to someone who declined. Workflow A paused via `Config!B2 PAUSED=TRUE` — no more outbound until Workflow B is rebuilt to actually classify replies. Full workflow JSON saved to scratchpad so next session starts with diagnosis in hand.**
