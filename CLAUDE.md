@@ -647,6 +647,102 @@ Higher-volume outreach uses the operational playbook at [`marketing/outreach/PLA
 
 ---
 
+## Where We Left Off (2026-09-24 — n8n execution-limit emergency + cadence-reduction fix, verification pinned for Sept 27)
+
+**Status: 🟡 → 🟢 Emergency triage day. Came back after 13-day break to find both Outreach Reply Detectors + both Queue+Senders (Phasewise + Quadrum brands) failing at the Schedule Trigger with `Execution limit reached`. n8n Cloud Starter's 2,500/month cap blown by the two 30-min Reply Detectors alone (~2,880/month between them). Scoped dark window at ~41 hours, confirmed zero writes attempted (fails at platform-level pre-execute hook before any node code runs), confirmed hello@ inbox had no real prospect replies during the window (Kevin visual scan). Applied Option B — cadence reduction across all 4 workflows — in one atomic pass, all 4 verified via read-back. Projected new baseline ~2,140/month, fits Starter's cap with ~360 headroom. No cost, minor latency tradeoff (reply detection avg 15→30 min). Verification pinned for Sat 2026-09-27 after billing anchor reset lifts the current-cycle cap.**
+
+### The failure — 41 hours dark, discovered at session open
+
+Kevin flagged the ceiling had been hit before I opened any tools. Diagnostic pass via n8n Public API confirmed:
+
+- **Workflow A** (`okdNQXfRPjv3xTAg`) — last success id=4809 at 2026-09-22 23:15 UTC; first failure id=4813 at 2026-09-22 23:30 UTC (Mon 16:30 PT). 45 consecutive failures across the dark window.
+- **Workflow B** (`LrUltZOBQ1zBQs5m`) — last success id=4810 at 2026-09-22 23:30 UTC; first failure id=4823 at 2026-09-23 00:00 UTC (Mon 17:00 PT). 82 consecutive failures.
+- Both still marked `active=true` — n8n Cloud doesn't auto-deactivate on cap hit, just refuses to spawn.
+- Error text (via `GET /executions/5361?includeData=true`): `"Execution limit reached. Consider upgrading your plan"` thrown at `Object.sendPreExecuteEvent` in `/home/node/.n8n/hooks.js:18074:19`. Platform-level pre-execute hook — throws BEFORE any Schedule Trigger node code runs. Executions never attempt any writes. **Zero corruption risk**, confirmed by comparing SendLog + ReplyLog state pre-failure vs post-failure (identical).
+
+### Blast radius — safe on both sides
+
+**Outbound (Workflow A):** SendLog from 9/14-17 shows the pipeline drained cleanly — Mon 9/14 (8, daily cap), Tue 9/15 (8, daily cap), Wed 9/16 (6, queue draining), Thu 9/17 (1, queue near-empty). By Mon 9/22 the queue was already empty; Workflow A's morning cron ticks had nothing to send. **Zero real outbound cost from the dark window** — nothing was queued when the ceiling hit, and nothing wrong was sent.
+
+**Inbound (Workflow B):** Kevin visually scanned hello@ inbox for the full 41-hour window and confirmed **zero real prospect replies landed** — just DMARC report + Capterra/Hunter promo noise. Nothing needing manual ReplyLog backfill. (Historical inbound rate ~2-3 real replies/week, so 0 in 41 hours is on the lower end of plausible but not surprising.) For context, ReplyLog since the Sept 11 backfill added 2 real Workflow B v4 classifications — both 9/15 22:00 UTC + 9/19 18:30 UTC — both correctly logged as `ooo` with `no_match` link_method (generic auto-responders, no Prospects tie).
+
+### Root cause — execution budget oversubscribed
+
+Full active-workflow inventory + monthly execution math:
+
+| Workflow | Cron | Monthly executions |
+|---|---|---|
+| Phasewise WF B (Reply Detector) | `*/30 * * * *` | 1,440 |
+| Quadrum WF B (Reply Detector) | `*/30 * * * *` | 1,440 |
+| Phasewise WF A (Queue+Sender) | `*/15 8-16 * * 1-4` | ~620 |
+| Quadrum WF A (Queue+Sender) | `*/15 15-23 * * 1-4` | ~620 |
+| Social Media Auto-Post | 9/12/17 daily Mon-Fri | ~66 |
+| Phasewise SEO content | Fri 7:00 UTC | ~4 |
+| Quadrum blog | Fri 14:00 UTC | ~4 |
+| Monthly AI Refill | 1st of month | 1 |
+| Error triggers | on-error only | ~10-20 |
+| **Total baseline** | | **~4,200/month** |
+
+**Starter tier cap: 2,500/month.** The two 30-min Reply Detectors alone burn 2,880/month — over the cap by themselves before anything else runs. Reply Detectors were the highest-leverage cut point.
+
+n8n plan billing anchor per Kevin's dashboard: 27th of each month, $24 charge. Current-cycle cap lifts Sat 2026-09-27.
+
+### Fix — Option B, one atomic pass
+
+Rejected **Option A** (upgrade to Pro ~$50/mo) — no need to spend for 3 days of headroom when a cadence trim solves the class. Rejected **Option D** (deactivate Quadrum) — Quadrum outreach is genuinely running and we don't want to sacrifice a live channel.
+
+Applied **cadence reduction across all 4 workflows** in a single script pass. Each PUT: fresh backup of full workflow JSON → build modified payload (only Schedule Trigger cron expression changed) → PUT with pruned settings (per 2026-09-10 lesson — strip `timeSavedMode`/`callerPolicy`/`availableInMCP` etc.) → read-back verify.
+
+| # | Workflow | Old cron | New cron | Monthly savings |
+|---|---|---|---|---|
+| 1 | Phasewise WF B | `*/30 * * * *` | `0 * * * *` | ~720 |
+| 2 | Quadrum WF B | `*/30 * * * *` | `0 * * * *` | ~720 |
+| 3 | Phasewise WF A | `*/15 8-16 * * 1-4` | `*/30 8-16 * * 1-4` | ~310 |
+| 4 | Quadrum WF A | `*/15 15-23 * * 1-4` | `*/30 15-23 * * 1-4` | ~310 |
+| **Total** | | | | **~2,060** |
+
+**Projected new baseline: ~2,140/month.** Fits Starter's 2,500 cap with ~360 headroom.
+
+All 4 verified: HTTP 200, cron flipped to new value, `active=true` preserved, node count unchanged. Payloads pruned to `{name, nodes, connections, settings}` — the schema PUT actually accepts.
+
+**Belt-and-suspenders backups:** full pre-PUT workflow snapshots at `C:/dev/phasewise/scratchpad/*-backup-2026-09-24T17-09-48.json`. Rollback is one PUT away.
+
+**Tradeoffs of the cadence trim:**
+- Reply detection latency: 15 min avg → 30 min avg. For OOO / bounce / negative — no meaningful impact. For a hot positive reply that would otherwise get a same-hour human response, the classifier + ReplyLog entry may sit ~30 min longer. Acceptable at current reply volume.
+- Outbound send cadence: 15 min → 30 min ticks. Daily cap is 8, so under the old cadence the cap was typically hit within 2 hours; under 30 min it'll hit within 4 hours. Real throughput unchanged (cap is the ceiling, tick frequency isn't).
+
+### The reset-date wrinkle — verification held until Sept 27
+
+Kevin picked Path 1 (wait for reset, $0) over Path 2 (temp Pro upgrade ~$5-30 for 3 days of verification). **Cadence changes are LIVE now**, but the current cycle's 2,500 cap is already blown — every cron tick will still fail with the same error until the billing anchor resets. Cosmetically ugly (workflows spam failure events through Sat) but harmless (same pre-execute pretrap, zero writes). Kevin's Sept 27 charge lifts the cap; first cron ticks after that = clean successful executions on the new cadence.
+
+**Verification checkpoint pinned in the todos:** after Sat 2026-09-27, pull execution history for all 4 workflows, confirm ≥2 consecutive clean runs per workflow under new cadence, confirm no unexpected downstream errors from the trim (e.g. a Prospects row that expected 15-min follow-up gap now sees 30-min — should be fine since Config gates on days not sub-day intervals, but worth eyeballing).
+
+### Adjacent status while investigating
+
+- **Hunter.io:** 0/50 searches used, plan resets 2026-10-21 (billing anniversary — corrected from earlier ~9/21 estimate in prior WWLOs).
+- **Sentry:** `loops_result_success:false` filter, 14-day window = **zero events**. 22 straight quiet days confirms hybrid-stays-hybrid decision from the 2026-09-08 investigation. Migration case stays where it was.
+
+### Committed today
+
+| SHA | Description |
+|---|---|
+| _pending_ | CLAUDE.md: 2026-09-24 WWLO — n8n execution-limit emergency + cadence-reduction fix + Sept 27 verification checkpoint |
+
+Live-system operations (4 n8n PUTs, 1 Sheets read pass, 1 Hunter status query) had no repo impact — external state only.
+
+### Uncommitted in working tree
+
+Same untracked items as prior sessions: `automation/n8n-workflow-A*` files, `automation/n8n-outreach-pipeline-design.md`, `automation/SEO_BLOG_AUTOMATION_PORTING_GUIDE.md`, `brand_v2/exports/`, `marketing/`. Deliberate carry-over.
+
+### Next-session pick-ups (ranked)
+
+1. **🚨 Sat 2026-09-27 or Mon 2026-09-28 — verify all 4 workflows firing cleanly under new cadence.** After the Sept 27 billing anchor reset, pull execution history for `LrUltZOBQ1zBQs5m`, `RbVIB5dKoYukZzKX`, `okdNQXfRPjv3xTAg`, `dOml9cRfwnscTgcQ`. Confirm ≥2 consecutive success executions per workflow. **This closes the class** — cadence-fix approach only proven when we see real ticks pass.
+2. **Watch for prospect replies during 9/25-27 dark tail.** Any real reply that lands before reset will silent-drop the same way as the 41-hour window. Historical rate 2-3/week means 1 real reply in the remaining ~3 days is possible. Manual hello@ scan Fri mid-day + Sat morning.
+3. **P2 backlog carry-over from 9/11:** delete unused Loops template `cmtix6d45001z0jw68jmu0xse` (Trial-nudge 1 unused), Loops SDK stall root fix, Loops Forms sidebar check, Google Ads verification (still Path A), Charlie Serota, Workflow A files uncommitted, Sep 7 unknown bounce diagnosis, ECHO LA 9/5 soft-to-hard escalation.
+4. **Ops:** update Trial-nudge Template 4 when Founding Member spot 20 fills.
+
+---
+
 ## Where We Left Off (2026-09-11 — Workflow B v4 shipped end-to-end, `$input.all()` gotcha surfaced + fixed, Workflow A unpaused)
 
 **Status: 🟢🟢🟢 The full arc closed in one long session. Started with the v4 spec Kevin approved yesterday, ended with production classification proven working via a controlled test send, Wilson + City Fabrick manually backfilled to ReplyLog, and Workflow A off pause. The mid-session detour that ate the morning: an n8n runtime gotcha where `$input.all()` in the Classify Replies Code node was silently returning items from Read SendLog (243 rows) instead of Get Gmail Messages (5-6 rows), because I'd inserted Read SendLog upstream and `$input` follows the DIRECTLY PREVIOUS node. Local vm sandbox tests missed it because they mocked `$input.all()` directly with Gmail data — the only way to see the bug was a live-tick production test, which is exactly what Path 2 delivered.**
