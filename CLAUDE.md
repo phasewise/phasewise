@@ -647,6 +647,70 @@ Higher-volume outreach uses the operational playbook at [`marketing/outreach/PLA
 
 ---
 
+## Where We Left Off (2026-09-29 — Post-9/27 reset verification, class closed ✅)
+
+**Status: 🟢 Verification day. The Sat 2026-09-27 billing anchor lifted the n8n Cloud Starter cap on schedule. Post-reset window shows all 4 workflows firing cleanly on the new cadence — 163 total executions across 48 hours, zero errors, zero state corruption. The 2026-09-24 cadence-reduction fix is proven in production. Class officially closed.**
+
+### Per-workflow post-reset results
+
+| Workflow | Post-reset execs | Consecutive successes | Errors | Latest tick |
+|---|---|---|---|---|
+| Phasewise WF B (Reply Detector) | 63 | 63 | 0 | 2026-09-29 14:00 UTC |
+| Quadrum WF B (Reply Detector) | 64 | 64 | 0 | 2026-09-29 14:00 UTC |
+| Phasewise WF A (Queue+Sender) | 18 | 18 | 0 | 2026-09-28 23:30 UTC |
+| Quadrum WF A (Queue+Sender) | 18 | 18 | 0 | 2026-09-29 06:30 UTC |
+| **Total** | **163** | **163** | **0** | |
+
+Both Reply Detectors are firing every hour on the top (`0 * * * *`); both Queue+Senders fired their full Mon-Thu send window Monday 9/28 without incident. The reset actually appears to have lifted the cap slightly ahead of the billing date (midnight UTC 9/27 = 5pm PT 9/26), based on the 2026-09-26 16:00 UTC ReplyLog entry.
+
+### ReplyLog — 3 new rows post-outage, all safe
+
+- 2026-09-26 16:00 UTC — `ooo`, no_match (generic auto-responder)
+- 2026-09-27 16:00 UTC — `ooo`, no_match
+- 2026-09-28 19:00 UTC — `ooo`, no_match
+
+All three are Workflow B v4 correctly bucketing OOO auto-responders that don't tie to any active prospect. Zero manual triage required.
+
+### SendLog post-reset — 0 sends, but not a bug
+
+Last outbound was 2026-09-24 (BLOCS + Segal Shuart + PLAT Studio, all step=3 breakups). Monday 9/28's 18 clean WF A ticks read Config + Prospects + correctly emitted zero sends because **the campaign queue was drained through step-3 breakups**. Verified by the fact that WF A ran the full window cleanly without erroring. This surfaced the actual top constraint — see strategic assessment below.
+
+### Strategic assessment — cold outreach post-mortem
+
+Pulled the full pipeline data (79 prospects, 109 sends across Waves 1-6). Honest numbers:
+
+| Metric | Value |
+|---|---|
+| Prospects contacted (has last_sent_date) | 53 |
+| Hard bounced (status=bounced) | 15 (28.3% of contacted) |
+| Manual DNC decisions | 2 |
+| Cycled full 3-step sequence, total silence | 42 (79.2% of contacted) |
+| Human replies of any kind | **1** (Wilson Design "no thanks") |
+| Positive replies / trials / conversions | **0** |
+
+**Honest diagnosis: three problems compounding, not one:**
+1. **List quality** is the base-rate killer — 28% bounce rate (industry norm <5%) means we're burning sends + reputation on Hunter-flagged accept_all domains + confirmed-undeliverable addresses that shouldn't have entered the pipeline. Several 2026-08-28 DNCs came from Hunter deliverability failures AFTER queueing.
+2. **Message unproven** — with only ~40 sends that actually reached inboxes and 1 human reply, we don't have enough clean signal to know if the "Founding Member $49/mo" pitch resonates. But the 1 real reply was negative.
+3. **Channel weakness** — for LA firms, cold email is the weakest B2B SaaS discovery path. Competitors (Monograph, Deltek, BQE) primarily win via ASLA presence, Capterra searches when actively shopping, and referrals from existing clients.
+
+**Not just Wave-6-refresh territory.** Refilling the queue at the same volume through the same broken infrastructure with the same message will produce another 0-of-N result. Kevin's decision framework (delivered as chat, not encoded here): (a) fix list quality + one message rewrite + small controlled batch, (b) pause cold email, lean into organic + directory + community, or (c) narrower wedge (MWELO calculator alone) instead of full-platform pitch.
+
+### Committed today
+
+| SHA | Description |
+|---|---|
+| _pending_ | CLAUDE.md: 2026-09-29 verification closure + cold-outreach post-mortem |
+
+Live-system operations (n8n API reads + Sheets reads) had no repo impact.
+
+### Next-session pick-ups
+
+1. **Kevin decides on cold-outreach strategy** — Path A (fix list + iterate), Path B (pause, pivot channels), or Path C (narrower wedge). No sending until direction chosen.
+2. **P2 backlog carry-over from 9/11**: Sep 7 unknown-bounce diagnosis, ECHO LA 9/5 soft-to-hard escalation, delete unused Loops template `cmtix6d45001z0jw68jmu0xse`, Loops SDK stall root fix.
+3. **First paying customer** remains the single metric per the 2026-08-02 reframe.
+
+---
+
 ## Where We Left Off (2026-09-24 — n8n execution-limit emergency + cadence-reduction fix, verification pinned for Sept 27)
 
 **Status: 🟡 → 🟢 Emergency triage day. Came back after 13-day break to find both Outreach Reply Detectors + both Queue+Senders (Phasewise + Quadrum brands) failing at the Schedule Trigger with `Execution limit reached`. n8n Cloud Starter's 2,500/month cap blown by the two 30-min Reply Detectors alone (~2,880/month between them). Scoped dark window at ~41 hours, confirmed zero writes attempted (fails at platform-level pre-execute hook before any node code runs), confirmed hello@ inbox had no real prospect replies during the window (Kevin visual scan). Applied Option B — cadence reduction across all 4 workflows — in one atomic pass, all 4 verified via read-back. Projected new baseline ~2,140/month, fits Starter's cap with ~360 headroom. No cost, minor latency tradeoff (reply detection avg 15→30 min). Verification pinned for Sat 2026-09-27 after billing anchor reset lifts the current-cycle cap.**
