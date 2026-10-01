@@ -728,7 +728,7 @@ One Strong-fit prospect from batch 2 sent an automatic out-of-office reply at 8:
 
 ### Correction: the "no_match" out-of-office rows are Instagram emails
 
-On 9/29 I described the unmatched `ooo` rows in ReplyLog as generic auto-replies without reading them. Their snippets show they're **Instagram notification emails** ("Catch up on Instagram", "New people to discover") that Workflow B mislabels as out-of-office. No prospect rows were affected, but they pollute the reply log Path A will be judged on. **Proposed fix, awaiting Kevin's approval:** add `instagram.com` and `facebookmail.com` to `NOISE_DOMAINS` in the classifier (`automation/wb-classify-v4.js` + live Workflow B), add a test case, then verify the next run. Separately, optionally remove the existing Instagram rows from ReplyLog after reading each one.
+On 9/29 I described the unmatched `ooo` rows in ReplyLog as generic auto-replies without reading them. Their snippets show they're **Instagram notification emails** ("Catch up on Instagram", "New people to discover") that Workflow B mislabels as out-of-office. No prospect rows were affected, but they pollute the reply log Path A will be judged on. **Fixed and shipped 10/1 (`a01d9a4`):** the root cause was the classifier treating `Precedence: bulk/junk` and `X-Auto-Response-Suppress` as auto-reply signals (newsletters carry them too). Those rules were removed, `instagram.com` and `facebookmail.com` were added to `NOISE_DOMAINS`, and two regression fixtures were added (16/16 pass). Live Workflow B was updated with the same change; its first runs on the new code (11:00 AM and noon PT) succeeded. Still optional: remove the old Instagram rows from ReplyLog after reading each one.
 
 ### Lessons from this stretch
 
@@ -742,14 +742,15 @@ On 9/29 I described the unmatched `ooo` rows in ReplyLog as generic auto-replies
 | SHA | Description |
 |---|---|
 | `dd554cd` | CLAUDE.md: 2026-09-29 WWLO (verification + cold-outreach post-mortem) |
-| _pending_ | This entry |
+| `493bd0a` | This entry |
+| `a01d9a4` | Workflow B: stop reading newsletter headers as out-of-office (+ 2 test fixtures) |
 
 Live-system changes (sheet rows, the new n8n workflow, sends) have no repo impact.
 
 ### Next-session pick-ups (ranked)
 
 1. **🚨 Day-5 follow-ups, Wed 10/7 and Thu 10/8: Kevin sends by hand** (decided 10/1, to keep the test isolated from the production pipeline). Gmail reply in each thread, Schedule Send 8 AM PT; the per-recipient send sheet is in `PATH-A.private.md`. Skip anyone who has really replied. After each day, Claude updates the rows to `path_a_fu1` and adds SendLog rows (keeps Workflow B's subject matching working).
-2. **Instagram noise fix in Workflow B** (pending approval, see above).
+2. **Optional: clean the old Instagram rows out of ReplyLog** (read each first; needs Kevin's approval).
 3. **Verify the Gmail connector** in the new session (look up message `1a0f2d475c5ec054`), then spot-check Sent and read anything under the Path A label.
 4. **Optional: check the post-click path.** Does `/demo/mwelo` make the next step obvious, and do campaign clicks show up in Google Analytics?
 5. **Check-ins on days 5, 12 and 21:** reply log + the 16 rows + the Path A label; **full assessment ~10/21-22** against the thresholds above.
