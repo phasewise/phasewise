@@ -8,6 +8,10 @@ PROSPECTS-*.md
 private/
 *.private.md
 
+# Claude's local working scripts and backups — contain prospect emails,
+# sheet row snapshots and execution dumps.
+scratchpad/
+
 # Claude Code local harness files — local settings + runtime locks.
 # Never belong in the repo.
 .claude/

@@ -647,6 +647,116 @@ Higher-volume outreach uses the operational playbook at [`marketing/outreach/PLA
 
 ---
 
+## Where We Left Off (2026-10-01 — Path A launched: 16 MWELO-wedge emails sent, first auto-reply caught)
+
+**Status: 🟢 Path A (the controlled cold-email test chosen on 9/29) is fully launched. 16 hand-qualified, Hunter-verified prospects got the new MWELO-pain email: 8 on Wed 9/30 and 8 on Thu 10/1, both at 8:00 AM PT via a one-off n8n workflow using the same Gmail credential as Workflow A. Every send is verified in n8n, SendLog and Prospects. Kevin confirmed the From line reads `Phasewise Team <hello@phasewise.io>`. First response: one automatic out-of-office reply, caught and logged correctly by Workflow B. Path B (blog, directories) keeps running on its own. Next hard deadline: day-5 follow-ups on Wed 10/7 and Thu 10/8, which Kevin will send by hand.**
+
+**Prospect names, emails, Gmail IDs, exclusions and the follow-up send sheet live in the gitignored `PATH-A.private.md`** (this repo is public). This entry keeps methodology and results only.
+
+### The Path A test, as approved
+
+**Locked first email** (no pricing, no Founding Member mention, no "not selling anything" line):
+
+```
+Subject: Is MWELO 2-4 hours per project for [Firm]?
+
+Hi [First],
+
+Quick question from the Phasewise team — we build operating tools for California LA firms.
+
+We keep hearing MWELO compliance eats 2-4 hours per project between MAWA + ETWU calcs, hydrozone tracking when substitutions happen, and the paperwork on submittal. Real for [Firm], or are we overstating it?
+
+Asking because we built a calculator that produces MAWA/ETWU + a print-ready compliance report in about 3 minutes. 90-second demo if you're curious: phasewise.io/demo/mwelo?utm_source=outreach&utm_campaign=mwelo-wedge-2026-10
+
+— The Phasewise team
+```
+
+**Approved day-5 follow-up** (reply in the same thread):
+
+```
+Hi [First],
+
+Bumping this in case it got buried. Is MWELO still a real time-sink at [Firm], or do you already have it handled?
+
+Either answer helps us. If you'd rather just look, the 90-second demo is here: phasewise.io/demo/mwelo?utm_source=outreach&utm_campaign=mwelo-wedge-2026-10&utm_content=fu1
+
+— The Phasewise team
+```
+
+A day-12 follow-up goes only to firms that replied to the day-5 one.
+
+**List rules (approved):** Hunter verifier status `valid` with score ≥ 90; named person, no generic inboxes (info@, studio@, etc.); no catch-all domains; nobody in the warm-but-paused or do-not-contact lists; no solo practices or firms over ~30 staff; no Caltrans-overlap portfolios.
+
+**Success thresholds (fixed in advance, not lowered for the smaller batch):**
+
+| Result | Read | Next move |
+|---|---|---|
+| ≥1 trial signup or ≥2 forwards | Message works | Invest more; consider Path C (MWELO as a free standalone tool) |
+| 3-6 human replies + ≥3 demo clicks, 0 trials | Reaches people, doesn't activate | Change the ask, one more wave |
+| 0-2 human replies, <3 clicks, 0 trials | Cold email is dead for this audience | Stop cold sends, go fully to Path B |
+
+Bounces, out-of-office replies and silence don't count as signal.
+
+### How the 16 were found
+
+- **Track A (existing sheet):** of 19 never-contacted rows, only 1 had a usable email. The rest had none, or only a generic inbox.
+- **Track B (new):** Kevin pasted ~159 ASLA FirmFinder entries (LA, 100-mile radius). Deduped against the sheet (17 already in it), triaged out large firms, contractors and solo residential practices, then three research agents checked size, portfolio and principal for ~48 firms.
+- **Hunter, two passes:** each principal looked up by name, then checked with the verifier. 32 searches produced 14 usable addresses; one more was published on the firm's own site and one in a directory (both verified), plus the Track A one. Main losses: catch-all domains (7), no address found (4), score 89 (3), invalid (1), person asked Hunter not to share their details (2). **Hunter usage this cycle: 37/50 searches, 75/100 verifications; it resets 10/21.**
+- **Excluded on purpose:** one firm whose principal chairs the state licensing committee, and two with transportation-heavy portfolios (anonymity risk); two people who asked Hunter not to share their details (dropped for good); three at score 89 (held the ≥90 rule). Names in `PATH-A.private.md`.
+
+### The 16 prospects (names in `PATH-A.private.md`)
+
+| Batch | Sent | Strong fit | Borderline fit | Day-5 follow-up |
+|---|---|---|---|---|
+| 1 | Wed 9/30 8:00 AM PT | 4 | 4 | Wed 10/7 |
+| 2 | Thu 10/1 8:00 AM PT | 5 | 3 | Thu 10/8 |
+| **Total** | | **9** | **7** | |
+
+Regions: LA County, Orange County, Ventura, Inland Empire, San Diego, Santa Barbara.
+
+### Where things live
+
+- **Prospects sheet:** the 16 rows have `wave = 7-PathA` and status `path_a_*` (now `path_a_sent`). Workflow A only sends to `queued` / `sent_1` / `sent_fu1`, so it never touches these rows. **The fit tier (STRONG / BORDERLINE) is stored in the `confidence` column** so results can be split by fit.
+- **Row 44 (the one existing-sheet prospect):** its old data was shifted one column to the right from `subject_line` onward, which left the inbox field blank (that's why Workflow A never picked it up). It was rewritten cleanly; the firm info was restored into notes, and the original row is backed up locally in `scratchpad/`. **Other old rows may have the same shift**; worth checking in the next data-quality pass.
+- **Sender workflow:** n8n "Path A — Wave 7 sender (one-off)", ID `w4Nfi8xtmUfPxnOu`, **now turned off** and not used for follow-ups. Runs: 5797 (9/30) and 5888 (10/1), each 8 sent, 8 rows updated, 8 SendLog rows. Its batch-picking code lives inside the n8n workflow (local copy in `scratchpad/`, which holds prospect emails and is gitignored). Safeguards: date-locked batches, only `path_a_ready` rows, duplicate filter, max 8 per run, subject must match the template.
+- **SendLog:** 16 rows with exact subjects, so Workflow B can match out-of-office replies by subject.
+- **Reply tracking:** Workflow B reads every Prospects row (no status filter), so replies from these 16 addresses are matched automatically. Replies from a different person (assistant, forwarded colleague) won't be matched, so **Kevin's Gmail filter labels anything with subject `"MWELO 2-4 hours per project"` as Path A** for manual review. Demo clicks: Google Analytics, campaign `mwelo-wedge-2026-10`; `utm_content=fu1` marks follow-up clicks.
+
+### First response
+
+One Strong-fit prospect from batch 2 sent an automatic out-of-office reply at 8:00 AM 10/1 (back 10/5), relayed through Microsoft's servers. Workflow B's 9:00 AM run matched it to the right prospect and logged it as `ooo`; the row stays `path_a_sent` with the 10/8 follow-up. It's automated, so it's not a signal under the thresholds, but it confirms reply matching works end to end for Path A sends.
+
+### Correction: the "no_match" out-of-office rows are Instagram emails
+
+On 9/29 I described the unmatched `ooo` rows in ReplyLog as generic auto-replies without reading them. Their snippets show they're **Instagram notification emails** ("Catch up on Instagram", "New people to discover") that Workflow B mislabels as out-of-office. No prospect rows were affected, but they pollute the reply log Path A will be judged on. **Proposed fix, awaiting Kevin's approval:** add `instagram.com` and `facebookmail.com` to `NOISE_DOMAINS` in the classifier (`automation/wb-classify-v4.js` + live Workflow B), add a test case, then verify the next run. Separately, optionally remove the existing Instagram rows from ReplyLog after reading each one.
+
+### Lessons from this stretch
+
+1. **Approvals must come to this session.** Kevin gave the "go for Thursday" approval in his separate planning chat, which can't relay here, and later relayed that chat's stale "manually trigger Thursday" option after the batch had already sent. If an approval or option comes up that this session didn't produce, check live state before acting. (Saved to memory.)
+2. **A pause between batches has to live in the workflow, not in Claude.** The plan was "turn it off after Wednesday until Kevin checks." I can only act when messaged, so it never happened and Thursday sent on schedule. For future holds, have the workflow check a "go" flag in the sheet.
+3. **Compare timestamps as dates, not text.** A watcher script compared `16:00:00.441Z` against `16:00:00Z` as strings and missed a run that started exactly on the hour.
+4. **Gmail connector:** claude.ai connectors load at session start and don't appear in VS Code's MCP panel. It must be signed in as `kevin@phasewise.io` (hello@ is an alias on that mailbox). Earlier in this session it was signed into a different mailbox and couldn't find our sent messages. Check with a known message ID (e.g. `1a0f2d475c5ec054`, a batch-1 send) before relying on it.
+
+### Committed today
+
+| SHA | Description |
+|---|---|
+| `dd554cd` | CLAUDE.md: 2026-09-29 WWLO (verification + cold-outreach post-mortem) |
+| _pending_ | This entry |
+
+Live-system changes (sheet rows, the new n8n workflow, sends) have no repo impact.
+
+### Next-session pick-ups (ranked)
+
+1. **🚨 Day-5 follow-ups, Wed 10/7 and Thu 10/8: Kevin sends by hand** (decided 10/1, to keep the test isolated from the production pipeline). Gmail reply in each thread, Schedule Send 8 AM PT; the per-recipient send sheet is in `PATH-A.private.md`. Skip anyone who has really replied. After each day, Claude updates the rows to `path_a_fu1` and adds SendLog rows (keeps Workflow B's subject matching working).
+2. **Instagram noise fix in Workflow B** (pending approval, see above).
+3. **Verify the Gmail connector** in the new session (look up message `1a0f2d475c5ec054`), then spot-check Sent and read anything under the Path A label.
+4. **Optional: check the post-click path.** Does `/demo/mwelo` make the next step obvious, and do campaign clicks show up in Google Analytics?
+5. **Check-ins on days 5, 12 and 21:** reply log + the 16 rows + the Path A label; **full assessment ~10/21-22** against the thresholds above.
+6. **Don't start new prospect research** until the three-week result is in.
+
+---
+
 ## Where We Left Off (2026-09-29 — Post-9/27 reset verification, class closed ✅)
 
 **Status: 🟢 Verification day. The Sat 2026-09-27 billing anchor lifted the n8n Cloud Starter cap on schedule. Post-reset window shows all 4 workflows firing cleanly on the new cadence — 163 total executions across 48 hours, zero errors, zero state corruption. The 2026-09-24 cadence-reduction fix is proven in production. Class officially closed.**
