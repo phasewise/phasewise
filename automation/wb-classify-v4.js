@@ -66,6 +66,8 @@ const NOISE_DOMAINS = new Set([
   'atlassian.com',
   'vercel.com',
   'supabase.io',
+  'instagram.com',
+  'facebookmail.com',
 ]);
 
 const BOUNCE_LOCAL_PREFIXES = ['mailer-daemon', 'mail-daemon', 'postmaster'];
@@ -190,12 +192,13 @@ function hasOooHeader(headers) {
   }
   if (headerVal(headers, 'X-Autoreply')) return true;
   if (headerVal(headers, 'X-Autorespond')) return true;
+  // Precedence bulk/junk and X-Auto-Response-Suppress are NOT auto-reply signals:
+  // newsletters and notification mail carry them ("don't auto-reply to me").
   const prec = headerVal(headers, 'Precedence');
   if (prec) {
     const val = stripHeaderPrefix(prec).toLowerCase();
-    if (/auto[_-]?reply|junk|bulk/.test(val)) return true;
+    if (/auto[_-]?reply/.test(val)) return true;
   }
-  if (headerVal(headers, 'X-Auto-Response-Suppress')) return true;
   return false;
 }
 

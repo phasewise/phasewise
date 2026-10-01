@@ -358,6 +358,49 @@ const FIXTURES = [
       reason: 'noise_sender',
     },
   },
+
+  {
+    id: '15-instagram-digest-noise',
+    // Real shape from exec 5834 (2026-09-30). Was logged as `ooo` because of the
+    // X-Auto-Response-Suppress header.
+    message: {
+      from: 'Instagram <posts-recaps@mail.instagram.com>',
+      from_address: 'posts-recaps@mail.instagram.com',
+      subject: 'See what alexisl.cheers and 8 others shared',
+      body: 'Catch up on Instagram https://www.instagram.com/_n/user?utm_campaign=digest_email',
+      headers: {
+        'List-Unsubscribe': '<https://www.instagram.com/email/oneclick/unsubscribe>',
+        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+        'X-Auto-Response-Suppress': 'All',
+      },
+      thread_id: 'thread-ig-1',
+      message_id: 'msg-ig-1',
+    },
+    expected: {
+      type: 'noise_skipped',
+      reason: 'noise_sender',
+    },
+  },
+
+  {
+    id: '16-unlisted-newsletter-not-ooo',
+    // Same suppress/bulk headers from a sender on no list: must not read as an auto-reply.
+    message: {
+      from: 'Some Vendor <news@some-vendor-newsletter.com>',
+      from_address: 'news@some-vendor-newsletter.com',
+      subject: 'This month in site design',
+      body: 'Our latest articles and product updates.',
+      headers: {
+        'Precedence': 'bulk',
+        'X-Auto-Response-Suppress': 'All',
+      },
+      thread_id: 'thread-news-1',
+      message_id: 'msg-news-1',
+    },
+    expected: {
+      type: 'noise_skipped',
+    },
+  },
 ];
 
 // -----------------------------------------------------------------------------
